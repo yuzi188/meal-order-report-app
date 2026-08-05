@@ -565,7 +565,7 @@ def table_line(label, row, note=""):
     if not row["total"]:
         return ""
     suffix = f"\uff08{note}\uff09" if note else ""
-    return f"{label}\uff1a{count_text(row)}\uff0c\u5171{row['total']}{suffix}"
+    return f"{label}\uff1a{count_text(row)}{suffix}"
 
 
 def delivery_table_text(report_date):
@@ -615,7 +615,7 @@ def delivery_table_text(report_date):
         if not total:
             continue
         lines.append("")
-        lines.append(f"{meal_names[meal]}\uff5c\u7e3d\u4eba\u6578 {total}")
+        lines.append(f"{meal_names[meal]}")
         lines.append(meal_notes[meal])
         for label, getter, note in rows:
             line = table_line(label, getter(meal), note)
