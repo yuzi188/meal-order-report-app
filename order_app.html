@@ -266,6 +266,7 @@
       unitDeliveryLocations = data.unit_delivery_locations || {};
       departments = data.units || [];
       if (!activeDepartment || !departments.includes(activeDepartment)) activeDepartment = departments[0] || "";
+      currentSummary = data.summary;
       renderDepartmentTabs();
       renderMeals(data.menu);
       renderSummary(data.summary);
@@ -311,6 +312,17 @@
       box.insertAdjacentHTML("beforeend", lineTemplate(mealKey, box.querySelectorAll(".line").length + 1));
     }
 
+    function countsForLocation(mealKey, location) {
+      const counts = { taiwan: 0, healthy: 0, cambodia: 0 };
+      const rows = (currentSummary && currentSummary.rows) || [];
+      rows.forEach(row => {
+        if (row.unit === activeDepartment && row.meal_key === mealKey && row.delivery_location === location && counts[row.cuisine] !== undefined) {
+          counts[row.cuisine] += Number(row.count || 0);
+        }
+      });
+      return counts;
+    }
+
     function renderMeals(menu) {
       document.getElementById("menuDate").textContent = `${menu.display_date} ${t.todayMenu}`;
       const meal = menu.meals.find(item => item.key === activeMeal) || menu.meals[0];
@@ -345,7 +357,10 @@
                   </tr>
                 </thead>
                 <tbody data-lines="${meal.key}">
-                  ${visibleLocations().map((location, index) => lineTemplate(meal.key, index + 1, 0, 0, 0, location)).join("")}
+                  ${visibleLocations().map((location, index) => {
+                    const counts = countsForLocation(meal.key, location);
+                    return lineTemplate(meal.key, index + 1, counts.taiwan, counts.healthy, counts.cambodia, location);
+                  }).join("")}
                 </tbody>
               </table>
             </div>
@@ -387,14 +402,7 @@
         </tr>
       `;
 
-      const rows = (summary.rows || []).filter(row => row.unit === activeDepartment && row.meal_key === activeMeal);
-      document.getElementById("detailRows").innerHTML = rows.length
-        ? rows.map(row => `
-          <div class="detail-item">
-            ${escapeHtml(row.unit)} | ${mealNames[row.meal_key]} | ${cuisineNames[row.cuisine]} ${row.count} ${t.portion} | ${escapeHtml(row.delivery_location)}
-          </div>
-        `).join("")
-        : `<div class="detail-item">${activeDepartment} ${t.noReport}</div>`;
+      document.getElementById("detailRows").innerHTML = "";
     }
 
     function collectEntries() {
@@ -462,7 +470,9 @@
     async function refreshSummary() {
       const res = await fetch(`/api/summary?date=${encodeURIComponent(currentDate)}`);
       const data = await res.json();
+      currentSummary = data.summary;
       renderSummary(data.summary);
+      renderMeals(currentMenu);
     }
 
     document.addEventListener("click", event => {
@@ -470,7 +480,6 @@
       if (department) {
         activeDepartment = department;
         renderDepartmentTabs();
-        renderMeals(currentMenu);
         refreshSummary().catch(err => setStatus(err.message, "err"));
       }
       const mealTab = event.target.closest("[data-meal-tab]")?.dataset.mealTab;
