@@ -54,6 +54,8 @@ def storage_status():
     }
 
 DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3\u91d1\u6d41", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "1002-2\u5ba2\u670d"]
+HIDDEN_FIXED_UNITS = ["\u5eda\u623f\u54e1\u5de5"]
+FIXED_REPORT_UNITS = DEPARTMENTS + HIDDEN_FIXED_UNITS
 DELIVERY_LOCATIONS = [
     "\u90e8\u9580\u73fe\u5834",
     "1002-2",
@@ -123,6 +125,12 @@ FIXED_REPORTS = [
         "location": "\u90e8\u9580\u73fe\u5834",
         "cuisine": "cambodia",
         "counts": {"breakfast": 3, "lunch": 5, "dinner": 5, "late_night": 5},
+    },
+    {
+        "unit": "\u5eda\u623f\u54e1\u5de5",
+        "location": "\u90e8\u9580\u73fe\u5834",
+        "cuisine": "cambodia",
+        "counts": {"breakfast": 10, "lunch": 10, "dinner": 10},
     },
 ]
 
@@ -315,14 +323,22 @@ def set_setting(key, value):
 
 
 def fixed_reports_config():
+    defaults = json.loads(json.dumps(FIXED_REPORTS, ensure_ascii=False))
     stored = get_setting("fixed_reports")
     if not stored:
-        return json.loads(json.dumps(FIXED_REPORTS, ensure_ascii=False))
+        return defaults
     try:
         reports = json.loads(stored)
     except Exception:
-        return json.loads(json.dumps(FIXED_REPORTS, ensure_ascii=False))
-    return reports if isinstance(reports, list) else json.loads(json.dumps(FIXED_REPORTS, ensure_ascii=False))
+        return defaults
+    if not isinstance(reports, list):
+        return defaults
+    existing_keys = {(rule.get("unit"), rule.get("location"), rule.get("cuisine")) for rule in reports}
+    for rule in defaults:
+        key = (rule.get("unit"), rule.get("location"), rule.get("cuisine"))
+        if key not in existing_keys:
+            reports.append(rule)
+    return reports
 
 
 def save_fixed_reports_config(reports):
@@ -333,7 +349,7 @@ def save_fixed_reports_config(reports):
         unit = str(rule.get("unit") or "").strip()
         location = str(rule.get("location") or "").strip()
         cuisine = str(rule.get("cuisine") or "").strip()
-        if unit not in DEPARTMENTS:
+        if unit not in FIXED_REPORT_UNITS:
             raise ValueError("部門不正確")
         if cuisine not in CUISINES:
             raise ValueError("餐種不正確")
@@ -661,15 +677,18 @@ def table_line(label, row, note="", bucket_cuisines=None):
     return f"{label}\uff1a{count_text(row, bucket_cuisines)}{suffix}"
 
 
-def meal_total_line(row, bucket_row=None):
+def meal_total_line(row, bucket_row=None, pork_row=None):
     bucket_row = bucket_row or empty_count_row()
-    taiwan_box = max(0, row["taiwan"] - bucket_row["taiwan"])
+    pork_row = pork_row or empty_count_row()
+    taiwan_box = max(0, row["taiwan"] - bucket_row["taiwan"] - pork_row["taiwan"])
     cambodia_box = max(0, row["cambodia"] - bucket_row["cambodia"])
     parts = []
     if taiwan_box:
         parts.append(f"\U0001f1f9\U0001f1fc\U0001f371\u5171 {taiwan_box}")
     if bucket_row["taiwan"]:
         parts.append(f"\U0001f1f9\U0001f1fc\U0001faa3\u5171 {bucket_row['taiwan']}")
+    if pork_row["taiwan"]:
+        parts.append(f"\U0001f437\u4e0d\u5403\u8c6c\U0001f371 {pork_row['taiwan']}")
     if row["healthy"]:
         parts.append(f"\u5065\u5eb7\u9910\U0001f966 {row['healthy']}")
     if cambodia_box:
@@ -689,6 +708,10 @@ def bucket_total_for_meal(data, meal):
         )
     add_count_row(total, count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]), ["taiwan", "cambodia"])
     return total
+
+
+def pork_restriction_total_for_meal(data, meal):
+    return count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")], ["taiwan"])
 
 
 def delivery_table_text(report_date):
@@ -733,14 +756,27 @@ def delivery_table_text(report_date):
         ("\U0001f437\u4e0d\u5403\u8c6c\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")]), "\u5099\u8a3b"),
         ("\u4e0d\u5403\u6d77\u9bae\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u6d77\u9bae")]), "\u5099\u8a3b"),
     ]
+    def visible_total_for_meal(meal):
+        total_row = empty_count_row()
+        for row_def in rows:
+            add_count_row(total_row, row_def[1](meal))
+        return total_row
+
     lines = [f"\u9001\u9910\u7e3d\u8868 {report_date}"]
     for meal in MEAL_KEYS:
-        total = data["totals"][meal]["total"]
+        visible_total = visible_total_for_meal(meal)
+        total = visible_total["total"]
         if not total:
             continue
         lines.append("")
         lines.append(f"{meal_names[meal]}")
-        lines.append(meal_total_line(data["totals"][meal], bucket_total_for_meal(data, meal)))
+        lines.append(
+            meal_total_line(
+                visible_total,
+                bucket_total_for_meal(data, meal),
+                pork_restriction_total_for_meal(data, meal),
+            )
+        )
         for row_def in rows:
             label, getter, note = row_def[:3]
             meal_label = label(meal) if callable(label) else label
@@ -965,7 +1001,7 @@ def summary(report_date):
             location: {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
             for location in DELIVERY_LOCATIONS
         }
-        for unit in DEPARTMENTS
+        for unit in FIXED_REPORT_UNITS
     }
 
     for row in rows:
