@@ -582,7 +582,7 @@ def summarize_bot_report(payload):
         "dinner": "\u665a\u9910",
         "late_night": "\u5bb5\u591c",
     }
-    cuisine_names = {"taiwan": "\u53f0\u9910", "healthy": "\u5065\u5eb7\u9910", "cambodia": "\u67ec\u9910"}
+    cuisine_names = {"taiwan": "\U0001f1f9\U0001f1fc", "healthy": "\u5065\u5eb7\u9910\U0001f966", "cambodia": "\U0001f1f0\U0001f1ed"}
     totals = {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
     location_lines = []
     for entry in payload["entries"]:
@@ -591,8 +591,10 @@ def summarize_bot_report(payload):
         count = int(entry["count"])
         totals[meal][cuisine] += count
         totals[meal]["total"] += count
-        location_lines.append(f"{meal_names[meal]} {entry['delivery_location']} {cuisine_names[cuisine]} {count}")
-    lines = ["\u5df2\u8b80\u5230\u4eba\u6578\uff0c\u8acb\u78ba\u8a8d", f"{payload['date']} {payload['unit']}"]
+        location_lines.append(
+            f"{meal_names[meal]} {display_location(entry['delivery_location'])}\uff1a{cuisine_names[cuisine]}{count}"
+        )
+    lines = ["\u5df2\u8b80\u5230\u4eba\u6578", f"{payload['date']} {payload['unit']}"]
     for meal in MEAL_KEYS:
         row = totals[meal]
         if not row["total"]:
@@ -601,8 +603,6 @@ def summarize_bot_report(payload):
     lines.append("")
     lines.append("\u660e\u7d30\uff1a")
     lines.extend(location_lines)
-    lines.append("")
-    lines.append("\u78ba\u8a8d\u7121\u8aa4\u8acb\u56de\u8986\uff1a\u78ba\u8a8d")
     return "\n".join(lines)
 
 
@@ -631,6 +631,13 @@ def count_from_row(row, cuisines=None):
     total = empty_count_row()
     add_count_row(total, row, cuisines)
     return total
+
+
+def display_location(location):
+    labels = {
+        "\u4e0d\u5403\u8c6c": "\U0001f437\u4e0d\u5403\u8c6c",
+    }
+    return labels.get(location, location)
 
 
 def count_text(row, bucket_cuisines=None):
@@ -693,7 +700,7 @@ def delivery_table_text(report_date):
         ("\u4fdd\u59c6 88\U0001f371", lambda meal: count_for_units(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "88")]), ""),
         ("\u6d77\u5357\u96de\u98ef\U0001f371", lambda meal: count_for_units(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]), ""),
         ("\u4e0d\u5403\u725b\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u725b")]), "\u5099\u8a3b"),
-        ("\u4e0d\u5403\u8c6c\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")]), "\u5099\u8a3b"),
+        ("\U0001f437\u4e0d\u5403\u8c6c\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")]), "\u5099\u8a3b"),
         ("\u4e0d\u5403\u6d77\u9bae\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u6d77\u9bae")]), "\u5099\u8a3b"),
     ]
     lines = [f"\u9001\u9910\u7e3d\u8868 {report_date}"]
@@ -861,9 +868,14 @@ def handle_telegram_update(update):
     try:
         payload = parse_bot_3f_report(parse_text)
         summary_text = summarize_bot_report(payload)
-        save_pending_bot_report(chat_id, payload, summary_text)
-        telegram_send_message(chat_id, summary_text, message_id)
-        return {"ok": True, "action": "pending", "date": payload["date"], "unit": payload["unit"], "entries": len(payload["entries"])}
+        result = save_report(payload)
+        clear_pending_bot_report(chat_id)
+        telegram_send_message(
+            chat_id,
+            f"{summary_text}\n\n\u5df2\u81ea\u52d5\u5beb\u5165 {payload['date']} {payload['unit']}\n\u5beb\u5165 {result['saved']} \u7b46\uff0c\u5c0f\u7a0b\u5f0f\u5df2\u540c\u6b65\u3002",
+            message_id,
+        )
+        return {"ok": True, "action": "saved_auto", "date": payload["date"], "unit": payload["unit"], "entries": len(payload["entries"]), "result": result}
     except Exception as exc:
         if any(mark in text for mark in ["\u53f0\u9910", "\u80d6\u80d6", "\u67ec\u9910", "\u675f\u9910", "\u65e9\u9910", "\u5348\u9910", "\u4e2d\u9910", "\u665a\u9910", "\u5bb5\u591c", "3F", "MT", "\u5ba2\u670d"]):
             telegram_send_message(chat_id, f"\u6c92\u6709\u5beb\u5165\uff1a{exc}", message_id)
