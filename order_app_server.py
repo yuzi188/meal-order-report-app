@@ -757,8 +757,8 @@ def handle_telegram_update(update):
         return {"ok": True, "action": "delivery_table"}
 
     if text.startswith("/\u7e3d\u6578") or text.startswith("/\u603b\u6570"):
-        telegram_send_message(chat_id, totals_report_text(normalize_report_date(text)), message_id)
-        return {"ok": True, "action": "totals_report"}
+        telegram_send_message(chat_id, delivery_table_text(normalize_report_date(text)), message_id)
+        return {"ok": True, "action": "employee_totals_report"}
 
     parse_text = text
     if text.startswith("/\u4eba\u6578") or text.startswith("/\u4eba\u6570") or text.startswith("/parse"):
