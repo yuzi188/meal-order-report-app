@@ -84,14 +84,40 @@
     .input-table input { min-height: 38px; padding: 6px 8px; }
     .location-cell { min-width: 108px; color: var(--brand); font-weight: 950; }
     .location-button { width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--brand); font-weight: 950; }
-    .location-panel { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: 6px; }
-    .line.open .location-panel { display: grid; }
-    .location-option { min-height: 34px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: #1d2935; font-weight: 850; font-size: 13px; }
-    .location-option.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .location-panel, .note-presets {
+      display: none;
+      margin-top: 6px;
+      padding: 12px 10px;
+      border-radius: 18px;
+      background: #111;
+      box-shadow: 0 14px 28px rgba(0,0,0,.28);
+      color: #fff;
+      min-width: 190px;
+    }
+    .line.open .location-panel, .line.note-open .note-presets { display: grid; gap: 2px; }
+    .location-option, .note-preset {
+      min-height: 38px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: #fff;
+      text-align: left;
+      font-weight: 850;
+      font-size: 16px;
+      padding: 6px 10px 6px 34px;
+      position: relative;
+    }
+    .location-option.active::before {
+      content: "\2713";
+      position: absolute;
+      left: 10px;
+      top: 8px;
+      font-weight: 950;
+    }
+    .location-option:active, .note-preset:active { background: rgba(255,255,255,.12); }
     .note-input { min-width: 150px; }
     .note-cell { min-width: 190px; }
-    .note-presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: 6px; }
-    .note-preset { min-height: 32px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--brand); font-weight: 850; font-size: 13px; }
+    .note-menu-button { width: 100%; min-height: 34px; margin-top: 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--brand); font-weight: 900; }
     .count-input { text-align: center; font-size: 19px; font-weight: 900; }
     .remove { min-height: 42px; border: 1px solid #ebc7bd; color: var(--danger); background: #fff6f3; border-radius: 8px; font-weight: 900; }
     .add-line { width: 100%; min-height: 40px; border: 1px dashed var(--brand); color: var(--brand); background: #fff; border-radius: 8px; font-weight: 900; }
@@ -259,6 +285,7 @@
     function notePresetButtons() {
       if (activeDepartment !== "3F") return "";
       return `
+        <button type="button" class="note-menu-button" data-toggle-note>\u5099\u8a3b\u9078\u9805</button>
         <div class="note-presets">
           ${notePresets.map(text => `<button type="button" class="note-preset" data-note-preset="${text}">${text}</button>`).join("")}
         </div>
@@ -450,7 +477,14 @@
       const addMeal = event.target.dataset.addLine;
       if (addMeal) addLine(addMeal);
       if (event.target.dataset.toggleLocation !== undefined) {
-        event.target.closest(".line").classList.toggle("open");
+        const line = event.target.closest(".line");
+        line.classList.toggle("open");
+        line.classList.remove("note-open");
+      }
+      if (event.target.dataset.toggleNote !== undefined) {
+        const line = event.target.closest(".line");
+        line.classList.toggle("note-open");
+        line.classList.remove("open");
       }
       const locationChoice = event.target.dataset.locationChoice;
       if (locationChoice) {
@@ -468,6 +502,7 @@
         const current = input.value.split(/[,\u3001\uff0c]/).map(item => item.trim()).filter(Boolean);
         if (!current.includes(notePreset)) current.push(notePreset);
         input.value = current.join("\u3001");
+        event.target.closest(".line").classList.remove("note-open");
       }
       if (event.target.dataset.removeLine !== undefined) {
         const box = event.target.closest("[data-lines]");
