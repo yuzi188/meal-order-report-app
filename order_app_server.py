@@ -550,17 +550,22 @@ def count_from_row(row, cuisines=None):
     return total
 
 
+def count_text(row):
+    parts = []
+    if row["taiwan"]:
+        parts.append(f"\u53f0\u9910{row['taiwan']}")
+    if row["healthy"]:
+        parts.append(f"\u5065\u5eb7\u9910{row['healthy']}")
+    if row["cambodia"]:
+        parts.append(f"\u67ec\u9910{row['cambodia']}")
+    return " / ".join(parts)
+
+
 def table_line(label, row, note=""):
     if not row["total"]:
         return ""
-    return (
-        f"{label:<13} "
-        f"\u53f0{row['taiwan']:>3} "
-        f"\u5065{row['healthy']:>3} "
-        f"\u67ec{row['cambodia']:>3} "
-        f"\u7e3d{row['total']:>3}"
-        f"{('  ' + note) if note else ''}"
-    )
+    suffix = f"\uff08{note}\uff09" if note else ""
+    return f"{label}\uff1a{count_text(row)}\uff0c\u5171{row['total']}{suffix}"
 
 
 def delivery_table_text(report_date):
@@ -604,14 +609,14 @@ def delivery_table_text(report_date):
         ("\u4e0d\u5403\u8c6c", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")]), "\u5099\u8a3b"),
         ("\u4e0d\u5403\u6d77\u9bae", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u6d77\u9bae")]), "\u5099\u8a3b"),
     ]
-    lines = [f"\u9001\u9910\u7e3d\u8868 {report_date}", "\u53f0=\u53f0\u9910  \u5065=\u5065\u5eb7\u9910  \u67ec=\u67ec\u9910"]
+    lines = [f"\u9001\u9910\u7e3d\u8868 {report_date}"]
     for meal in MEAL_KEYS:
         total = data["totals"][meal]["total"]
         if not total:
             continue
         lines.append("")
-        lines.append(f"{meal_names[meal]}\uff5c\u7e3d\u4eba\u6578 {total}\uff5c{meal_notes[meal]}")
-        lines.append("\u5730\u9ede           \u53f0   \u5065   \u67ec   \u7e3d")
+        lines.append(f"{meal_names[meal]}\uff5c\u7e3d\u4eba\u6578 {total}")
+        lines.append(meal_notes[meal])
         for label, getter, note in rows:
             line = table_line(label, getter(meal), note)
             if line:
