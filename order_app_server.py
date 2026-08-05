@@ -575,12 +575,6 @@ def delivery_table_text(report_date):
         "dinner": "\u665a\u9910 05:00",
         "late_night": "\u5bb5\u591c 09:00",
     }
-    meal_notes = {
-        "breakfast": "\u65e9\u9910 7 \u9ede\u524d\u62b5\u9054",
-        "lunch": "1001 \u5cb1\u5c11 11:00 \u524d\u9001\u5230",
-        "dinner": "1001 4:40 \u524d\u9001\u5230",
-        "late_night": "1001 9:40 \u524d\u62b5\u5230",
-    }
     data = summary(report_date)
     rows = [
         (
@@ -618,7 +612,6 @@ def delivery_table_text(report_date):
             continue
         lines.append("")
         lines.append(f"{meal_names[meal]}")
-        lines.append(meal_notes[meal])
         for label, getter, note in rows:
             line = table_line(label, getter(meal), note)
             if line:
