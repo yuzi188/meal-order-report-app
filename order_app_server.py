@@ -483,15 +483,19 @@ def build_cost_row(report_date, stored):
         + supplier_costs["rice_cost"]
         + supplier_costs["ice_cost"]
     )
-    total_cost = supplier_food_cost if supplier_food_cost else taiwan_cost + cambodia_cost
+    taiwan_food_cost = supplier_food_cost if supplier_food_cost else taiwan_cost
+    total_cost = taiwan_food_cost + cambodia_cost
     total_expense_cost = total_cost + other_cost
     total_count = taiwan_count + cambodia_count
     avg = round(total_cost / total_count, 4) if total_count else 0
+    taiwan_avg = round(taiwan_food_cost / taiwan_count, 4) if taiwan_count else 0
+    cambodia_avg = round(cambodia_cost / cambodia_count, 4) if cambodia_count else 0
     return {
         "date": report_date,
         "taiwan_cost": taiwan_cost,
         "cambodia_cost": cambodia_cost,
         **supplier_costs,
+        "taiwan_food_cost": round(taiwan_food_cost, 2),
         "supplier_food_cost": round(supplier_food_cost, 2),
         "other_cost": round(other_cost, 2),
         "total_cost": round(total_cost, 2),
@@ -500,6 +504,8 @@ def build_cost_row(report_date, stored):
         "cambodia_count": cambodia_count,
         "total_count": total_count,
         "average": avg,
+        "taiwan_average": taiwan_avg,
+        "cambodia_average": cambodia_avg,
         "over_limit": avg > 1.32 if total_count else False,
         "note": stored.get("note", "") if stored else "",
         "saved": bool(stored),
@@ -534,6 +540,7 @@ def cost_report(start_date, end_date, summary_end_date=None):
             "pork_cost": 0.0,
             "vegetable_cost": 0.0,
             "frozen_cost": 0.0,
+            "cambodia_cost": 0.0,
             "grocery_cost": 0.0,
             "gas_cost": 0.0,
             "water_cost": 0.0,
@@ -554,6 +561,7 @@ def cost_report(start_date, end_date, summary_end_date=None):
             "pork_cost",
             "vegetable_cost",
             "frozen_cost",
+            "cambodia_cost",
             "grocery_cost",
             "gas_cost",
             "water_cost",
@@ -576,6 +584,7 @@ def cost_report(start_date, end_date, summary_end_date=None):
             "pork_cost",
             "vegetable_cost",
             "frozen_cost",
+            "cambodia_cost",
             "grocery_cost",
             "gas_cost",
             "water_cost",
@@ -594,6 +603,7 @@ def cost_report(start_date, end_date, summary_end_date=None):
             "pork_cost",
             "vegetable_cost",
             "frozen_cost",
+            "cambodia_cost",
             "grocery_cost",
             "gas_cost",
             "water_cost",

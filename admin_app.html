@@ -121,6 +121,7 @@
         <div><label for="pork_cost">豬肉商</label><input id="pork_cost" data-expense="pork_cost" type="number" step="0.01" min="0"></div>
         <div><label for="vegetable_cost">青菜商</label><input id="vegetable_cost" data-expense="vegetable_cost" type="number" step="0.01" min="0"></div>
         <div><label for="frozen_cost">冷凍商</label><input id="frozen_cost" data-expense="frozen_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="cambodia_cost">柬餐菜金</label><input id="cambodia_cost" data-expense="cambodia_cost" type="number" step="0.01" min="0"></div>
         <div><label for="grocery_cost">雜貨</label><input id="grocery_cost" data-expense="grocery_cost" type="number" step="0.01" min="0"></div>
         <div><label for="gas_cost">瓦斯</label><input id="gas_cost" data-expense="gas_cost" type="number" step="0.01" min="0"></div>
         <div><label for="water_cost">水</label><input id="water_cost" data-expense="water_cost" type="number" step="0.01" min="0"></div>
@@ -131,7 +132,7 @@
       </div>
       <div class="expense-actions">
         <button id="saveExpense">保存今日成本</button>
-        <div class="hint">豬肉商、青菜商、冷凍商算每日菜金；其他項目只進每5天總成本。</div>
+        <div class="hint">豬肉商、青菜商、冷凍商、柬餐菜金算每日菜金；其他項目只進每5天總成本。</div>
       </div>
     </section>
 
@@ -164,6 +165,7 @@
               <th>豬肉商</th>
               <th>青菜商</th>
               <th>冷凍商</th>
+              <th>柬餐菜金</th>
               <th>雜貨</th>
               <th>瓦斯</th>
               <th>水</th>
@@ -193,6 +195,7 @@
       "pork_cost",
       "vegetable_cost",
       "frozen_cost",
+      "cambodia_cost",
       "grocery_cost",
       "gas_cost",
       "water_cost",
@@ -294,8 +297,8 @@
         <div class="card"><div class="card-name">菜金平均</div><div class="card-value ${avgClass(month.average)}">$${Number(month.average || 0).toFixed(2)}</div></div>
       `;
       document.getElementById("rows").innerHTML = data.rows.map(row => {
-        const taiwanAvg = row.taiwan_count ? row.taiwan_cost / row.taiwan_count : 0;
-        const cambodiaAvg = row.cambodia_count ? row.cambodia_cost / row.cambodia_count : 0;
+        const taiwanAvg = row.taiwan_average || 0;
+        const cambodiaAvg = row.cambodia_average || 0;
         return `
           <tr class="summary-row" data-toggle-date="${row.date}">
             <td>${row.date}</td>
@@ -312,7 +315,7 @@
                   <strong>菜金明細</strong>
                   台餐菜金 ${money(row.taiwan_cost)} / 台餐+健康餐 ${row.taiwan_count} / 平均 <span class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</span><br>
                   柬餐菜金 ${money(row.cambodia_cost)} / 柬餐 ${row.cambodia_count} / 平均 <span class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</span><br>
-                  食材供應商 ${money(row.supplier_food_cost)}
+                  台餐食材 ${money(row.taiwan_food_cost)}
                 </div>
                 <div class="detail-box">
                   <strong>供應商</strong>
@@ -331,6 +334,7 @@
           <td>${money(row.pork_cost)}</td>
           <td>${money(row.vegetable_cost)}</td>
           <td>${money(row.frozen_cost)}</td>
+          <td>${money(row.cambodia_cost)}</td>
           <td>${money(row.grocery_cost)}</td>
           <td>${money(row.gas_cost)}</td>
           <td>${money(row.water_cost)}</td>
