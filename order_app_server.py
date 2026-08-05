@@ -10,7 +10,11 @@ from urllib.parse import parse_qs, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent
 MENU_PATH = BASE_DIR / "august_menu_fixed_table.json"
-DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR))
+DATA_DIR = Path(
+    os.environ.get("DATA_DIR")
+    or os.environ.get("RAILWAY_VOLUME_MOUNT_PATH")
+    or BASE_DIR
+)
 DB_PATH = DATA_DIR / "meal_order_reports.sqlite3"
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8787"))
