@@ -76,6 +76,12 @@ FIXED_REPORTS = [
         "beef_notes": {"lunch": 10, "dinner": 10, "late_night": 10},
     },
     {
+        "unit": "1002-2\u4ee3\u7406",
+        "location": "\u90e8\u9580\u73fe\u5834",
+        "cuisine": "taiwan",
+        "counts": {"breakfast": 9, "lunch": 5, "dinner": 5, "late_night": 5},
+    },
+    {
         "unit": "1002-3\u91d1\u6d41",
         "location": "\u90e8\u9580\u73fe\u5834",
         "cuisine": "taiwan",
