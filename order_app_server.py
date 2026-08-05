@@ -15,7 +15,7 @@ DB_PATH = DATA_DIR / "meal_order_reports.sqlite3"
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8787"))
 
-DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "\u5ba2\u670d\u90e8\u9580"]
+DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "1002-2\u5ba2\u670d"]
 DELIVERY_LOCATIONS = [
     "\u90e8\u9580\u73fe\u5834",
     "1002-2",
@@ -34,7 +34,7 @@ CUISINES = ["taiwan", "healthy", "cambodia"]
 def allowed_delivery_locations(unit):
     if unit == "3F":
         return DELIVERY_LOCATIONS[2:]
-    if unit == "\u5ba2\u670d\u90e8\u9580":
+    if unit == "1002-2\u5ba2\u670d":
         return ["1002-2"]
     return [DELIVERY_LOCATIONS[0]]
 

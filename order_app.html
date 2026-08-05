@@ -284,7 +284,7 @@
 
     function visibleLocations() {
       if (activeDepartment === "3F") return deliveryLocations.slice(2);
-      if (activeDepartment === "\u5ba2\u670d\u90e8\u9580") return ["1002-2"];
+      if (activeDepartment === "1002-2\u5ba2\u670d") return ["1002-2"];
       return deliveryLocations.length ? [deliveryLocations[0]] : [];
     }
 
