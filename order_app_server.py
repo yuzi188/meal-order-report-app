@@ -661,15 +661,34 @@ def table_line(label, row, note="", bucket_cuisines=None):
     return f"{label}\uff1a{count_text(row, bucket_cuisines)}{suffix}"
 
 
-def meal_total_line(row):
+def meal_total_line(row, bucket_row=None):
+    bucket_row = bucket_row or empty_count_row()
+    taiwan_box = max(0, row["taiwan"] - bucket_row["taiwan"])
+    cambodia_box = max(0, row["cambodia"] - bucket_row["cambodia"])
     parts = []
-    if row["taiwan"]:
-        parts.append(f"\U0001f1f9\U0001f1fc\U0001f371\u5171 {row['taiwan']}")
+    if taiwan_box:
+        parts.append(f"\U0001f1f9\U0001f1fc\U0001f371\u5171 {taiwan_box}")
+    if bucket_row["taiwan"]:
+        parts.append(f"\U0001f1f9\U0001f1fc\U0001faa3\u5171 {bucket_row['taiwan']}")
     if row["healthy"]:
         parts.append(f"\u5065\u5eb7\u9910\U0001f966 {row['healthy']}")
-    if row["cambodia"]:
-        parts.append(f"\U0001f1f0\U0001f1ed\U0001f371\u5171 {row['cambodia']}")
+    if cambodia_box:
+        parts.append(f"\U0001f1f0\U0001f1ed\U0001f371\u5171 {cambodia_box}")
+    if bucket_row["cambodia"]:
+        parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3\u5171 {bucket_row['cambodia']}")
     return "\uff5c".join(parts)
+
+
+def bucket_total_for_meal(data, meal):
+    total = empty_count_row()
+    if meal != "breakfast":
+        add_count_row(
+            total,
+            count_for_units(data, meal, [("1001", "\u90e8\u9580\u73fe\u5834")], ["taiwan"]),
+            ["taiwan"],
+        )
+    add_count_row(total, count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]), ["taiwan", "cambodia"])
+    return total
 
 
 def delivery_table_text(report_date):
@@ -721,7 +740,7 @@ def delivery_table_text(report_date):
             continue
         lines.append("")
         lines.append(f"{meal_names[meal]}")
-        lines.append(meal_total_line(data["totals"][meal]))
+        lines.append(meal_total_line(data["totals"][meal], bucket_total_for_meal(data, meal)))
         for row_def in rows:
             label, getter, note = row_def[:3]
             meal_label = label(meal) if callable(label) else label
