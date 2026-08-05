@@ -553,11 +553,11 @@ def count_from_row(row, cuisines=None):
 def count_text(row):
     parts = []
     if row["taiwan"]:
-        parts.append(f"\u53f0\u9910{row['taiwan']}")
+        parts.append(f"\U0001f1f9\U0001f1fc \u53f0\u7063{row['taiwan']}")
     if row["healthy"]:
-        parts.append(f"\u5065\u5eb7\u9910{row['healthy']}")
+        parts.append(f"\u5065\u5eb7\u9910\U0001f966{row['healthy']}")
     if row["cambodia"]:
-        parts.append(f"\u67ec\u9910{row['cambodia']}")
+        parts.append(f"\U0001f1f0\U0001f1ed \u67ec\u9910{row['cambodia']}")
     return " / ".join(parts)
 
 
@@ -601,7 +601,7 @@ def delivery_table_text(report_date):
         ("1002-2\u5ba2\u670d", lambda meal: count_for_units(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]), ""),
         ("MT-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]), ""),
         ("\u5065\u5eb7\u9910-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), ""),
-        ("3F\u5305\u9910\u76d2", lambda meal: count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal]), ""),
+        ("\u5305\u98ef\u76d2\U0001f371-3F", lambda meal: count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal]), ""),
         ("68\u516c\u5bd3", lambda meal: add_count_row(data["locations"]["68"][meal].copy(), empty_count_row()), ""),
         ("88\u516c\u5bd3", lambda meal: add_count_row(data["locations"]["88"][meal].copy(), empty_count_row()), ""),
         ("\u6d77\u5357\u96de\u98ef", lambda meal: count_for_units(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]), ""),
@@ -639,17 +639,17 @@ def totals_report_text(report_date):
         add_count_row(grand, row)
         lines.append(
             f"{meal_names[meal]}\uff1a"
-            f"\u53f0\u9910{row['taiwan']} / "
-            f"\u5065\u5eb7\u9910{row['healthy']} / "
-            f"\u67ec\u9910{row['cambodia']} / "
+            f"\U0001f1f9\U0001f1fc \u53f0\u7063{row['taiwan']} / "
+            f"\u5065\u5eb7\u9910\U0001f966{row['healthy']} / "
+            f"\U0001f1f0\U0001f1ed \u67ec\u9910{row['cambodia']} / "
             f"\u5408\u8a08{row['total']}"
         )
     lines.append("")
     lines.append(
         f"\u5168\u5929\u7e3d\u6578\uff1a"
-        f"\u53f0\u9910{grand['taiwan']} / "
-        f"\u5065\u5eb7\u9910{grand['healthy']} / "
-        f"\u67ec\u9910{grand['cambodia']} / "
+        f"\U0001f1f9\U0001f1fc \u53f0\u7063{grand['taiwan']} / "
+        f"\u5065\u5eb7\u9910\U0001f966{grand['healthy']} / "
+        f"\U0001f1f0\U0001f1ed \u67ec\u9910{grand['cambodia']} / "
         f"\u5408\u8a08{grand['total']}"
     )
     return "\n".join(lines)
