@@ -624,6 +624,37 @@ def delivery_table_text(report_date):
     return "\n".join(lines)
 
 
+def totals_report_text(report_date):
+    meal_names = {
+        "breakfast": "\u65e9\u9910",
+        "lunch": "\u5348\u9910",
+        "dinner": "\u665a\u9910",
+        "late_night": "\u5bb5\u591c",
+    }
+    data = summary(report_date)
+    lines = [f"\u7e3d\u6578 {report_date}"]
+    grand = empty_count_row()
+    for meal in MEAL_KEYS:
+        row = data["totals"][meal]
+        add_count_row(grand, row)
+        lines.append(
+            f"{meal_names[meal]}\uff1a"
+            f"\u53f0\u9910{row['taiwan']} / "
+            f"\u5065\u5eb7\u9910{row['healthy']} / "
+            f"\u67ec\u9910{row['cambodia']} / "
+            f"\u5408\u8a08{row['total']}"
+        )
+    lines.append("")
+    lines.append(
+        f"\u5168\u5929\u7e3d\u6578\uff1a"
+        f"\u53f0\u9910{grand['taiwan']} / "
+        f"\u5065\u5eb7\u9910{grand['healthy']} / "
+        f"\u67ec\u9910{grand['cambodia']} / "
+        f"\u5408\u8a08{grand['total']}"
+    )
+    return "\n".join(lines)
+
+
 def save_pending_bot_report(chat_id, payload, summary_text):
     init_db()
     with sqlite3.connect(DB_PATH) as conn:
@@ -724,6 +755,10 @@ def handle_telegram_update(update):
     if text.startswith("/\u7e3d\u8868") or text.startswith("/\u603b\u8868") or text.startswith("/\u9001\u9910\u8868"):
         telegram_send_message(chat_id, delivery_table_text(normalize_report_date(text)), message_id)
         return {"ok": True, "action": "delivery_table"}
+
+    if text.startswith("/\u7e3d\u6578") or text.startswith("/\u603b\u6570"):
+        telegram_send_message(chat_id, totals_report_text(normalize_report_date(text)), message_id)
+        return {"ok": True, "action": "totals_report"}
 
     parse_text = text
     if text.startswith("/\u4eba\u6578") or text.startswith("/\u4eba\u6570") or text.startswith("/parse"):
