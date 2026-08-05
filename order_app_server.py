@@ -27,6 +27,25 @@ ADMIN_SESSION_SECRET = os.environ.get("ADMIN_SESSION_SECRET", ADMIN_PASSWORD)
 ADMIN_COOKIE = "ofa_admin_session"
 ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12
 
+
+def storage_status():
+    volume_path = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH")
+    explicit_data_dir = os.environ.get("DATA_DIR")
+    is_persistent = bool(volume_path or explicit_data_dir)
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        writable = os.access(DATA_DIR, os.W_OK)
+    except Exception:
+        writable = False
+    return {
+        "data_dir": str(DATA_DIR),
+        "db_path": str(DB_PATH),
+        "persistent": is_persistent,
+        "writable": writable,
+        "source": "RAILWAY_VOLUME_MOUNT_PATH" if volume_path else ("DATA_DIR" if explicit_data_dir else "app filesystem"),
+        "warning": "" if is_persistent else "尚未掛載 Railway Volume，部署後資料可能會消失。",
+    }
+
 DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3\u91d1\u6d41", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "1002-2\u5ba2\u670d"]
 DELIVERY_LOCATIONS = [
     "\u90e8\u9580\u73fe\u5834",
@@ -725,6 +744,11 @@ class Handler(BaseHTTPRequestHandler):
             start_date = params.get("start", [today_key()])[0]
             end_date = params.get("end", [start_date])[0]
             self.send_json(cost_report(start_date, end_date))
+            return
+        if parsed.path == "/api/admin/storage":
+            if not self.require_admin():
+                return
+            self.send_json(storage_status())
             return
         self.send_json({"error": "not found"}, 404)
 
