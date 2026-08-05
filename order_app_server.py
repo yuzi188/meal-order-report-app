@@ -14,7 +14,8 @@ DB_PATH = DATA_DIR / "meal_order_reports.sqlite3"
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8787"))
 
-UNITS = ["1001", "1002-2", "1002-3", "68", "88", "3F"]
+DEPARTMENTS = ["1001", "1002-2", "1002-3", "3F"]
+DELIVERY_LOCATIONS = ["部門現場", "68公寓", "88公寓", "3F自由", "自由女神3F"]
 MEAL_KEYS = ["breakfast", "lunch", "dinner", "late_night"]
 CUISINES = ["taiwan", "cambodia"]
 
@@ -33,14 +34,24 @@ def init_db():
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 report_date TEXT NOT NULL,
                 unit TEXT NOT NULL,
+                delivery_location TEXT NOT NULL DEFAULT '部門現場',
                 meal_key TEXT NOT NULL,
                 cuisine TEXT NOT NULL,
                 count INTEGER NOT NULL,
+                restrictions TEXT NOT NULL DEFAULT '[]',
+                note TEXT NOT NULL DEFAULT '',
                 updated_at TEXT NOT NULL,
-                PRIMARY KEY (report_date, unit, meal_key, cuisine)
+                line_key TEXT NOT NULL
             )
+            """
+        )
+        conn.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_reports_line
+            ON reports (report_date, unit, meal_key, line_key)
             """
         )
 
@@ -50,10 +61,10 @@ def db_rows(report_date):
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             """
-            SELECT report_date, unit, meal_key, cuisine, count, updated_at
+            SELECT report_date, unit, delivery_location, meal_key, cuisine, count, restrictions, note, updated_at, line_key
             FROM reports
             WHERE report_date = ?
-            ORDER BY unit, meal_key, cuisine
+            ORDER BY unit, delivery_location, meal_key, cuisine
             """,
             (report_date,),
         ).fetchall()
@@ -63,8 +74,12 @@ def db_rows(report_date):
 def save_report(payload):
     report_date = str(payload.get("date") or today_key())
     unit = str(payload.get("unit") or "").strip()
-    if unit not in UNITS:
-        raise ValueError("單位不正確")
+    delivery_location = str(payload.get("delivery_location") or "部門現場").strip()
+
+    if unit not in DEPARTMENTS:
+        raise ValueError("部門不正確")
+    if delivery_location not in DELIVERY_LOCATIONS:
+        raise ValueError("送餐地點不正確")
 
     entries = payload.get("entries") or []
     now = datetime.now().isoformat(timespec="seconds")
@@ -72,22 +87,38 @@ def save_report(payload):
     for entry in entries:
         meal_key = str(entry.get("meal_key") or "")
         cuisine = str(entry.get("cuisine") or "")
+        entry_location = str(entry.get("delivery_location") or delivery_location).strip()
+        restrictions = entry.get("restrictions") or []
+        if not isinstance(restrictions, list):
+            restrictions = []
+        note = str(entry.get("note") or "").strip()
+        line_key = str(entry.get("line_key") or "").strip()
         count = int(entry.get("count") or 0)
         if meal_key not in MEAL_KEYS:
             raise ValueError("餐別不正確")
         if cuisine not in CUISINES:
             raise ValueError("餐種不正確")
+        if entry_location not in DELIVERY_LOCATIONS:
+            raise ValueError("送餐地點不正確")
         if count < 0:
             raise ValueError("人數不能小於 0")
-        cleaned.append((report_date, unit, meal_key, cuisine, count, now))
+        if not line_key:
+            line_key = f"{meal_key}-{cuisine}-{entry_location}-{note}"
+        cleaned.append((report_date, unit, entry_location, meal_key, cuisine, count, json.dumps(restrictions, ensure_ascii=False), note, now, line_key))
 
     with sqlite3.connect(DB_PATH) as conn:
         conn.executemany(
             """
-            INSERT INTO reports (report_date, unit, meal_key, cuisine, count, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(report_date, unit, meal_key, cuisine)
-            DO UPDATE SET count = excluded.count, updated_at = excluded.updated_at
+            INSERT INTO reports (report_date, unit, delivery_location, meal_key, cuisine, count, restrictions, note, updated_at, line_key)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(report_date, unit, meal_key, line_key)
+            DO UPDATE SET
+                delivery_location = excluded.delivery_location,
+                cuisine = excluded.cuisine,
+                count = excluded.count,
+                restrictions = excluded.restrictions,
+                note = excluded.note,
+                updated_at = excluded.updated_at
             """,
             cleaned,
         )
@@ -96,30 +127,52 @@ def save_report(payload):
 
 def summary(report_date):
     rows = db_rows(report_date)
-    totals = {
-        meal: {"taiwan": 0, "cambodia": 0, "total": 0}
-        for meal in MEAL_KEYS
+    totals = {meal: {"taiwan": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
+    locations = {
+        location: {meal: {"taiwan": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
+        for location in DELIVERY_LOCATIONS
     }
     units = {
         unit: {
-            meal: {"taiwan": None, "cambodia": None}
-            for meal in MEAL_KEYS
+            location: {meal: {"taiwan": None, "cambodia": None} for meal in MEAL_KEYS}
+            for location in DELIVERY_LOCATIONS
         }
-        for unit in UNITS
+        for unit in DEPARTMENTS
     }
+
     for row in rows:
+        unit = row["unit"]
+        location = row["delivery_location"]
         meal = row["meal_key"]
         cuisine = row["cuisine"]
         count = int(row["count"])
-        units[row["unit"]][meal][cuisine] = count
+        if unit not in units or location not in locations:
+            continue
+        current = units[unit][location][meal][cuisine]
+        units[unit][location][meal][cuisine] = count if current is None else current + count
         totals[meal][cuisine] += count
         totals[meal]["total"] += count
+        locations[location][meal][cuisine] += count
+        locations[location][meal]["total"] += count
+
     missing = [
-        unit
-        for unit, meals in units.items()
-        if any(value is None for meal in meals.values() for value in meal.values())
+        f"{unit}-{location}"
+        for unit, location_data in units.items()
+        for location, meals in location_data.items()
+        if all(
+            value is None
+            for meals in location_data.values()
+            for meal in meals.values()
+            for value in meal.values()
+        )
     ]
-    return {"rows": rows, "units": units, "totals": totals, "missing_units": missing}
+    return {
+        "rows": rows,
+        "units": units,
+        "locations": locations,
+        "totals": totals,
+        "missing_units": missing,
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -155,7 +208,15 @@ class Handler(BaseHTTPRequestHandler):
             if not day:
                 self.send_json({"error": f"找不到 {date} 菜單"}, 404)
                 return
-            self.send_json({"date": date, "units": UNITS, "menu": day, "summary": summary(date)})
+            self.send_json(
+                {
+                    "date": date,
+                    "units": DEPARTMENTS,
+                    "delivery_locations": DELIVERY_LOCATIONS,
+                    "menu": day,
+                    "summary": summary(date),
+                }
+            )
             return
         if parsed.path == "/api/summary":
             date = params.get("date", [today_key()])[0]

@@ -3,93 +3,158 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>訂餐人數回報</title>
+  <title>OFA 訂餐回報</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      color-scheme: light;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f7fb;
-      color: #172033;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+      background: #edf3f5;
+      color: #1d2935;
+      --brand: #195b74;
+      --accent: #107764;
+      --line: #d8e2e8;
+      --muted: #667685;
+      --panel: #ffffff;
+      --soft: #f7fafb;
+      --danger: #a33a1f;
+      --ok: #1f7a53;
     }
-    body { margin: 0; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
-    .top { display: flex; gap: 12px; align-items: end; justify-content: space-between; flex-wrap: wrap; }
-    h1 { font-size: 24px; margin: 0 0 6px; color: #17466f; }
-    .date { color: #627089; font-size: 14px; }
-    .panel { background: #fff; border: 1px solid #d8e0ea; border-radius: 8px; padding: 14px; margin-top: 14px; }
-    label { display: block; font-weight: 700; margin-bottom: 6px; }
-    select, input, button {
-      font: inherit;
-      border: 1px solid #b9c6d6;
-      border-radius: 7px;
-      padding: 10px;
-      background: #fff;
-      box-sizing: border-box;
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #edf3f5; }
+    button, input, select { font: inherit; }
+    .app { max-width: 1080px; margin: 0 auto; padding: 14px; padding-bottom: 30px; }
+    .hero {
+      margin: -14px -14px 14px;
+      padding: 18px 16px;
+      background: linear-gradient(135deg, #195b74, #107764);
+      color: white;
+      border-radius: 0 0 8px 8px;
     }
-    button { background: #17466f; color: #fff; border-color: #17466f; font-weight: 700; cursor: pointer; }
-    button.secondary { background: #eef3f8; color: #17466f; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .meal { border: 1px solid #d8e0ea; border-radius: 8px; padding: 12px; background: #fbfdff; }
-    .meal h2 { font-size: 18px; margin: 0 0 8px; color: #17466f; }
-    .items { font-size: 14px; line-height: 1.7; margin-bottom: 10px; }
-    .counts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .summary { overflow-x: auto; }
+    .hero-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    h1 { margin: 0; font-size: 24px; letter-spacing: 0; }
+    .date-text { margin-top: 6px; font-size: 15px; opacity: .92; }
+    .pill { border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.15); padding: 8px 10px; border-radius: 8px; font-weight: 800; white-space: nowrap; }
+    .toolbar { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 10px; margin-bottom: 12px; align-items: end; }
+    label { display: block; margin-bottom: 6px; color: var(--muted); font-weight: 900; font-size: 13px; }
+    input, select {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: #1d2935;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(16,119,100,.14); }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .metric { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-height: 76px; }
+    .metric-name { color: var(--muted); font-size: 13px; font-weight: 900; }
+    .metric-total { margin-top: 4px; font-size: 25px; font-weight: 950; }
+    .metric-split { margin-top: 2px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .meal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .meal { background: white; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .meal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; background: var(--soft); border-bottom: 1px solid var(--line); }
+    .meal-title { color: var(--brand); font-size: 18px; font-weight: 950; }
+    .meal-time { color: var(--muted); font-weight: 850; white-space: nowrap; }
+    .dishes { padding: 12px 14px 8px; display: grid; gap: 6px; }
+    .dish { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; line-height: 1.45; font-size: 15px; }
+    .cat { color: var(--muted); font-weight: 900; }
+    .dish-name { font-weight: 750; overflow-wrap: anywhere; }
+    .lines { padding: 0 14px 12px; display: grid; gap: 10px; }
+    .line { border: 1px solid var(--line); background: #fbfdfe; border-radius: 8px; padding: 10px; display: grid; gap: 8px; }
+    .line-row { display: grid; grid-template-columns: 1fr 96px; gap: 8px; }
+    .line-row.three { grid-template-columns: 1fr 1fr 44px; }
+    .chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .chip { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 38px; border: 1px solid var(--line); background: white; border-radius: 8px; color: #1d2935; font-size: 13px; font-weight: 850; }
+    .chip input { width: auto; min-height: auto; padding: 0; }
+    .count-input { text-align: center; font-size: 20px; font-weight: 900; }
+    .remove { min-height: 44px; border: 1px solid #ebc7bd; color: var(--danger); background: #fff6f3; border-radius: 8px; font-weight: 900; }
+    .add-line { width: 100%; min-height: 42px; border: 1px dashed var(--brand); color: var(--brand); background: white; border-radius: 8px; font-weight: 900; }
+    .actions { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 128px; gap: 10px; background: rgba(237,243,245,.92); backdrop-filter: blur(10px); padding-top: 12px; margin-top: 12px; }
+    button { cursor: pointer; }
+    .primary { min-height: 48px; border: 0; border-radius: 8px; background: var(--brand); color: white; font-weight: 950; }
+    .secondary { min-height: 48px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--brand); font-weight: 950; }
+    .status { min-height: 22px; color: var(--muted); margin: 10px 0 0; font-size: 14px; }
+    .status.ok { color: var(--ok); font-weight: 850; }
+    .status.err { color: var(--danger); font-weight: 850; }
+    .report { margin-top: 12px; background: white; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .report h2 { margin: 0; padding: 12px 14px; color: var(--brand); font-size: 18px; border-bottom: 1px solid var(--line); }
+    .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { border: 1px solid #d8e0ea; padding: 8px; text-align: center; white-space: nowrap; }
-    th { background: #17466f; color: #fff; }
-    .missing { color: #b42318; font-weight: 700; }
-    .ok { color: #1f7a4d; font-weight: 700; }
-    @media (max-width: 720px) {
-      .wrap { padding: 12px; }
-      .grid { grid-template-columns: 1fr; }
-      .counts { grid-template-columns: 1fr; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+    th { background: var(--soft); color: var(--muted); font-weight: 950; }
+    td:first-child, th:first-child { text-align: left; padding-left: 14px; }
+    .detail-list { padding: 10px 14px 14px; display: grid; gap: 6px; color: #1d2935; font-size: 14px; }
+    .detail-item { padding: 8px 10px; border-radius: 8px; background: #f7fafb; border: 1px solid var(--line); }
+    @media (max-width: 760px) {
+      .app { padding: 12px; }
+      .hero { margin: -12px -12px 12px; }
+      h1 { font-size: 22px; }
+      .toolbar, .meal-grid, .actions { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .line-row, .line-row.three { grid-template-columns: 1fr; }
+      .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <div class="top">
-      <div>
-        <h1>訂餐人數回報</h1>
-        <div class="date" id="menuDate">載入中</div>
+  <main class="app">
+    <section class="hero">
+      <div class="hero-row">
+        <div>
+          <h1>OFA 訂餐回報</h1>
+          <div class="date-text" id="menuDate">載入今日菜單中</div>
+        </div>
+        <div class="pill">部門 + 地點</div>
       </div>
-      <div>
-        <label for="unit">單位</label>
-        <select id="unit"></select>
-      </div>
-    </div>
-
-    <section class="panel">
-      <div class="grid" id="meals"></div>
-      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-        <button id="submit">送出回報</button>
-        <button class="secondary" id="reload">重新整理統計</button>
-      </div>
-      <p id="status"></p>
     </section>
 
-    <section class="panel summary">
-      <h2 style="margin-top:0;color:#17466f">今日統計</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>餐別</th>
-            <th>台餐</th>
-            <th>柬埔寨餐</th>
-            <th>合計</th>
-          </tr>
-        </thead>
-        <tbody id="summaryRows"></tbody>
-      </table>
-      <p id="missing"></p>
+    <section class="toolbar">
+      <div>
+        <label for="dateInput">日期</label>
+        <input id="dateInput" type="date">
+      </div>
+      <div>
+        <label for="unit">部門</label>
+        <select id="unit"></select>
+      </div>
+    </section>
+
+    <section class="cards" id="summaryCards"></section>
+    <section class="meal-grid" id="meals"></section>
+
+    <section class="actions">
+      <button class="primary" id="submit">送出回報</button>
+      <button class="secondary" id="reload">更新統計</button>
+    </section>
+    <p class="status" id="status"></p>
+
+    <section class="report">
+      <h2>今日統計</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>餐別</th>
+              <th>台餐</th>
+              <th>柬埔寨餐</th>
+              <th>合計</th>
+            </tr>
+          </thead>
+          <tbody id="summaryRows"></tbody>
+        </table>
+      </div>
+      <div class="detail-list" id="detailRows"></div>
     </section>
   </main>
 
   <script>
     const mealNames = { breakfast: "早餐", lunch: "午餐", dinner: "晚餐", late_night: "宵夜" };
+    const cuisineNames = { taiwan: "台餐", cambodia: "柬埔寨餐" };
     let currentDate = "";
     let currentMenu = null;
+    let deliveryLocations = [];
 
     if (window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.ready();
@@ -104,21 +169,65 @@
       return `${map.year}-${map.month}-${map.day}`;
     }
 
-    async function load() {
-      currentDate = todayTaipei();
-      const res = await fetch(`/api/today?date=${currentDate}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "載入失敗");
-      currentMenu = data.menu;
-      renderUnits(data.units);
-      renderMeals(data.menu);
-      renderSummary(data.summary);
+    function setStatus(text, type = "") {
+      const el = document.getElementById("status");
+      el.className = `status ${type}`;
+      el.textContent = text;
     }
 
-    function renderUnits(units) {
+    async function load(date = todayTaipei()) {
+      currentDate = date;
+      document.getElementById("dateInput").value = date;
+      const res = await fetch(`/api/today?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "菜單載入失敗");
+      currentMenu = data.menu;
+      deliveryLocations = data.delivery_locations || ["部門現場"];
+      renderDepartments(data.units);
+      renderMeals(data.menu);
+      renderSummary(data.summary);
+      setStatus("");
+    }
+
+    function renderDepartments(units) {
       const unit = document.getElementById("unit");
       if (unit.options.length) return;
       unit.innerHTML = units.map(x => `<option value="${x}">${x}</option>`).join("");
+    }
+
+    function locationOptions(selected = "部門現場") {
+      return deliveryLocations.map(x => `<option value="${x}" ${x === selected ? "selected" : ""}>${x}</option>`).join("");
+    }
+
+    function lineTemplate(mealKey, lineIndex, cuisine = "taiwan", count = 0, location = "部門現場", note = "") {
+      return `
+        <div class="line" data-line="${lineIndex}">
+          <div class="line-row three">
+            <select data-field="cuisine">
+              <option value="taiwan" ${cuisine === "taiwan" ? "selected" : ""}>台餐</option>
+              <option value="cambodia" ${cuisine === "cambodia" ? "selected" : ""}>柬埔寨餐</option>
+            </select>
+            <input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="count" value="${count}">
+            <button class="remove" type="button" data-remove-line>刪</button>
+          </div>
+          <div class="line-row">
+            <select data-field="delivery_location">${locationOptions(location)}</select>
+            <input type="text" data-field="note" value="${note}" placeholder="備註，例如：包飯盒、不吃豬、MT部門">
+          </div>
+          <div class="chips">
+            <label class="chip"><input type="checkbox" value="不吃豬" data-field="restriction">不吃豬</label>
+            <label class="chip"><input type="checkbox" value="不吃牛" data-field="restriction">不吃牛</label>
+            <label class="chip"><input type="checkbox" value="不吃海鮮" data-field="restriction">不吃海鮮</label>
+            <label class="chip"><input type="checkbox" value="健康餐" data-field="restriction">健康餐</label>
+          </div>
+        </div>
+      `;
+    }
+
+    function addLine(mealKey, defaults = {}) {
+      const box = document.querySelector(`[data-lines="${mealKey}"]`);
+      const index = box.children.length + 1;
+      box.insertAdjacentHTML("beforeend", lineTemplate(mealKey, index, defaults.cuisine, defaults.count, defaults.location, defaults.note));
     }
 
     function renderMeals(menu) {
@@ -126,29 +235,43 @@
       document.getElementById("meals").innerHTML = menu.meals.map(meal => {
         const dishes = meal.items
           .filter(item => item.dish)
-          .map(item => `${item.category}：${item.dish}`)
-          .join("<br>");
-        return `
-          <div class="meal" data-meal="${meal.key}">
-            <h2>${meal.label} ${meal.time}</h2>
-            <div class="items">${dishes}</div>
-            <div class="counts">
-              <div>
-                <label>台餐人數</label>
-                <input type="number" min="0" step="1" inputmode="numeric" data-cuisine="taiwan" data-meal="${meal.key}" value="0">
-              </div>
-              <div>
-                <label>柬埔寨餐人數</label>
-                <input type="number" min="0" step="1" inputmode="numeric" data-cuisine="cambodia" data-meal="${meal.key}" value="0">
-              </div>
+          .map(item => `
+            <div class="dish">
+              <div class="cat">${item.category}</div>
+              <div class="dish-name">${item.dish}</div>
             </div>
-          </div>
+          `)
+          .join("");
+        return `
+          <article class="meal" data-meal="${meal.key}">
+            <div class="meal-head">
+              <div class="meal-title">${meal.label}</div>
+              <div class="meal-time">${meal.time}</div>
+            </div>
+            <div class="dishes">${dishes}</div>
+            <div class="lines" data-lines="${meal.key}">
+              ${lineTemplate(meal.key, 1, "taiwan", 0, "部門現場", "")}
+              ${lineTemplate(meal.key, 2, "cambodia", 0, "部門現場", "")}
+            </div>
+            <div style="padding:0 14px 14px">
+              <button class="add-line" type="button" data-add-line="${meal.key}">新增一筆地點 / 備註</button>
+            </div>
+          </article>
         `;
       }).join("");
     }
 
     function renderSummary(summary) {
-      document.getElementById("summaryRows").innerHTML = Object.entries(summary.totals).map(([key, row]) => `
+      const entries = Object.entries(summary.totals || {});
+      document.getElementById("summaryCards").innerHTML = entries.map(([key, row]) => `
+        <div class="metric">
+          <div class="metric-name">${mealNames[key]}</div>
+          <div class="metric-total">${row.total}</div>
+          <div class="metric-split">台 ${row.taiwan} / 柬 ${row.cambodia}</div>
+        </div>
+      `).join("");
+
+      document.getElementById("summaryRows").innerHTML = entries.map(([key, row]) => `
         <tr>
           <td>${mealNames[key]}</td>
           <td>${row.taiwan}</td>
@@ -156,18 +279,55 @@
           <td>${row.total}</td>
         </tr>
       `).join("");
-      const missing = summary.missing_units || [];
-      document.getElementById("missing").innerHTML = missing.length
-        ? `<span class="missing">未完整回報：${missing.join("、")}</span>`
-        : `<span class="ok">所有單位已完整回報</span>`;
+
+      const rows = summary.rows || [];
+      document.getElementById("detailRows").innerHTML = rows.length
+        ? rows.map(row => `
+          <div class="detail-item">
+            ${row.unit}｜${mealNames[row.meal_key]}｜${cuisineNames[row.cuisine]} ${row.count} 份｜${row.delivery_location}${formatRestrictions(row.restrictions)}${row.note ? `｜${row.note}` : ""}
+          </div>
+        `).join("")
+        : `<div class="detail-item">尚未有人回報</div>`;
+    }
+
+    function formatRestrictions(raw) {
+      try {
+        const list = typeof raw === "string" ? JSON.parse(raw || "[]") : raw;
+        return Array.isArray(list) && list.length ? `｜${list.join("、")}` : "";
+      } catch {
+        return "";
+      }
+    }
+
+    function collectEntries() {
+      const entries = [];
+      document.querySelectorAll("[data-lines]").forEach(box => {
+        const mealKey = box.dataset.lines;
+        box.querySelectorAll(".line").forEach((line, index) => {
+          const cuisine = line.querySelector('[data-field="cuisine"]').value;
+          const count = Number(line.querySelector('[data-field="count"]').value || 0);
+          const delivery_location = line.querySelector('[data-field="delivery_location"]').value;
+          const restrictions = [...line.querySelectorAll('[data-field="restriction"]:checked')].map(item => item.value);
+          const note = line.querySelector('[data-field="note"]').value.trim();
+          if (count > 0) {
+            entries.push({
+              meal_key: mealKey,
+              cuisine,
+              count,
+              delivery_location,
+              restrictions,
+              note,
+              line_key: `${mealKey}-${index + 1}`
+            });
+          }
+        });
+      });
+      return entries;
     }
 
     async function submitReport() {
-      const entries = [...document.querySelectorAll("input[data-meal]")].map(input => ({
-        meal_key: input.dataset.meal,
-        cuisine: input.dataset.cuisine,
-        count: Number(input.value || 0)
-      }));
+      const entries = collectEntries();
+      if (!entries.length) throw new Error("請至少填一筆人數");
       const payload = { date: currentDate, unit: document.getElementById("unit").value, entries };
       const res = await fetch("/api/report", {
         method: "POST",
@@ -176,7 +336,7 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "送出失敗");
-      document.getElementById("status").textContent = "已送出，可以重新修改後再送一次。";
+      setStatus("已送出，可以修改後再送一次。", "ok");
       if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
         Telegram.WebApp.HapticFeedback.notificationOccurred("success");
       }
@@ -184,16 +344,26 @@
     }
 
     async function refreshSummary() {
-      const res = await fetch(`/api/summary?date=${currentDate}`);
+      const res = await fetch(`/api/summary?date=${encodeURIComponent(currentDate)}`);
       const data = await res.json();
       renderSummary(data.summary);
     }
 
-    document.getElementById("submit").addEventListener("click", () => submitReport().catch(err => {
-      document.getElementById("status").textContent = err.message;
-    }));
-    document.getElementById("reload").addEventListener("click", () => refreshSummary());
-    load().catch(err => document.getElementById("status").textContent = err.message);
+    document.addEventListener("click", event => {
+      const addMeal = event.target.dataset.addLine;
+      if (addMeal) addLine(addMeal);
+      if (event.target.dataset.removeLine !== undefined) {
+        const box = event.target.closest("[data-lines]");
+        if (box.querySelectorAll(".line").length > 1) {
+          event.target.closest(".line").remove();
+        }
+      }
+    });
+
+    document.getElementById("submit").addEventListener("click", () => submitReport().catch(err => setStatus(err.message, "err")));
+    document.getElementById("reload").addEventListener("click", () => refreshSummary().catch(err => setStatus(err.message, "err")));
+    document.getElementById("dateInput").addEventListener("change", event => load(event.target.value).catch(err => setStatus(err.message, "err")));
+    load().catch(err => setStatus(err.message, "err"));
   </script>
 </body>
 </html>
