@@ -4,3 +4,4 @@
 .env
 .env.*
 tg_config.json
+.telegram_webhook_secret.local
