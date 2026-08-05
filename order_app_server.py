@@ -18,18 +18,21 @@ PORT = int(os.environ.get("PORT", "8787"))
 DEPARTMENTS = ["1001", "1002-2", "1002-3", "3F"]
 DELIVERY_LOCATIONS = [
     "\u90e8\u9580\u73fe\u5834",
-    "68\u516c\u5bd3",
-    "88\u516c\u5bd3",
-    "3F\u81ea\u7531",
-    "\u81ea\u7531\u5973\u795e3F",
+    "68",
+    "88",
+    "3F",
+    "3F\u5305\u9910\u76d2",
+    "\u4e0d\u5403\u725b",
+    "\u4e0d\u5403\u8c6c",
+    "\u4e0d\u5403\u6d77\u9bae",
 ]
 MEAL_KEYS = ["breakfast", "lunch", "dinner", "late_night"]
-CUISINES = ["taiwan", "cambodia"]
+CUISINES = ["taiwan", "healthy", "cambodia"]
 
 
 def allowed_delivery_locations(unit):
     if unit == "3F":
-        return DELIVERY_LOCATIONS
+        return DELIVERY_LOCATIONS[1:]
     return [DELIVERY_LOCATIONS[0]]
 
 
@@ -184,14 +187,14 @@ def save_report(payload):
 
 def summary(report_date):
     rows = db_rows(report_date)
-    totals = {meal: {"taiwan": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
+    totals = {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
     locations = {
-        location: {meal: {"taiwan": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
+        location: {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
         for location in DELIVERY_LOCATIONS
     }
     units = {
         unit: {
-            location: {meal: {"taiwan": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
+            location: {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
             for location in DELIVERY_LOCATIONS
         }
         for unit in DEPARTMENTS

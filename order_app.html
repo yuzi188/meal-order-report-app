@@ -75,7 +75,7 @@
     .cat { color: var(--muted); font-weight: 900; }
     .dish-name { font-weight: 760; overflow-wrap: anywhere; }
     .lines { padding: 0 12px 10px; }
-    .input-table { width: 100%; min-width: 560px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    .input-table { width: 100%; min-width: 460px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
     .input-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
     .input-table th, .input-table td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
     .input-table th { background: var(--soft); color: var(--muted); font-weight: 950; }
@@ -84,7 +84,7 @@
     .input-table input { min-height: 38px; padding: 6px 8px; }
     .location-cell { min-width: 108px; color: var(--brand); font-weight: 950; }
     .location-button { width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--brand); font-weight: 950; }
-    .location-panel, .note-presets {
+    .location-panel {
       display: none;
       margin-top: 6px;
       padding: 12px 10px;
@@ -94,8 +94,8 @@
       color: #fff;
       min-width: 190px;
     }
-    .line.open .location-panel, .line.note-open .note-presets { display: grid; gap: 2px; }
-    .location-option, .note-preset {
+    .line.open .location-panel { display: grid; gap: 2px; }
+    .location-option {
       min-height: 38px;
       border: 0;
       border-radius: 10px;
@@ -114,10 +114,7 @@
       top: 8px;
       font-weight: 950;
     }
-    .location-option:active, .note-preset:active { background: rgba(255,255,255,.12); }
-    .note-input { min-width: 150px; }
-    .note-cell { min-width: 190px; }
-    .note-menu-button { width: 100%; min-height: 34px; margin-top: 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--brand); font-weight: 900; }
+    .location-option:active { background: rgba(255,255,255,.12); }
     .count-input { text-align: center; font-size: 19px; font-weight: 900; }
     .remove { min-height: 42px; border: 1px solid #ebc7bd; color: var(--danger); background: #fff6f3; border-radius: 8px; font-weight: 900; }
     .add-line { width: 100%; min-height: 40px; border: 1px dashed var(--brand); color: var(--brand); background: #fff; border-radius: 8px; font-weight: 900; }
@@ -181,6 +178,7 @@
             <tr>
               <th>&#39184;&#21029;</th>
               <th>&#21488;&#39184;</th>
+              <th>&#20581;&#24247;&#39184;</th>
               <th>&#26596;&#22484;&#23528;&#39184;</th>
               <th>&#21512;&#35336;</th>
             </tr>
@@ -206,12 +204,12 @@
       del: "\u522a",
       notePlaceholder: "\u5099\u8a3b\uff1a\u4e0d\u5403\u8c6c\u3001\u4e0d\u5403\u725b\u3001\u4e0d\u5403\u6d77\u9bae\u3001\u5065\u5eb7\u9910\u3001\u5305\u98ef\u76d2",
       taiwan: "\u53f0\u9910",
+      healthy: "\u5065\u5eb7\u9910",
       cambodia: "\u67ec\u57d4\u5be8\u9910",
       portion: "\u4efd"
     };
     const mealNames = { breakfast: "\u65e9\u9910", lunch: "\u5348\u9910", dinner: "\u665a\u9910", late_night: "\u5bb5\u591c" };
-    const cuisineNames = { taiwan: t.taiwan, cambodia: t.cambodia };
-    const notePresets = ["\u5065\u5eb7\u9910", "\u4e0d\u5403\u725b", "\u4e0d\u5403\u8c6c", "\u4e0d\u5403\u6d77\u9bae"];
+    const cuisineNames = { taiwan: t.taiwan, healthy: t.healthy, cambodia: t.cambodia };
     let currentDate = "";
     let currentMenu = null;
     let currentSummary = null;
@@ -278,21 +276,11 @@
     }
 
     function visibleLocations() {
-      if (activeDepartment === "3F") return deliveryLocations;
+      if (activeDepartment === "3F") return deliveryLocations.slice(1);
       return deliveryLocations.length ? [deliveryLocations[0]] : [];
     }
 
-    function notePresetButtons() {
-      if (activeDepartment !== "3F") return "";
-      return `
-        <button type="button" class="note-menu-button" data-toggle-note>\u5099\u8a3b\u9078\u9805</button>
-        <div class="note-presets">
-          ${notePresets.map(text => `<button type="button" class="note-preset" data-note-preset="${text}">${text}</button>`).join("")}
-        </div>
-      `;
-    }
-
-    function lineTemplate(mealKey, lineIndex, taiwanCount = 0, cambodiaCount = 0, location = "", note = "") {
+    function lineTemplate(mealKey, lineIndex, taiwanCount = 0, healthyCount = 0, cambodiaCount = 0, location = "") {
       const locations = visibleLocations();
       const selectedLocation = locations.includes(location) ? location : (locations[0] || "");
       return `
@@ -302,11 +290,8 @@
             <div class="location-panel">${locationButtons(selectedLocation)}</div>
           </td>
           <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="taiwan_count" value="${taiwanCount}"></td>
+          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="healthy_count" value="${healthyCount}"></td>
           <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="cambodia_count" value="${cambodiaCount}"></td>
-          <td class="note-cell">
-            <input class="note-input" type="text" data-field="note" value="${escapeHtml(note)}" placeholder="${t.notePlaceholder}">
-            ${notePresetButtons()}
-          </td>
           <td><button class="remove" type="button" data-remove-line>${t.del}</button></td>
         </tr>
       `;
@@ -345,13 +330,13 @@
                   <tr>
                     <th>\u9001\u9910\u5730\u9ede</th>
                     <th>${t.taiwan}</th>
+                    <th>${t.healthy}</th>
                     <th>${t.cambodia}</th>
-                    <th>\u5099\u8a3b</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody data-lines="${meal.key}">
-                  ${visibleLocations().map((location, index) => lineTemplate(meal.key, index + 1, 0, 0, location)).join("")}
+                  ${visibleLocations().map((location, index) => lineTemplate(meal.key, index + 1, 0, 0, 0, location)).join("")}
                 </tbody>
               </table>
             </div>
@@ -365,7 +350,7 @@
 
     function renderSummary(summary) {
       currentSummary = summary;
-      const entries = currentMenu ? currentMenu.meals.map(meal => [meal.key, summary.totals[meal.key] || { taiwan: 0, cambodia: 0, total: 0 }, meal]) : [];
+      const entries = currentMenu ? currentMenu.meals.map(meal => [meal.key, summary.totals[meal.key] || { taiwan: 0, healthy: 0, cambodia: 0, total: 0 }, meal]) : [];
       document.getElementById("summaryCards").innerHTML = entries.map(([key, row, meal]) => {
         const menuLines = meal.items
           .filter(item => item.dish)
@@ -375,18 +360,19 @@
           <button type="button" class="metric ${key === activeMeal ? "active" : ""}" data-meal-tab="${key}">
             <div class="metric-name">${mealNames[key]} <span class="metric-time">${escapeHtml(meal.time)}</span></div>
             <div class="metric-total">${row.total}</div>
-            <div class="metric-split">${t.taiwan} ${row.taiwan} / ${t.cambodia} ${row.cambodia}</div>
+            <div class="metric-split">${t.taiwan} ${row.taiwan} / ${t.healthy} ${row.healthy} / ${t.cambodia} ${row.cambodia}</div>
             <div class="menu-list">${menuLines}</div>
           </button>
         `;
       }).join("");
 
-      const activeTotal = summary.totals[activeMeal] || { taiwan: 0, cambodia: 0, total: 0 };
+      const activeTotal = summary.totals[activeMeal] || { taiwan: 0, healthy: 0, cambodia: 0, total: 0 };
       document.getElementById("reportTitle").textContent = `${mealNames[activeMeal]} ${t.todayMenu}`;
       document.getElementById("summaryRows").innerHTML = `
         <tr>
           <td>${mealNames[activeMeal]}</td>
           <td>${activeTotal.taiwan}</td>
+          <td>${activeTotal.healthy}</td>
           <td>${activeTotal.cambodia}</td>
           <td>${activeTotal.total}</td>
         </tr>
@@ -396,7 +382,7 @@
       document.getElementById("detailRows").innerHTML = rows.length
         ? rows.map(row => `
           <div class="detail-item">
-            ${escapeHtml(row.unit)} | ${mealNames[row.meal_key]} | ${cuisineNames[row.cuisine]} ${row.count} ${t.portion} | ${escapeHtml(row.delivery_location)}${row.note ? ` | ${escapeHtml(row.note)}` : ""}
+            ${escapeHtml(row.unit)} | ${mealNames[row.meal_key]} | ${cuisineNames[row.cuisine]} ${row.count} ${t.portion} | ${escapeHtml(row.delivery_location)}
           </div>
         `).join("")
         : `<div class="detail-item">${activeDepartment} ${t.noReport}</div>`;
@@ -408,17 +394,27 @@
         const mealKey = box.dataset.lines;
         box.querySelectorAll(".line").forEach((line, index) => {
           const taiwanCount = Number(line.querySelector('[data-field="taiwan_count"]').value || 0);
+          const healthyCount = Number(line.querySelector('[data-field="healthy_count"]').value || 0);
           const cambodiaCount = Number(line.querySelector('[data-field="cambodia_count"]').value || 0);
           const deliveryLocation = line.dataset.location || deliveryLocations[0] || "";
-          const note = line.querySelector('[data-field="note"]').value.trim();
           if (taiwanCount > 0) {
             entries.push({
               meal_key: mealKey,
               cuisine: "taiwan",
               count: taiwanCount,
               delivery_location: deliveryLocation,
-              note,
+              note: "",
               line_key: `${mealKey}-${index + 1}-taiwan`
+            });
+          }
+          if (healthyCount > 0) {
+            entries.push({
+              meal_key: mealKey,
+              cuisine: "healthy",
+              count: healthyCount,
+              delivery_location: deliveryLocation,
+              note: "",
+              line_key: `${mealKey}-${index + 1}-healthy`
             });
           }
           if (cambodiaCount > 0) {
@@ -427,7 +423,7 @@
               cuisine: "cambodia",
               count: cambodiaCount,
               delivery_location: deliveryLocation,
-              note,
+              note: "",
               line_key: `${mealKey}-${index + 1}-cambodia`
             });
           }
@@ -479,12 +475,6 @@
       if (event.target.dataset.toggleLocation !== undefined) {
         const line = event.target.closest(".line");
         line.classList.toggle("open");
-        line.classList.remove("note-open");
-      }
-      if (event.target.dataset.toggleNote !== undefined) {
-        const line = event.target.closest(".line");
-        line.classList.toggle("note-open");
-        line.classList.remove("open");
       }
       const locationChoice = event.target.dataset.locationChoice;
       if (locationChoice) {
@@ -495,14 +485,6 @@
           button.classList.toggle("active", button.dataset.locationChoice === locationChoice);
         });
         line.classList.remove("open");
-      }
-      const notePreset = event.target.dataset.notePreset;
-      if (notePreset) {
-        const input = event.target.closest(".line").querySelector('[data-field="note"]');
-        const current = input.value.split(/[,\u3001\uff0c]/).map(item => item.trim()).filter(Boolean);
-        if (!current.includes(notePreset)) current.push(notePreset);
-        input.value = current.join("\u3001");
-        event.target.closest(".line").classList.remove("note-open");
       }
       if (event.target.dataset.removeLine !== undefined) {
         const box = event.target.closest("[data-lines]");
