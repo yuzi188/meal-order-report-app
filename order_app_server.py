@@ -19,7 +19,7 @@ DB_PATH = DATA_DIR / "meal_order_reports.sqlite3"
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8787"))
 
-DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "1002-2\u5ba2\u670d"]
+DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3\u91d1\u6d41", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "1002-2\u5ba2\u670d"]
 DELIVERY_LOCATIONS = [
     "\u90e8\u9580\u73fe\u5834",
     "1002-2",
