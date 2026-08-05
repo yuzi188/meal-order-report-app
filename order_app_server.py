@@ -578,7 +578,7 @@ def delivery_table_text(report_date):
     data = summary(report_date)
     rows = [
         (
-            "1001 3A",
+            "1001 3A\U0001faa3",
             lambda meal: count_for_units(data, meal, [("1001", "\u90e8\u9580\u73fe\u5834")], ["taiwan", "healthy"]),
             "",
         ),
@@ -593,11 +593,11 @@ def delivery_table_text(report_date):
             "",
         ),
         ("1002-2\u5ba2\u670d", lambda meal: count_for_units(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]), ""),
-        ("MT-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]), "MT"),
-        ("\u5065\u5eb7\u9910\U0001f966-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), "MT"),
+        ("MT-3F\U0001faa3", lambda meal: count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]), "MT"),
+        ("\u5065\u5eb7\u9910\U0001f966-3F\U0001faa3", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), "MT"),
         ("\u5305\u98ef\u76d2\U0001f371-3F", lambda meal: count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal]), "MT"),
-        ("68\u516c\u5bd3", lambda meal: count_for_units(data, meal, [("3F", "68")]), "MT"),
-        ("88\u516c\u5bd3", lambda meal: count_for_units(data, meal, [("3F", "88")]), "MT"),
+        ("68\u516c\u5bd3\U0001faa3", lambda meal: count_for_units(data, meal, [("3F", "68")]), "MT"),
+        ("88\u516c\u5bd3\U0001faa3", lambda meal: count_for_units(data, meal, [("3F", "88")]), "MT"),
         ("\u4fdd\u59c6 68", lambda meal: count_for_units(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "68")]), ""),
         ("\u4fdd\u59c6 88", lambda meal: count_for_units(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "88")]), ""),
         ("\u6d77\u5357\u96de\u98ef", lambda meal: count_for_units(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]), ""),
