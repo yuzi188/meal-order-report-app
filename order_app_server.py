@@ -545,7 +545,7 @@ def parse_bot_3f_report(text):
     report_date = normalize_report_date(text)
     current_meal = None
     entries_by_key = {}
-    for raw_line in text.splitlines():
+    for raw_index, raw_line in enumerate(text.splitlines(), start=1):
         line = raw_line.strip()
         if not line or set(line) <= {"-", "_"}:
             continue
@@ -574,7 +574,10 @@ def parse_bot_3f_report(text):
         location = "1002-2" if unit == "1002-2\u5ba2\u670d" else normalize_delivery_location(line)
         if unit == "3F" and current_meal == "late_night" and cuisine == "cambodia" and "\u9910\u6876" in line:
             location = "3F"
+        is_late_night_cambodia_bucket = unit == "3F" and current_meal == "late_night" and cuisine == "cambodia" and location == "3F"
         line_key = f"bot-{current_meal}-{cuisine}-{location}"
+        if is_late_night_cambodia_bucket:
+            line_key = f"{line_key}-{raw_index}"
         if line_key in entries_by_key:
             entries_by_key[line_key]["count"] += count
         else:
@@ -684,7 +687,8 @@ def bucket_count_text(row, bucket_counts=None):
         parts.append(f"\u5065\u5eb7\u9910\U0001f966{row['healthy']}")
     if row["cambodia"]:
         if bucket_counts.get("cambodia"):
-            parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3{bucket_counts['cambodia']}\u6876")
+            detail = bucket_counts.get("cambodia_detail", "")
+            parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3{bucket_counts['cambodia']}\u6876{detail}")
         else:
             parts.append(f"\U0001f1f0\U0001f1ed{row['cambodia']}")
     return " / ".join(parts)
@@ -723,7 +727,8 @@ def meal_total_line(row, bucket_row=None, pork_row=None, bucket_counts=None):
         parts.append(f"\U0001f1f0\U0001f1ed\U0001f371\u5171 {cambodia_box}")
     if bucket_row["cambodia"]:
         if bucket_counts.get("cambodia"):
-            parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3\u5171 {bucket_counts['cambodia']}\u6876")
+            detail = bucket_counts.get("cambodia_detail", "")
+            parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3\u5171 {bucket_counts['cambodia']}\u6876{detail}")
         else:
             parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3\u5171 {bucket_row['cambodia']}")
     return "\uff5c".join(parts)
@@ -749,13 +754,25 @@ def pork_restriction_total_for_meal(data, meal):
 
 def bucket_count_for_meal(data, meal):
     counts = {}
-    late_night_cambodia = (
-        data["locations"]["3F"][meal]["cambodia"]
-        + data["locations"]["3F\u5305\u9910\u76d2"][meal]["cambodia"]
-    ) if meal == "late_night" else 0
-    if meal == "late_night" and late_night_cambodia:
-        counts["cambodia"] = 2
+    if meal == "late_night":
+        parts = late_night_cambodia_bucket_parts(data)
+        if parts:
+            counts["cambodia"] = len(parts)
+            counts["cambodia_detail"] = "\uff08" + "+".join(str(value) for value in parts) + "\uff09"
     return counts
+
+
+def late_night_cambodia_bucket_parts(data):
+    parts = []
+    for row in data["rows"]:
+        if (
+            row.get("unit") == "3F"
+            and row.get("meal_key") == "late_night"
+            and row.get("cuisine") == "cambodia"
+            and row.get("delivery_location") in {"3F", "3F\u5305\u9910\u76d2"}
+        ):
+            parts.append(int(row.get("count") or 0))
+    return [value for value in parts if value > 0]
 
 
 def mt_3f_count_for_meal(data, meal):
