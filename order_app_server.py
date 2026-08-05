@@ -562,22 +562,25 @@ def count_from_row(row, cuisines=None):
     return total
 
 
-def count_text(row):
+def count_text(row, bucket_cuisines=None):
+    bucket_cuisines = set(bucket_cuisines or [])
     parts = []
     if row["taiwan"]:
-        parts.append(f"\U0001f1f9\U0001f1fc{row['taiwan']}")
+        suffix = "\U0001faa3" if "taiwan" in bucket_cuisines else ""
+        parts.append(f"\U0001f1f9\U0001f1fc{row['taiwan']}{suffix}")
     if row["healthy"]:
         parts.append(f"\u5065\u5eb7\u9910\U0001f966{row['healthy']}")
     if row["cambodia"]:
-        parts.append(f"\U0001f1f0\U0001f1ed{row['cambodia']}")
+        suffix = "\U0001faa3" if "cambodia" in bucket_cuisines else ""
+        parts.append(f"\U0001f1f0\U0001f1ed{row['cambodia']}{suffix}")
     return " / ".join(parts)
 
 
-def table_line(label, row, note=""):
+def table_line(label, row, note="", bucket_cuisines=None):
     if not row["total"]:
         return ""
     suffix = f"\uff08{note}\uff09" if note else ""
-    return f"{label}\uff1a{count_text(row)}{suffix}"
+    return f"{label}\uff1a{count_text(row, bucket_cuisines)}{suffix}"
 
 
 def delivery_table_text(report_date):
@@ -608,7 +611,8 @@ def delivery_table_text(report_date):
         (
             "MT-3F\U0001faa3",
             lambda meal: count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]),
-            lambda meal: "MT\uff0c\u67ec\u9910\U0001faa3" if meal == "late_night" and data["locations"]["3F"][meal]["cambodia"] else "MT",
+            lambda meal: "MT",
+            lambda meal: ["cambodia"] if meal == "late_night" and data["locations"]["3F"][meal]["cambodia"] else [],
         ),
         ("\u5065\u5eb7\u9910\U0001f966-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), "MT"),
         ("\u5305\u98ef\u76d2\U0001f371-3F", lambda meal: count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal]), "MT"),
@@ -628,9 +632,11 @@ def delivery_table_text(report_date):
             continue
         lines.append("")
         lines.append(f"{meal_names[meal]}")
-        for label, getter, note in rows:
+        for row_def in rows:
+            label, getter, note = row_def[:3]
+            bucket_cuisines = row_def[3](meal) if len(row_def) > 3 and callable(row_def[3]) else (row_def[3] if len(row_def) > 3 else [])
             meal_note = note(meal) if callable(note) else note
-            line = table_line(label, getter(meal), meal_note)
+            line = table_line(label, getter(meal), meal_note, bucket_cuisines)
             if line:
                 lines.append(line)
     return "\n".join(lines)
