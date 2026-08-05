@@ -25,6 +25,10 @@
     h1 { margin: 0; font-size: 24px; color: var(--yellow); }
     .sub { color: var(--muted); margin-top: 4px; font-size: 14px; }
     .controls { display: grid; grid-template-columns: 1fr 1fr 120px; gap: 8px; margin: 10px 0; }
+    .expense-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+    .expense-actions { display: flex; gap: 8px; align-items: center; padding: 0 12px 12px; }
+    .expense-actions button { min-width: 120px; }
+    .hint { color: var(--muted); font-size: 13px; line-height: 1.45; }
     label { display: block; color: var(--muted); font-weight: 900; font-size: 13px; margin-bottom: 5px; }
     input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); padding: 7px 9px; }
     input[type="date"], input[type="month"] { color-scheme: dark; }
@@ -42,6 +46,13 @@
     th, td { border-bottom: 1px solid var(--line); padding: 8px; text-align: center; white-space: nowrap; }
     th { background: var(--soft); color: var(--muted); font-weight: 950; }
     td:first-child, th:first-child { text-align: left; }
+    .summary-row { cursor: pointer; }
+    .summary-row.open { background: rgba(245, 200, 75, 0.06); }
+    .details-row { display: none; background: #0d131c; }
+    .details-row.open { display: table-row; }
+    .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; text-align: left; white-space: normal; }
+    .detail-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .detail-box strong { color: var(--yellow); display: block; margin-bottom: 6px; }
     .money { max-width: 105px; text-align: center; }
     .count { max-width: 92px; text-align: center; }
     .save { min-width: 68px; }
@@ -49,7 +60,7 @@
     .logout { background: transparent; color: var(--yellow); }
     @media (max-width: 760px) {
       .hero { display: block; }
-      .controls, .cards { grid-template-columns: 1fr; }
+      .controls, .cards, .expense-grid, .detail-grid { grid-template-columns: 1fr; }
       .app { padding: 10px; }
     }
   </style>
@@ -79,6 +90,26 @@
       </div>
     </section>
 
+    <section class="panel">
+      <h2>每日成本輸入</h2>
+      <div class="expense-grid" id="expenseForm">
+        <div><label for="pork_cost">豬肉商</label><input id="pork_cost" data-expense="pork_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="vegetable_cost">青菜商</label><input id="vegetable_cost" data-expense="vegetable_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="frozen_cost">冷凍商</label><input id="frozen_cost" data-expense="frozen_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="grocery_cost">雜貨</label><input id="grocery_cost" data-expense="grocery_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="gas_cost">瓦斯</label><input id="gas_cost" data-expense="gas_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="water_cost">水</label><input id="water_cost" data-expense="water_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="meal_box_cost">餐盒</label><input id="meal_box_cost" data-expense="meal_box_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="corner_store_cost">柑仔店</label><input id="corner_store_cost" data-expense="corner_store_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="rice_cost">大米</label><input id="rice_cost" data-expense="rice_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="ice_cost">冰塊</label><input id="ice_cost" data-expense="ice_cost" type="number" step="0.01" min="0"></div>
+      </div>
+      <div class="expense-actions">
+        <button id="saveExpense">保存今日成本</button>
+        <div class="hint">豬肉商、青菜商、冷凍商算每日菜金；其他項目只進每5天總成本。</div>
+      </div>
+    </section>
+
     <section class="cards" id="cards"></section>
     <p class="status" id="status"></p>
 
@@ -89,17 +120,11 @@
           <thead>
             <tr>
               <th>日期</th>
-              <th>台餐菜金</th>
-              <th>台餐+健康餐份數</th>
-              <th>台餐+健康餐平均</th>
-              <th>柬餐菜金</th>
-              <th>柬餐份數</th>
-              <th>柬餐平均</th>
               <th>總菜金</th>
               <th>總份數</th>
               <th>總平均</th>
-              <th>備註</th>
-              <th></th>
+              <th>其他成本</th>
+              <th>總成本</th>
             </tr>
           </thead>
           <tbody id="rows"></tbody>
@@ -111,7 +136,7 @@
       <h2>每5天統計</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>區間</th><th>總菜金</th><th>總份數</th><th>平均</th></tr></thead>
+          <thead><tr><th>區間</th><th>菜金</th><th>其他成本</th><th>總成本</th><th>總份數</th><th>菜金平均</th><th>總成本平均</th></tr></thead>
           <tbody id="weeks"></tbody>
         </table>
       </div>
@@ -121,6 +146,19 @@
   <script>
     const limit = 1.32;
     let currentRows = [];
+    let currentData = null;
+    const expenseFields = [
+      "pork_cost",
+      "vegetable_cost",
+      "frozen_cost",
+      "grocery_cost",
+      "gas_cost",
+      "water_cost",
+      "meal_box_cost",
+      "corner_store_cost",
+      "rice_cost",
+      "ice_cost"
+    ];
 
     function todayTaipei() {
       const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
@@ -155,15 +193,35 @@
       const res = await fetch(`/api/costs?start=${range.start}&end=${range.end}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "載入失敗");
+      currentData = data;
       currentRows = data.rows;
       render(data);
+      populateExpenseForm();
       setStatus("");
+    }
+
+    function selectedDate() {
+      return document.getElementById("todayInput").value || todayTaipei();
+    }
+
+    function selectedRow() {
+      return currentRows.find(row => row.date === selectedDate()) || null;
+    }
+
+    function populateExpenseForm() {
+      const row = selectedRow();
+      expenseFields.forEach(field => {
+        const input = document.querySelector(`[data-expense="${field}"]`);
+        input.value = row && row[field] ? row[field] : "";
+      });
     }
 
     function render(data) {
       const month = data.month;
       document.getElementById("cards").innerHTML = `
         <div class="card"><div class="card-name">本月總菜金</div><div class="card-value">${money(month.cost)}</div></div>
+        <div class="card"><div class="card-name">本月其他成本</div><div class="card-value">${money(month.other_cost)}</div></div>
+        <div class="card"><div class="card-name">本月總成本</div><div class="card-value">${money(month.total_expense_cost)}</div></div>
         <div class="card"><div class="card-name">本月總份數</div><div class="card-value">${month.count}</div></div>
         <div class="card"><div class="card-name">本月平均</div><div class="card-value ${avgClass(month.average)}">$${Number(month.average || 0).toFixed(2)}</div></div>
       `;
@@ -171,19 +229,31 @@
         const taiwanAvg = row.taiwan_count ? row.taiwan_cost / row.taiwan_count : 0;
         const cambodiaAvg = row.cambodia_count ? row.cambodia_cost / row.cambodia_count : 0;
         return `
-          <tr data-date="${row.date}">
+          <tr class="summary-row" data-toggle-date="${row.date}">
             <td>${row.date}</td>
-            <td><input class="money" data-field="taiwan_cost" type="number" step="0.01" min="0" value="${row.taiwan_cost || ""}"></td>
-            <td>${row.taiwan_count}</td>
-            <td class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</td>
-            <td><input class="money" data-field="cambodia_cost" type="number" step="0.01" min="0" value="${row.cambodia_cost || ""}"></td>
-            <td>${row.cambodia_count}</td>
-            <td class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</td>
             <td>${money(row.total_cost)}</td>
             <td>${row.total_count}</td>
             <td class="${avgClass(row.average)}">${money(row.average)}</td>
-            <td><input data-field="note" value="${row.note || ""}"></td>
-            <td><button class="save" data-save="${row.date}">保存</button></td>
+            <td>${money(row.other_cost)}</td>
+            <td>${money(row.total_expense_cost)}</td>
+          </tr>
+          <tr class="details-row" data-detail-date="${row.date}">
+            <td colspan="6">
+              <div class="detail-grid">
+                <div class="detail-box">
+                  <strong>菜金明細</strong>
+                  台餐菜金 ${money(row.taiwan_cost)} / 台餐+健康餐 ${row.taiwan_count} / 平均 <span class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</span><br>
+                  柬餐菜金 ${money(row.cambodia_cost)} / 柬餐 ${row.cambodia_count} / 平均 <span class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</span><br>
+                  食材供應商 ${money(row.supplier_food_cost)}
+                </div>
+                <div class="detail-box">
+                  <strong>供應商</strong>
+                  豬肉 ${money(row.pork_cost)} / 青菜 ${money(row.vegetable_cost)} / 冷凍 ${money(row.frozen_cost)}<br>
+                  雜貨 ${money(row.grocery_cost)} / 瓦斯 ${money(row.gas_cost)} / 水 ${money(row.water_cost)}<br>
+                  餐盒 ${money(row.meal_box_cost)} / 柑仔店 ${money(row.corner_store_cost)} / 大米 ${money(row.rice_cost)} / 冰塊 ${money(row.ice_cost)}
+                </div>
+              </div>
+            </td>
           </tr>
         `;
       }).join("");
@@ -191,8 +261,11 @@
         <tr>
           <td>${row.label}</td>
           <td>${money(row.cost)}</td>
+          <td>${money(row.other_cost)}</td>
+          <td>${money(row.total_expense_cost)}</td>
           <td>${row.count}</td>
           <td class="${avgClass(row.average)}">${money(row.average)}</td>
+          <td>${money(row.expense_average)}</td>
         </tr>
       `).join("");
     }
@@ -215,8 +288,26 @@
       await load();
     }
 
+    async function saveExpense() {
+      const date = selectedDate();
+      const payload = { date };
+      expenseFields.forEach(field => {
+        payload[field] = document.querySelector(`[data-expense="${field}"]`).value;
+      });
+      const res = await fetch("/api/cost", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "保存失敗");
+      setStatus(`${date} 成本已保存`, "good");
+      await load();
+    }
+
     function isEditingCostTable() {
-      return Boolean(document.activeElement && document.activeElement.closest("#rows"));
+      return Boolean(document.activeElement && (document.activeElement.closest("#rows") || document.activeElement.closest("#expenseForm")));
     }
 
     async function autoRefresh() {
@@ -233,8 +324,14 @@
     document.addEventListener("click", event => {
       const date = event.target.dataset.save;
       if (date) saveRow(date).catch(err => setStatus(err.message, "bad"));
+      const toggleDate = event.target.closest("[data-toggle-date]")?.dataset.toggleDate;
+      if (toggleDate) {
+        document.querySelector(`[data-toggle-date="${toggleDate}"]`)?.classList.toggle("open");
+        document.querySelector(`[data-detail-date="${toggleDate}"]`)?.classList.toggle("open");
+      }
     });
     document.getElementById("reload").addEventListener("click", () => load().catch(err => setStatus(err.message, "bad")));
+    document.getElementById("saveExpense").addEventListener("click", () => saveExpense().catch(err => setStatus(err.message, "bad")));
     document.getElementById("logout").addEventListener("click", async () => {
       await fetch("/api/admin/logout", { method: "POST", cache: "no-store" });
       window.location.href = "/admin";

@@ -198,7 +198,17 @@ def init_db():
                 cambodia_count INTEGER NOT NULL DEFAULT 0,
                 note TEXT NOT NULL DEFAULT '',
                 updated_at TEXT NOT NULL,
-                counts_locked INTEGER NOT NULL DEFAULT 1
+                counts_locked INTEGER NOT NULL DEFAULT 1,
+                pork_cost REAL NOT NULL DEFAULT 0,
+                vegetable_cost REAL NOT NULL DEFAULT 0,
+                frozen_cost REAL NOT NULL DEFAULT 0,
+                grocery_cost REAL NOT NULL DEFAULT 0,
+                gas_cost REAL NOT NULL DEFAULT 0,
+                water_cost REAL NOT NULL DEFAULT 0,
+                meal_box_cost REAL NOT NULL DEFAULT 0,
+                corner_store_cost REAL NOT NULL DEFAULT 0,
+                rice_cost REAL NOT NULL DEFAULT 0,
+                ice_cost REAL NOT NULL DEFAULT 0
             )
             """
         )
@@ -207,6 +217,21 @@ def init_db():
         }
         if "counts_locked" not in existing_columns:
             conn.execute("ALTER TABLE daily_costs ADD COLUMN counts_locked INTEGER NOT NULL DEFAULT 1")
+        expense_columns = {
+            "pork_cost": "REAL NOT NULL DEFAULT 0",
+            "vegetable_cost": "REAL NOT NULL DEFAULT 0",
+            "frozen_cost": "REAL NOT NULL DEFAULT 0",
+            "grocery_cost": "REAL NOT NULL DEFAULT 0",
+            "gas_cost": "REAL NOT NULL DEFAULT 0",
+            "water_cost": "REAL NOT NULL DEFAULT 0",
+            "meal_box_cost": "REAL NOT NULL DEFAULT 0",
+            "corner_store_cost": "REAL NOT NULL DEFAULT 0",
+            "rice_cost": "REAL NOT NULL DEFAULT 0",
+            "ice_cost": "REAL NOT NULL DEFAULT 0",
+        }
+        for column, definition in expense_columns.items():
+            if column not in existing_columns:
+                conn.execute(f"ALTER TABLE daily_costs ADD COLUMN {column} {definition}")
 
 
 def db_rows(report_date):
@@ -397,7 +422,10 @@ def db_cost_rows(start_date, end_date):
         rows = conn.execute(
             """
             SELECT report_date, taiwan_cost, cambodia_cost, taiwan_count,
-                   cambodia_count, note, updated_at, counts_locked
+                   cambodia_count, note, updated_at, counts_locked,
+                   pork_cost, vegetable_cost, frozen_cost, grocery_cost,
+                   gas_cost, water_cost, meal_box_cost, corner_store_cost,
+                   rice_cost, ice_cost
             FROM daily_costs
             WHERE report_date >= ? AND report_date <= ?
             ORDER BY report_date
@@ -414,14 +442,41 @@ def build_cost_row(report_date, stored):
     cambodia_count = int(stored["cambodia_count"]) if use_stored_counts else defaults["cambodia"]
     taiwan_cost = float(stored.get("taiwan_cost") or 0) if stored else 0.0
     cambodia_cost = float(stored.get("cambodia_cost") or 0) if stored else 0.0
-    total_cost = taiwan_cost + cambodia_cost
+    supplier_costs = {
+        "pork_cost": float(stored.get("pork_cost") or 0) if stored else 0.0,
+        "vegetable_cost": float(stored.get("vegetable_cost") or 0) if stored else 0.0,
+        "frozen_cost": float(stored.get("frozen_cost") or 0) if stored else 0.0,
+        "grocery_cost": float(stored.get("grocery_cost") or 0) if stored else 0.0,
+        "gas_cost": float(stored.get("gas_cost") or 0) if stored else 0.0,
+        "water_cost": float(stored.get("water_cost") or 0) if stored else 0.0,
+        "meal_box_cost": float(stored.get("meal_box_cost") or 0) if stored else 0.0,
+        "corner_store_cost": float(stored.get("corner_store_cost") or 0) if stored else 0.0,
+        "rice_cost": float(stored.get("rice_cost") or 0) if stored else 0.0,
+        "ice_cost": float(stored.get("ice_cost") or 0) if stored else 0.0,
+    }
+    supplier_food_cost = supplier_costs["pork_cost"] + supplier_costs["vegetable_cost"] + supplier_costs["frozen_cost"]
+    other_cost = (
+        supplier_costs["grocery_cost"]
+        + supplier_costs["gas_cost"]
+        + supplier_costs["water_cost"]
+        + supplier_costs["meal_box_cost"]
+        + supplier_costs["corner_store_cost"]
+        + supplier_costs["rice_cost"]
+        + supplier_costs["ice_cost"]
+    )
+    total_cost = supplier_food_cost if supplier_food_cost else taiwan_cost + cambodia_cost
+    total_expense_cost = total_cost + other_cost
     total_count = taiwan_count + cambodia_count
     avg = round(total_cost / total_count, 4) if total_count else 0
     return {
         "date": report_date,
         "taiwan_cost": taiwan_cost,
         "cambodia_cost": cambodia_cost,
+        **supplier_costs,
+        "supplier_food_cost": round(supplier_food_cost, 2),
+        "other_cost": round(other_cost, 2),
         "total_cost": round(total_cost, 2),
+        "total_expense_cost": round(total_expense_cost, 2),
         "taiwan_count": taiwan_count,
         "cambodia_count": cambodia_count,
         "total_count": total_count,
@@ -446,12 +501,23 @@ def cost_report(start_date, end_date):
         current += timedelta(days=1)
 
     def empty_group(label):
-        return {"label": label, "cost": 0.0, "count": 0, "average": 0.0, "over_limit": False}
+        return {
+            "label": label,
+            "cost": 0.0,
+            "other_cost": 0.0,
+            "total_expense_cost": 0.0,
+            "count": 0,
+            "average": 0.0,
+            "expense_average": 0.0,
+            "over_limit": False,
+        }
 
     month = empty_group("month")
     weeks = {}
     for row in rows:
         month["cost"] += row["total_cost"]
+        month["other_cost"] += row["other_cost"]
+        month["total_expense_cost"] += row["total_expense_cost"]
         month["count"] += row["total_count"]
         row_date = date.fromisoformat(row["date"])
         period_start_day = ((row_date.day - 1) // 5) * 5 + 1
@@ -459,11 +525,16 @@ def cost_report(start_date, end_date):
         period_label = f"{row_date.month}/{period_start_day}-{row_date.month}/{period_end_day}"
         weeks.setdefault(period_label, empty_group(period_label))
         weeks[period_label]["cost"] += row["total_cost"]
+        weeks[period_label]["other_cost"] += row["other_cost"]
+        weeks[period_label]["total_expense_cost"] += row["total_expense_cost"]
         weeks[period_label]["count"] += row["total_count"]
 
     for group in [month, *weeks.values()]:
         group["cost"] = round(group["cost"], 2)
+        group["other_cost"] = round(group["other_cost"], 2)
+        group["total_expense_cost"] = round(group["total_expense_cost"], 2)
         group["average"] = round(group["cost"] / group["count"], 4) if group["count"] else 0.0
+        group["expense_average"] = round(group["total_expense_cost"] / group["count"], 4) if group["count"] else 0.0
         group["over_limit"] = group["average"] > 1.32 if group["count"] else False
 
     return {"rows": rows, "month": month, "weeks": list(weeks.values()), "limit": 1.32}
@@ -483,15 +554,32 @@ def save_cost(payload):
     cambodia_count = existing["cambodia_count"] if keep_locked_counts else (
         payload.get("cambodia_count") if "cambodia_count" in payload else defaults["cambodia"]
     )
+    def cost_value(field):
+        if field in payload:
+            return float(payload.get(field) or 0)
+        if existing:
+            return float(existing.get(field) or 0)
+        return 0.0
+
     values = (
         report_date,
-        float(payload.get("taiwan_cost") or 0),
-        float(payload.get("cambodia_cost") or 0),
+        cost_value("taiwan_cost"),
+        cost_value("cambodia_cost"),
         int(taiwan_count or 0),
         int(cambodia_count or 0),
-        str(payload.get("note") or "").strip(),
+        str(payload.get("note") if "note" in payload else (existing.get("note") if existing else "") or "").strip(),
         now,
         counts_locked,
+        cost_value("pork_cost"),
+        cost_value("vegetable_cost"),
+        cost_value("frozen_cost"),
+        cost_value("grocery_cost"),
+        cost_value("gas_cost"),
+        cost_value("water_cost"),
+        cost_value("meal_box_cost"),
+        cost_value("corner_store_cost"),
+        cost_value("rice_cost"),
+        cost_value("ice_cost"),
     )
     init_db()
     with sqlite3.connect(DB_PATH) as conn:
@@ -499,9 +587,12 @@ def save_cost(payload):
             """
             INSERT INTO daily_costs (
                 report_date, taiwan_cost, cambodia_cost, taiwan_count,
-                cambodia_count, note, updated_at, counts_locked
+                cambodia_count, note, updated_at, counts_locked,
+                pork_cost, vegetable_cost, frozen_cost, grocery_cost,
+                gas_cost, water_cost, meal_box_cost, corner_store_cost,
+                rice_cost, ice_cost
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(report_date)
             DO UPDATE SET
                 taiwan_cost = excluded.taiwan_cost,
@@ -510,7 +601,17 @@ def save_cost(payload):
                 cambodia_count = excluded.cambodia_count,
                 note = excluded.note,
                 updated_at = excluded.updated_at,
-                counts_locked = excluded.counts_locked
+                counts_locked = excluded.counts_locked,
+                pork_cost = excluded.pork_cost,
+                vegetable_cost = excluded.vegetable_cost,
+                frozen_cost = excluded.frozen_cost,
+                grocery_cost = excluded.grocery_cost,
+                gas_cost = excluded.gas_cost,
+                water_cost = excluded.water_cost,
+                meal_box_cost = excluded.meal_box_cost,
+                corner_store_cost = excluded.corner_store_cost,
+                rice_cost = excluded.rice_cost,
+                ice_cost = excluded.ice_cost
             """,
             values,
         )
