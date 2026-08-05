@@ -158,7 +158,27 @@
       <h2>每5天統計</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>區間</th><th>菜金</th><th>其他成本</th><th>總成本</th><th>總份數</th><th>菜金平均</th><th>總成本平均</th></tr></thead>
+          <thead>
+            <tr>
+              <th>區間</th>
+              <th>豬肉商</th>
+              <th>青菜商</th>
+              <th>冷凍商</th>
+              <th>雜貨</th>
+              <th>瓦斯</th>
+              <th>水</th>
+              <th>餐盒</th>
+              <th>柑仔店</th>
+              <th>大米</th>
+              <th>冰塊</th>
+              <th>菜金</th>
+              <th>其他成本</th>
+              <th>總成本</th>
+              <th>總份數</th>
+              <th>菜金平均</th>
+              <th>總成本平均</th>
+            </tr>
+          </thead>
           <tbody id="weeks"></tbody>
         </table>
       </div>
@@ -307,6 +327,16 @@
       document.getElementById("weeks").innerHTML = data.weeks.map(row => `
         <tr>
           <td>${row.label}</td>
+          <td>${money(row.pork_cost)}</td>
+          <td>${money(row.vegetable_cost)}</td>
+          <td>${money(row.frozen_cost)}</td>
+          <td>${money(row.grocery_cost)}</td>
+          <td>${money(row.gas_cost)}</td>
+          <td>${money(row.water_cost)}</td>
+          <td>${money(row.meal_box_cost)}</td>
+          <td>${money(row.corner_store_cost)}</td>
+          <td>${money(row.rice_cost)}</td>
+          <td>${money(row.ice_cost)}</td>
           <td>${money(row.cost)}</td>
           <td>${money(row.other_cost)}</td>
           <td>${money(row.total_expense_cost)}</td>

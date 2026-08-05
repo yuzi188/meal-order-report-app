@@ -529,6 +529,16 @@ def cost_report(start_date, end_date):
             "average": 0.0,
             "expense_average": 0.0,
             "over_limit": False,
+            "pork_cost": 0.0,
+            "vegetable_cost": 0.0,
+            "frozen_cost": 0.0,
+            "grocery_cost": 0.0,
+            "gas_cost": 0.0,
+            "water_cost": 0.0,
+            "meal_box_cost": 0.0,
+            "corner_store_cost": 0.0,
+            "rice_cost": 0.0,
+            "ice_cost": 0.0,
         }
 
     month = empty_group("month")
@@ -538,6 +548,19 @@ def cost_report(start_date, end_date):
         month["other_cost"] += row["other_cost"]
         month["total_expense_cost"] += row["total_expense_cost"]
         month["count"] += row["total_count"]
+        for field in [
+            "pork_cost",
+            "vegetable_cost",
+            "frozen_cost",
+            "grocery_cost",
+            "gas_cost",
+            "water_cost",
+            "meal_box_cost",
+            "corner_store_cost",
+            "rice_cost",
+            "ice_cost",
+        ]:
+            month[field] += row[field]
         row_date = date.fromisoformat(row["date"])
         period_start_day = ((row_date.day - 1) // 5) * 5 + 1
         period_end_day = min(period_start_day + 4, (date(row_date.year, row_date.month + 1, 1) - timedelta(days=1)).day) if row_date.month < 12 else min(period_start_day + 4, 31)
@@ -547,11 +570,37 @@ def cost_report(start_date, end_date):
         weeks[period_label]["other_cost"] += row["other_cost"]
         weeks[period_label]["total_expense_cost"] += row["total_expense_cost"]
         weeks[period_label]["count"] += row["total_count"]
+        for field in [
+            "pork_cost",
+            "vegetable_cost",
+            "frozen_cost",
+            "grocery_cost",
+            "gas_cost",
+            "water_cost",
+            "meal_box_cost",
+            "corner_store_cost",
+            "rice_cost",
+            "ice_cost",
+        ]:
+            weeks[period_label][field] += row[field]
 
     for group in [month, *weeks.values()]:
         group["cost"] = round(group["cost"], 2)
         group["other_cost"] = round(group["other_cost"], 2)
         group["total_expense_cost"] = round(group["total_expense_cost"], 2)
+        for field in [
+            "pork_cost",
+            "vegetable_cost",
+            "frozen_cost",
+            "grocery_cost",
+            "gas_cost",
+            "water_cost",
+            "meal_box_cost",
+            "corner_store_cost",
+            "rice_cost",
+            "ice_cost",
+        ]:
+            group[field] = round(group[field], 2)
         group["average"] = round(group["cost"] / group["count"], 4) if group["count"] else 0.0
         group["expense_average"] = round(group["total_expense_cost"] / group["count"], 4) if group["count"] else 0.0
         group["over_limit"] = group["average"] > 1.32 if group["count"] else False
