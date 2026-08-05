@@ -221,6 +221,7 @@
     let currentMenu = null;
     let currentSummary = null;
     let deliveryLocations = [];
+    let unitDeliveryLocations = {};
     let departments = [];
     let activeDepartment = "";
     let activeMeal = "breakfast";
@@ -262,6 +263,7 @@
       if (!res.ok) throw new Error(data.error || t.loadFail);
       currentMenu = data.menu;
       deliveryLocations = data.delivery_locations || [];
+      unitDeliveryLocations = data.unit_delivery_locations || {};
       departments = data.units || [];
       if (!activeDepartment || !departments.includes(activeDepartment)) activeDepartment = departments[0] || "";
       renderDepartmentTabs();
@@ -283,9 +285,7 @@
     }
 
     function visibleLocations() {
-      if (activeDepartment === "3F") return deliveryLocations.slice(2);
-      if (activeDepartment === "\u4fdd\u59c6\u90e8\u9580") return ["68", "88"];
-      if (activeDepartment === "1002-2\u5ba2\u670d") return ["1002-2"];
+      if (unitDeliveryLocations[activeDepartment]) return unitDeliveryLocations[activeDepartment];
       return deliveryLocations.length ? [deliveryLocations[0]] : [];
     }
 
@@ -391,7 +391,7 @@
       document.getElementById("detailRows").innerHTML = rows.length
         ? rows.map(row => `
           <div class="detail-item">
-            ${escapeHtml(row.unit)} | ${mealNames[row.meal_key]} | ${cuisineNames[row.cuisine]} ${row.count} ${t.portion} | ${escapeHtml(row.delivery_location)}${row.note ? ` | ${escapeHtml(row.note)}` : ""}
+            ${escapeHtml(row.unit)} | ${mealNames[row.meal_key]} | ${cuisineNames[row.cuisine]} ${row.count} ${t.portion} | ${escapeHtml(row.delivery_location)}
           </div>
         `).join("")
         : `<div class="detail-item">${activeDepartment} ${t.noReport}</div>`;

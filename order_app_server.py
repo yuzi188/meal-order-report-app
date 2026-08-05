@@ -90,6 +90,10 @@ def allowed_delivery_locations(unit):
     return [DELIVERY_LOCATIONS[0]]
 
 
+def unit_delivery_locations():
+    return {unit: allowed_delivery_locations(unit) for unit in DEPARTMENTS}
+
+
 def load_menu():
     return json.loads(MENU_PATH.read_text(encoding="utf-8"))
 
@@ -358,6 +362,7 @@ class Handler(BaseHTTPRequestHandler):
                     "date": date,
                     "units": DEPARTMENTS,
                     "delivery_locations": DELIVERY_LOCATIONS,
+                    "unit_delivery_locations": unit_delivery_locations(),
                     "menu": day,
                     "summary": summary(date),
                 }
