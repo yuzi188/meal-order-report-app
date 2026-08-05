@@ -661,6 +661,17 @@ def table_line(label, row, note="", bucket_cuisines=None):
     return f"{label}\uff1a{count_text(row, bucket_cuisines)}{suffix}"
 
 
+def meal_total_line(row):
+    parts = []
+    if row["taiwan"]:
+        parts.append(f"\U0001f1f9\U0001f1fc\U0001f371\u5171 {row['taiwan']}")
+    if row["healthy"]:
+        parts.append(f"\u5065\u5eb7\u9910\U0001f966 {row['healthy']}")
+    if row["cambodia"]:
+        parts.append(f"\U0001f1f0\U0001f1ed\U0001f371\u5171 {row['cambodia']}")
+    return "\uff5c".join(parts)
+
+
 def delivery_table_text(report_date):
     meal_names = {
         "breakfast": "\u65e9\u9910 07:00",
@@ -710,6 +721,7 @@ def delivery_table_text(report_date):
             continue
         lines.append("")
         lines.append(f"{meal_names[meal]}")
+        lines.append(meal_total_line(data["totals"][meal]))
         for row_def in rows:
             label, getter, note = row_def[:3]
             meal_label = label(meal) if callable(label) else label
