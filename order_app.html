@@ -476,6 +476,15 @@
       renderMeals(currentMenu);
     }
 
+    async function autoRefresh() {
+      const today = todayTaipei();
+      if (currentDate !== today && document.getElementById("dateInput").value === currentDate) {
+        await load(today);
+        return;
+      }
+      await refreshSummary();
+    }
+
     document.addEventListener("click", event => {
       const department = event.target.dataset.department;
       if (department) {
@@ -515,6 +524,7 @@
     document.getElementById("reload").addEventListener("click", () => refreshSummary().catch(err => setStatus(err.message, "err")));
     document.getElementById("dateInput").addEventListener("change", event => load(event.target.value).catch(err => setStatus(err.message, "err")));
     load().catch(err => setStatus(err.message, "err"));
+    setInterval(() => autoRefresh().catch(() => {}), 30000);
   </script>
 </body>
 </html>

@@ -174,10 +174,10 @@
           <tr data-date="${row.date}">
             <td>${row.date}</td>
             <td><input class="money" data-field="taiwan_cost" type="number" step="0.01" min="0" value="${row.taiwan_cost || ""}"></td>
-            <td><input class="count" data-field="taiwan_count" type="number" step="1" min="0" value="${row.taiwan_count}"></td>
+            <td>${row.taiwan_count}</td>
             <td class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</td>
             <td><input class="money" data-field="cambodia_cost" type="number" step="0.01" min="0" value="${row.cambodia_cost || ""}"></td>
-            <td><input class="count" data-field="cambodia_count" type="number" step="1" min="0" value="${row.cambodia_count}"></td>
+            <td>${row.cambodia_count}</td>
             <td class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</td>
             <td>${money(row.total_cost)}</td>
             <td>${row.total_count}</td>
@@ -215,6 +215,21 @@
       await load();
     }
 
+    function isEditingCostTable() {
+      return Boolean(document.activeElement && document.activeElement.closest("#rows"));
+    }
+
+    async function autoRefresh() {
+      const today = todayTaipei();
+      const todayInput = document.getElementById("todayInput");
+      if (todayInput.value !== today) {
+        todayInput.value = today;
+        document.getElementById("monthInput").value = today.slice(0, 7);
+      }
+      if (isEditingCostTable()) return;
+      await load();
+    }
+
     document.addEventListener("click", event => {
       const date = event.target.dataset.save;
       if (date) saveRow(date).catch(err => setStatus(err.message, "bad"));
@@ -233,6 +248,7 @@
     document.getElementById("todayInput").value = today;
     document.getElementById("monthInput").value = today.slice(0, 7);
     load().catch(err => setStatus(err.message, "bad"));
+    setInterval(() => autoRefresh().catch(() => {}), 60000);
   </script>
 </body>
 </html>

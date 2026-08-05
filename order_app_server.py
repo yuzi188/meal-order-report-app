@@ -197,10 +197,16 @@ def init_db():
                 taiwan_count INTEGER NOT NULL DEFAULT 0,
                 cambodia_count INTEGER NOT NULL DEFAULT 0,
                 note TEXT NOT NULL DEFAULT '',
-                updated_at TEXT NOT NULL
+                updated_at TEXT NOT NULL,
+                counts_locked INTEGER NOT NULL DEFAULT 1
             )
             """
         )
+        existing_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(daily_costs)").fetchall()
+        }
+        if "counts_locked" not in existing_columns:
+            conn.execute("ALTER TABLE daily_costs ADD COLUMN counts_locked INTEGER NOT NULL DEFAULT 1")
 
 
 def db_rows(report_date):
@@ -391,7 +397,7 @@ def db_cost_rows(start_date, end_date):
         rows = conn.execute(
             """
             SELECT report_date, taiwan_cost, cambodia_cost, taiwan_count,
-                   cambodia_count, note, updated_at
+                   cambodia_count, note, updated_at, counts_locked
             FROM daily_costs
             WHERE report_date >= ? AND report_date <= ?
             ORDER BY report_date
@@ -403,8 +409,9 @@ def db_cost_rows(start_date, end_date):
 
 def build_cost_row(report_date, stored):
     defaults = default_cost_counts(report_date)
-    taiwan_count = int(stored["taiwan_count"]) if stored else defaults["taiwan"]
-    cambodia_count = int(stored["cambodia_count"]) if stored else defaults["cambodia"]
+    use_stored_counts = bool(stored and int(stored.get("counts_locked") or 0))
+    taiwan_count = int(stored["taiwan_count"]) if use_stored_counts else defaults["taiwan"]
+    cambodia_count = int(stored["cambodia_count"]) if use_stored_counts else defaults["cambodia"]
     taiwan_cost = float(stored.get("taiwan_cost") or 0) if stored else 0.0
     cambodia_cost = float(stored.get("cambodia_cost") or 0) if stored else 0.0
     total_cost = taiwan_cost + cambodia_cost
@@ -462,14 +469,26 @@ def cost_report(start_date, end_date):
 def save_cost(payload):
     report_date = str(payload.get("date") or today_key())
     now = datetime.now().isoformat(timespec="seconds")
+    defaults = default_cost_counts(report_date)
+    existing = db_cost_rows(report_date, report_date).get(report_date)
+    has_payload_counts = "taiwan_count" in payload or "cambodia_count" in payload
+    keep_locked_counts = bool(existing and int(existing.get("counts_locked") or 0) and not has_payload_counts)
+    counts_locked = 1 if (has_payload_counts or keep_locked_counts) else 0
+    taiwan_count = existing["taiwan_count"] if keep_locked_counts else (
+        payload.get("taiwan_count") if "taiwan_count" in payload else defaults["taiwan"]
+    )
+    cambodia_count = existing["cambodia_count"] if keep_locked_counts else (
+        payload.get("cambodia_count") if "cambodia_count" in payload else defaults["cambodia"]
+    )
     values = (
         report_date,
         float(payload.get("taiwan_cost") or 0),
         float(payload.get("cambodia_cost") or 0),
-        int(payload.get("taiwan_count") or 0),
-        int(payload.get("cambodia_count") or 0),
+        int(taiwan_count or 0),
+        int(cambodia_count or 0),
         str(payload.get("note") or "").strip(),
         now,
+        counts_locked,
     )
     init_db()
     with sqlite3.connect(DB_PATH) as conn:
@@ -477,9 +496,9 @@ def save_cost(payload):
             """
             INSERT INTO daily_costs (
                 report_date, taiwan_cost, cambodia_cost, taiwan_count,
-                cambodia_count, note, updated_at
+                cambodia_count, note, updated_at, counts_locked
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(report_date)
             DO UPDATE SET
                 taiwan_cost = excluded.taiwan_cost,
@@ -487,7 +506,8 @@ def save_cost(payload):
                 taiwan_count = excluded.taiwan_count,
                 cambodia_count = excluded.cambodia_count,
                 note = excluded.note,
-                updated_at = excluded.updated_at
+                updated_at = excluded.updated_at,
+                counts_locked = excluded.counts_locked
             """,
             values,
         )
