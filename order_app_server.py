@@ -380,7 +380,7 @@ def db_rows(report_date):
                    restrictions, note, updated_at, line_key
             FROM reports
             WHERE report_date = ?
-            ORDER BY unit, meal_key, delivery_location, cuisine
+            ORDER BY unit, meal_key, delivery_location, cuisine, line_key
             """,
             (report_date,),
         ).fetchall()
@@ -764,7 +764,7 @@ def bucket_count_for_meal(data, meal):
 
 def late_night_cambodia_bucket_parts(data):
     parts = []
-    for row in data["rows"]:
+    for row in sorted(data["rows"], key=lambda item: str(item.get("line_key") or "")):
         if (
             row.get("unit") == "3F"
             and row.get("meal_key") == "late_night"
