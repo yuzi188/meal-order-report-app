@@ -3,8 +3,11 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import sqlite3
 import time
+import urllib.parse
+import urllib.request
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -26,6 +29,10 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "585858")
 ADMIN_SESSION_SECRET = os.environ.get("ADMIN_SESSION_SECRET", ADMIN_PASSWORD)
 ADMIN_COOKIE = "ofa_admin_session"
 ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_ALLOWED_CHAT_ID = os.environ.get("TELEGRAM_ALLOWED_CHAT_ID", "")
+TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+BOT_CONFIRM_TTL_SECONDS = 60 * 30
 
 
 def storage_status():
@@ -251,6 +258,17 @@ def init_db():
         for column, definition in expense_columns.items():
             if column not in existing_columns:
                 conn.execute(f"ALTER TABLE daily_costs ADD COLUMN {column} {definition}")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS bot_pending_reports (
+                chat_id TEXT PRIMARY KEY,
+                report_date TEXT NOT NULL,
+                payload TEXT NOT NULL,
+                summary_text TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+            """
+        )
 
 
 def db_rows(report_date):
@@ -344,6 +362,240 @@ def save_report(payload):
             cleaned,
         )
     return {"ok": True, "saved": len(cleaned), "updated_at": now}
+
+
+def normalize_report_date(text):
+    match = re.search(r"(\d{1,2})\s*/\s*(\d{1,2})", text)
+    if not match:
+        return today_key()
+    month = int(match.group(1))
+    day = int(match.group(2))
+    year = datetime.now().year
+    return f"{year:04d}-{month:02d}-{day:02d}"
+
+
+def normalize_meal_key(line):
+    if "早餐" in line or re.search(r"(^|\s)早[:：]?", line):
+        return "breakfast"
+    if "午餐" in line or "中餐" in line:
+        return "lunch"
+    if "晚餐" in line:
+        return "dinner"
+    if "宵夜" in line or "消夜" in line:
+        return "late_night"
+    return None
+
+
+def normalize_delivery_location(text):
+    if "不吃牛" in text:
+        return "\u4e0d\u5403\u725b"
+    if "不吃豬" in text or "不吃猪" in text:
+        return "\u4e0d\u5403\u8c6c"
+    if "不吃海鮮" in text or "不吃海鲜" in text:
+        return "\u4e0d\u5403\u6d77\u9bae"
+    if "68" in text:
+        return "68"
+    if "88" in text:
+        return "88"
+    if "包飯盒" in text or "包饭盒" in text or "餐桶" in text:
+        return "3F\u5305\u9910\u76d2"
+    return "3F"
+
+
+def cuisine_from_text(text):
+    if "胖胖" in text or "健康" in text:
+        return "healthy"
+    if "束餐" in text or "柬餐" in text or "柬埔寨" in text:
+        return "cambodia"
+    if "台餐" in text:
+        return "taiwan"
+    return None
+
+
+def parse_bot_3f_report(text):
+    if not text or not any(mark in text for mark in ["3F", "3樓", "3楼", "MT", "自由女神"]):
+        raise ValueError("目前只支援 3F 報餐文字")
+
+    report_date = normalize_report_date(text)
+    current_meal = None
+    entries_by_key = {}
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or set(line) <= {"-", "—", "_"}:
+            continue
+        meal_key = normalize_meal_key(line)
+        if meal_key:
+            current_meal = meal_key
+            remainder = re.split(r"[：:]", line, maxsplit=1)
+            if len(remainder) == 1:
+                continue
+            line = remainder[1].strip()
+        if not current_meal:
+            continue
+
+        cuisine = cuisine_from_text(line)
+        if not cuisine:
+            continue
+        count_match = re.search(r"([0-9]+)", line)
+        if not count_match:
+            continue
+        count = int(count_match.group(1))
+        location = normalize_delivery_location(line)
+        line_key = f"bot-{current_meal}-{cuisine}-{location}-{len(entries_by_key)}"
+        entries_by_key[line_key] = {
+            "meal_key": current_meal,
+            "cuisine": cuisine,
+            "delivery_location": location,
+            "count": count,
+            "line_key": line_key,
+            "note": "",
+        }
+
+    entries = list(entries_by_key.values())
+    if not entries:
+        raise ValueError("沒有讀到可寫入的人數，請確認有餐別、台餐/胖胖餐/束餐和份數")
+    payload = {"date": report_date, "unit": "3F", "entries": entries}
+    return payload
+
+
+def summarize_bot_report(payload):
+    meal_names = {
+        "breakfast": "早餐",
+        "lunch": "午餐",
+        "dinner": "晚餐",
+        "late_night": "宵夜",
+    }
+    cuisine_names = {"taiwan": "台餐", "healthy": "健康餐", "cambodia": "柬餐"}
+    totals = {
+        meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0}
+        for meal in MEAL_KEYS
+    }
+    location_lines = []
+    for entry in payload["entries"]:
+        meal = entry["meal_key"]
+        cuisine = entry["cuisine"]
+        count = int(entry["count"])
+        totals[meal][cuisine] += count
+        totals[meal]["total"] += count
+        location_lines.append(
+            f"{meal_names[meal]} {entry['delivery_location']} {cuisine_names[cuisine]} {count}"
+        )
+    lines = [f"請確認是否寫入：", f"{payload['date']} 3F"]
+    for meal in MEAL_KEYS:
+        row = totals[meal]
+        if not row["total"]:
+            continue
+        lines.append(
+            f"{meal_names[meal]} 台餐{row['taiwan']} 健康餐{row['healthy']} 柬餐{row['cambodia']}，合計{row['total']}"
+        )
+    lines.append("")
+    lines.append("位置明細：")
+    lines.extend(location_lines)
+    lines.append("")
+    lines.append("回覆「確認」寫入，或「取消」放棄。")
+    return "\n".join(lines)
+
+
+def save_pending_bot_report(chat_id, payload, summary_text):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO bot_pending_reports (chat_id, report_date, payload, summary_text, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(chat_id)
+            DO UPDATE SET
+                report_date = excluded.report_date,
+                payload = excluded.payload,
+                summary_text = excluded.summary_text,
+                created_at = excluded.created_at
+            """,
+            (str(chat_id), payload["date"], json.dumps(payload, ensure_ascii=False), summary_text, int(time.time())),
+        )
+
+
+def load_pending_bot_report(chat_id):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT payload, created_at FROM bot_pending_reports WHERE chat_id = ?",
+            (str(chat_id),),
+        ).fetchone()
+    if not row:
+        return None
+    if int(time.time()) - int(row["created_at"]) > BOT_CONFIRM_TTL_SECONDS:
+        clear_pending_bot_report(chat_id)
+        return None
+    return json.loads(row["payload"])
+
+
+def clear_pending_bot_report(chat_id):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM bot_pending_reports WHERE chat_id = ?", (str(chat_id),))
+
+
+def telegram_send_message(chat_id, text, reply_to_message_id=None):
+    if not TELEGRAM_BOT_TOKEN:
+        return {"ok": False, "error": "TELEGRAM_BOT_TOKEN not set"}
+    payload = {"chat_id": chat_id, "text": text}
+    if reply_to_message_id:
+        payload["reply_to_message_id"] = reply_to_message_id
+    data = urllib.parse.urlencode(payload).encode("utf-8")
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+        data=data,
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:
+            return json.loads(res.read().decode("utf-8"))
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+def handle_telegram_update(update):
+    message = update.get("message") or update.get("edited_message") or {}
+    text = str(message.get("text") or message.get("caption") or "").strip()
+    chat = message.get("chat") or {}
+    chat_id = str(chat.get("id") or "")
+    message_id = message.get("message_id")
+    if not chat_id or not text:
+        return {"ok": True, "ignored": True}
+    if TELEGRAM_ALLOWED_CHAT_ID and chat_id != TELEGRAM_ALLOWED_CHAT_ID:
+        return {"ok": True, "ignored": "chat not allowed"}
+
+    normalized = re.sub(r"\s+", "", text)
+    if normalized in {"確認", "确认", "ok", "OK"}:
+        payload = load_pending_bot_report(chat_id)
+        if not payload:
+            telegram_send_message(chat_id, "沒有待確認的人數資料，請先貼 3F 報餐文字。", message_id)
+            return {"ok": True, "action": "no_pending"}
+        result = save_report(payload)
+        clear_pending_bot_report(chat_id)
+        telegram_send_message(
+            chat_id,
+            f"已更新 {payload['date']} 3F 人數。\n寫入 {result['saved']} 筆。",
+            message_id,
+        )
+        return {"ok": True, "action": "saved", "result": result}
+
+    if normalized in {"取消", "放棄", "放弃", "cancel", "Cancel"}:
+        clear_pending_bot_report(chat_id)
+        telegram_send_message(chat_id, "已取消這次待確認資料。", message_id)
+        return {"ok": True, "action": "cancelled"}
+
+    try:
+        payload = parse_bot_3f_report(text)
+        summary_text = summarize_bot_report(payload)
+        save_pending_bot_report(chat_id, payload, summary_text)
+        telegram_send_message(chat_id, summary_text, message_id)
+        return {"ok": True, "action": "pending", "date": payload["date"], "entries": len(payload["entries"])}
+    except Exception as exc:
+        if any(mark in text for mark in ["台餐", "胖胖", "束餐", "柬餐", "早餐", "午餐", "晚餐", "宵夜"]):
+            telegram_send_message(chat_id, f"沒有寫入：{exc}", message_id)
+        return {"ok": True, "ignored": str(exc)}
 
 
 def meal_has_beef(report_date, meal_key):
@@ -816,6 +1068,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/telegram/webhook":
+            if TELEGRAM_WEBHOOK_SECRET:
+                header_secret = self.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+                if not hmac.compare_digest(header_secret, TELEGRAM_WEBHOOK_SECRET):
+                    self.send_json({"error": "bad secret"}, 401)
+                    return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                self.send_json(handle_telegram_update(payload))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 400)
+            return
         if parsed.path == "/api/admin/login":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
