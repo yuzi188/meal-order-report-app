@@ -688,7 +688,7 @@ def meal_total_line(row, bucket_row=None, pork_row=None):
     if bucket_row["taiwan"]:
         parts.append(f"\U0001f1f9\U0001f1fc\U0001faa3\u5171 {bucket_row['taiwan']}")
     if pork_row["taiwan"]:
-        parts.append(f"\U0001f437\u4e0d\u5403\u8c6c\U0001f371 {pork_row['taiwan']}")
+        parts.append(f"\U0001f437\u4e0d\u5403\u8c6c\U0001f371 {pork_row['taiwan']}\uff08MT\uff09")
     if row["healthy"]:
         parts.append(f"\u5065\u5eb7\u9910\U0001f966 {row['healthy']}")
     if cambodia_box:
@@ -753,7 +753,7 @@ def delivery_table_text(report_date):
         ("\u4fdd\u59c6 88\U0001f371", lambda meal: count_for_units(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "88")]), ""),
         ("\u6d77\u5357\u96de\u98ef\U0001f371", lambda meal: count_for_units(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]), ""),
         ("\u4e0d\u5403\u725b\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u725b")]), "\u5099\u8a3b"),
-        ("\U0001f437\u4e0d\u5403\u8c6c\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")]), "\u5099\u8a3b"),
+        ("\U0001f437\u4e0d\u5403\u8c6c\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")]), "MT"),
         ("\u4e0d\u5403\u6d77\u9bae\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u6d77\u9bae")]), "\u5099\u8a3b"),
     ]
     def visible_total_for_meal(meal):
