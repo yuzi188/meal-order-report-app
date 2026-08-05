@@ -506,7 +506,7 @@ def build_cost_row(report_date, stored):
     }
 
 
-def cost_report(start_date, end_date):
+def cost_report(start_date, end_date, summary_end_date=None):
     from datetime import date, timedelta
 
     start = date.fromisoformat(start_date)
@@ -518,6 +518,8 @@ def cost_report(start_date, end_date):
         key = current.isoformat()
         rows.append(build_cost_row(key, stored.get(key)))
         current += timedelta(days=1)
+    summary_cutoff = date.fromisoformat(summary_end_date) if summary_end_date else end
+    summary_rows = [row for row in rows if date.fromisoformat(row["date"]) <= summary_cutoff]
 
     def empty_group(label):
         return {
@@ -543,7 +545,7 @@ def cost_report(start_date, end_date):
 
     month = empty_group("month")
     weeks = {}
-    for row in rows:
+    for row in summary_rows:
         month["cost"] += row["total_cost"]
         month["other_cost"] += row["other_cost"]
         month["total_expense_cost"] += row["total_expense_cost"]
@@ -605,7 +607,7 @@ def cost_report(start_date, end_date):
         group["expense_average"] = round(group["total_expense_cost"] / group["count"], 4) if group["count"] else 0.0
         group["over_limit"] = group["average"] > 1.32 if group["count"] else False
 
-    return {"rows": rows, "month": month, "weeks": list(weeks.values()), "limit": 1.32}
+    return {"rows": rows, "month": month, "weeks": list(weeks.values()), "limit": 1.32, "summary_end_date": summary_cutoff.isoformat()}
 
 
 def save_cost(payload):
@@ -792,7 +794,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             start_date = params.get("start", [today_key()])[0]
             end_date = params.get("end", [start_date])[0]
-            self.send_json(cost_report(start_date, end_date))
+            summary_end_date = params.get("summary_end", [end_date])[0]
+            self.send_json(cost_report(start_date, end_date, summary_end_date))
             return
         if parsed.path == "/api/admin/storage":
             if not self.require_admin():
