@@ -558,6 +558,8 @@ def telegram_send_message(chat_id, text, reply_to_message_id=None):
 def handle_telegram_update(update):
     message = update.get("message") or update.get("edited_message") or {}
     text = str(message.get("text") or message.get("caption") or "").strip()
+    reply = message.get("reply_to_message") or {}
+    reply_text = str(reply.get("text") or reply.get("caption") or "").strip()
     chat = message.get("chat") or {}
     chat_id = str(chat.get("id") or "")
     message_id = message.get("message_id")
@@ -586,8 +588,19 @@ def handle_telegram_update(update):
         telegram_send_message(chat_id, "已取消這次待確認資料。", message_id)
         return {"ok": True, "action": "cancelled"}
 
+    if text.startswith("/test") or text.startswith("/測試"):
+        telegram_send_message(chat_id, f"bot 有收到訊息。\nchat_id: {chat_id}", message_id)
+        return {"ok": True, "action": "test", "chat_id": chat_id}
+
+    parse_text = text
+    if text.startswith("/人數") or text.startswith("/人数") or text.startswith("/parse"):
+        parse_text = text.split(maxsplit=1)[1] if len(text.split(maxsplit=1)) > 1 else reply_text
+        if not parse_text:
+            telegram_send_message(chat_id, "請在 /人數 後面貼報餐文字，或回覆報餐訊息輸入 /人數。", message_id)
+            return {"ok": True, "action": "parse_help"}
+
     try:
-        payload = parse_bot_3f_report(text)
+        payload = parse_bot_3f_report(parse_text)
         summary_text = summarize_bot_report(payload)
         save_pending_bot_report(chat_id, payload, summary_text)
         telegram_send_message(chat_id, summary_text, message_id)
@@ -877,7 +890,9 @@ def save_cost(payload):
     now = datetime.now().isoformat(timespec="seconds")
     defaults = default_cost_counts(report_date)
     existing = db_cost_rows(report_date, report_date).get(report_date)
-    has_payload_counts = "taiwan_count" in payload or "cambodia_count" in payload
+    has_payload_counts = bool(payload.get("lock_counts")) and (
+        "taiwan_count" in payload or "cambodia_count" in payload
+    )
     keep_locked_counts = bool(existing and int(existing.get("counts_locked") or 0) and not has_payload_counts)
     counts_locked = 1 if (has_payload_counts or keep_locked_counts) else 0
     taiwan_count = existing["taiwan_count"] if keep_locked_counts else (
