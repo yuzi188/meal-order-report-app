@@ -519,6 +519,96 @@ def summarize_bot_report(payload):
     return "\n".join(lines)
 
 
+def empty_count_row():
+    return {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0}
+
+
+def add_count_row(target, row, cuisines=None):
+    cuisines = cuisines or CUISINES
+    for cuisine in cuisines:
+        target[cuisine] += int(row.get(cuisine, 0))
+    target["total"] = target["taiwan"] + target["healthy"] + target["cambodia"]
+    return target
+
+
+def count_for_units(data, meal, unit_locations, cuisines=None):
+    total = empty_count_row()
+    for unit, location in unit_locations:
+        row = data["units"].get(unit, {}).get(location, {}).get(meal)
+        if row:
+            add_count_row(total, row, cuisines)
+    return total
+
+
+def table_line(label, row, note=""):
+    if not row["total"]:
+        return ""
+    return (
+        f"{label:<13} "
+        f"\u53f0{row['taiwan']:>3} "
+        f"\u5065{row['healthy']:>3} "
+        f"\u67ec{row['cambodia']:>3} "
+        f"\u7e3d{row['total']:>3}"
+        f"{('  ' + note) if note else ''}"
+    )
+
+
+def delivery_table_text(report_date):
+    meal_names = {
+        "breakfast": "\u65e9\u9910 07:00",
+        "lunch": "\u5348\u9910 11:00",
+        "dinner": "\u665a\u9910 05:00",
+        "late_night": "\u5bb5\u591c 09:00",
+    }
+    meal_notes = {
+        "breakfast": "\u65e9\u9910 7 \u9ede\u524d\u62b5\u9054",
+        "lunch": "1001 \u5cb1\u5c11 11:00 \u524d\u9001\u5230",
+        "dinner": "1001 4:40 \u524d\u9001\u5230",
+        "late_night": "1001 9:40 \u524d\u62b5\u5230",
+    }
+    data = summary(report_date)
+    rows = [
+        (
+            "1001 3A/\u9245\u57ce",
+            lambda meal: count_for_units(data, meal, [("1001", "\u90e8\u9580\u73fe\u5834")], ["taiwan", "healthy"]),
+            "",
+        ),
+        (
+            "1002-2\u4ee3\u7406",
+            lambda meal: count_for_units(data, meal, [("1002-2\u4ee3\u7406", "\u90e8\u9580\u73fe\u5834")], ["taiwan", "healthy"]),
+            "",
+        ),
+        (
+            "1002-3\u91d1\u6d41",
+            lambda meal: count_for_units(data, meal, [("1002-3\u91d1\u6d41", "\u90e8\u9580\u73fe\u5834")], ["taiwan", "healthy"]),
+            "",
+        ),
+        ("1002-2\u5ba2\u670d", lambda meal: count_for_units(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]), ""),
+        ("MT-3F", lambda meal: count_for_units(data, meal, [("3F", "3F")], ["taiwan", "cambodia"]), ""),
+        ("\u5065\u5eb7\u9910-3F", lambda meal: count_for_units(data, meal, [("3F", "3F")], ["healthy"]), ""),
+        ("3F\u5305\u9910\u76d2", lambda meal: count_for_units(data, meal, [("3F", "3F\u5305\u9910\u76d2")]), ""),
+        ("68\u516c\u5bd3", lambda meal: add_count_row(data["locations"]["68"][meal].copy(), empty_count_row()), ""),
+        ("88\u516c\u5bd3", lambda meal: add_count_row(data["locations"]["88"][meal].copy(), empty_count_row()), ""),
+        ("\u6d77\u5357\u96de\u98ef", lambda meal: count_for_units(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]), ""),
+        ("\u4e0d\u5403\u725b", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u725b")]), "\u5099\u8a3b"),
+        ("\u4e0d\u5403\u8c6c", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")]), "\u5099\u8a3b"),
+        ("\u4e0d\u5403\u6d77\u9bae", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u6d77\u9bae")]), "\u5099\u8a3b"),
+    ]
+    lines = [f"\u9001\u9910\u7e3d\u8868 {report_date}", "\u53f0=\u53f0\u9910  \u5065=\u5065\u5eb7\u9910  \u67ec=\u67ec\u9910"]
+    for meal in MEAL_KEYS:
+        total = data["totals"][meal]["total"]
+        if not total:
+            continue
+        lines.append("")
+        lines.append(f"{meal_names[meal]}\uff5c\u7e3d\u4eba\u6578 {total}\uff5c{meal_notes[meal]}")
+        lines.append("\u5730\u9ede           \u53f0   \u5065   \u67ec   \u7e3d")
+        for label, getter, note in rows:
+            line = table_line(label, getter(meal), note)
+            if line:
+                lines.append(line)
+    return "\n".join(lines)
+
+
 def save_pending_bot_report(chat_id, payload, summary_text):
     init_db()
     with sqlite3.connect(DB_PATH) as conn:
@@ -604,6 +694,7 @@ def handle_telegram_update(update):
             f"\u5df2\u5beb\u5165 {payload['date']} {payload['unit']} \u4eba\u6578\n\u5beb\u5165 {result['saved']} \u7b46\uff0c\u5c0f\u7a0b\u5f0f\u5df2\u540c\u6b65\u3002",
             message_id,
         )
+        telegram_send_message(chat_id, delivery_table_text(payload["date"]), message_id)
         return {"ok": True, "action": "saved", "result": result}
 
     if normalized in {"\u53d6\u6d88", "cancel", "Cancel"}:
@@ -614,6 +705,10 @@ def handle_telegram_update(update):
     if text.startswith("/test") or text.startswith("/\u6e2c\u8a66") or text.startswith("/\u6d4b\u8bd5"):
         telegram_send_message(chat_id, f"bot \u6709\u6536\u5230\u8a0a\u606f\nchat_id: {chat_id}", message_id)
         return {"ok": True, "action": "test", "chat_id": chat_id}
+
+    if text.startswith("/\u7e3d\u8868") or text.startswith("/\u603b\u8868") or text.startswith("/\u9001\u9910\u8868"):
+        telegram_send_message(chat_id, delivery_table_text(normalize_report_date(text)), message_id)
+        return {"ok": True, "action": "delivery_table"}
 
     parse_text = text
     if text.startswith("/\u4eba\u6578") or text.startswith("/\u4eba\u6570") or text.startswith("/parse"):
