@@ -593,7 +593,7 @@ def delivery_table_text(report_date):
     data = summary(report_date)
     rows = [
         (
-            "1001 3A\U0001faa3",
+            lambda meal: "1001 3A\U0001f371" if meal == "breakfast" else "1001 3A\U0001faa3",
             lambda meal: count_for_units(data, meal, [("1001", "\u90e8\u9580\u73fe\u5834")], ["taiwan", "healthy"]),
             "",
         ),
@@ -634,9 +634,10 @@ def delivery_table_text(report_date):
         lines.append(f"{meal_names[meal]}")
         for row_def in rows:
             label, getter, note = row_def[:3]
+            meal_label = label(meal) if callable(label) else label
             bucket_cuisines = row_def[3](meal) if len(row_def) > 3 and callable(row_def[3]) else (row_def[3] if len(row_def) > 3 else [])
             meal_note = note(meal) if callable(note) else note
-            line = table_line(label, getter(meal), meal_note, bucket_cuisines)
+            line = table_line(meal_label, getter(meal), meal_note, bucket_cuisines)
             if line:
                 lines.append(line)
     return "\n".join(lines)
