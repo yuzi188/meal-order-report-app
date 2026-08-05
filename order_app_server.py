@@ -335,14 +335,15 @@ def save_report(payload):
         )
 
     with sqlite3.connect(DB_PATH) as conn:
-        for meal_key in meal_keys_to_replace:
-            conn.execute(
-                """
-                DELETE FROM reports
-                WHERE report_date = ? AND unit = ? AND meal_key = ?
-                """,
-                (report_date, unit, meal_key),
-            )
+        if not payload.get("merge"):
+            for meal_key in meal_keys_to_replace:
+                conn.execute(
+                    """
+                    DELETE FROM reports
+                    WHERE report_date = ? AND unit = ? AND meal_key = ?
+                    """,
+                    (report_date, unit, meal_key),
+                )
         conn.executemany(
             """
             INSERT INTO reports (
@@ -472,20 +473,23 @@ def parse_bot_3f_report(text):
         if count is None:
             continue
         location = "1002-2" if unit == "1002-2\u5ba2\u670d" else normalize_delivery_location(line)
-        line_key = f"bot-{current_meal}-{cuisine}-{location}-{len(entries_by_key)}"
-        entries_by_key[line_key] = {
-            "meal_key": current_meal,
-            "cuisine": cuisine,
-            "delivery_location": location,
-            "count": count,
-            "line_key": line_key,
-            "note": "",
-        }
+        line_key = f"bot-{current_meal}-{cuisine}-{location}"
+        if line_key in entries_by_key:
+            entries_by_key[line_key]["count"] += count
+        else:
+            entries_by_key[line_key] = {
+                "meal_key": current_meal,
+                "cuisine": cuisine,
+                "delivery_location": location,
+                "count": count,
+                "line_key": line_key,
+                "note": "",
+            }
 
     entries = list(entries_by_key.values())
     if not entries:
         raise ValueError("\u6c92\u6709\u8b80\u5230\u53ef\u5beb\u5165\u7684\u4eba\u6578\uff0c\u8acb\u78ba\u8a8d\u6709\u9910\u5225\u3001\u53f0\u9910/\u80d6\u80d6\u9910/\u675f\u9910\u6216\u67ec\u9910\u548c\u4efd\u6578")
-    return {"date": report_date, "unit": unit, "entries": entries}
+    return {"date": report_date, "unit": unit, "entries": entries, "merge": True}
 
 
 def summarize_bot_report(payload):
