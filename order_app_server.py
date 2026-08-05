@@ -453,10 +453,13 @@ def cost_report(start_date, end_date):
     for row in rows:
         month["cost"] += row["total_cost"]
         month["count"] += row["total_count"]
-        week_label = date.fromisoformat(row["date"]).strftime("%G-W%V")
-        weeks.setdefault(week_label, empty_group(week_label))
-        weeks[week_label]["cost"] += row["total_cost"]
-        weeks[week_label]["count"] += row["total_count"]
+        row_date = date.fromisoformat(row["date"])
+        period_start_day = ((row_date.day - 1) // 5) * 5 + 1
+        period_end_day = min(period_start_day + 4, (date(row_date.year, row_date.month + 1, 1) - timedelta(days=1)).day) if row_date.month < 12 else min(period_start_day + 4, 31)
+        period_label = f"{row_date.month}/{period_start_day}-{row_date.month}/{period_end_day}"
+        weeks.setdefault(period_label, empty_group(period_label))
+        weeks[period_label]["cost"] += row["total_cost"]
+        weeks[period_label]["count"] += row["total_count"]
 
     for group in [month, *weeks.values()]:
         group["cost"] = round(group["cost"], 2)
