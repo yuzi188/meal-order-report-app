@@ -75,14 +75,20 @@
     .cat { color: var(--muted); font-weight: 900; }
     .dish-name { font-weight: 760; overflow-wrap: anywhere; }
     .lines { padding: 0 12px 10px; }
-    .input-table { width: 100%; min-width: 640px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    .input-table { width: 100%; min-width: 560px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
     .input-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
     .input-table th, .input-table td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
     .input-table th { background: var(--soft); color: var(--muted); font-weight: 950; }
     .input-table td:first-child, .input-table th:first-child { text-align: left; padding-left: 8px; }
     .input-table tr:last-child td { border-bottom: 0; }
-    .input-table select, .input-table input { min-height: 38px; padding: 6px 8px; }
-    .note-input { min-width: 180px; }
+    .input-table input { min-height: 38px; padding: 6px 8px; }
+    .location-cell { min-width: 108px; color: var(--brand); font-weight: 950; }
+    .location-button { width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--brand); font-weight: 950; }
+    .location-panel { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: 6px; }
+    .line.open .location-panel { display: grid; }
+    .location-option { min-height: 34px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: #1d2935; font-weight: 850; font-size: 13px; }
+    .location-option.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .note-input { min-width: 150px; }
     .count-input { text-align: center; font-size: 19px; font-weight: 900; }
     .remove { min-height: 42px; border: 1px solid #ebc7bd; color: var(--danger); background: #fff6f3; border-radius: 8px; font-weight: 900; }
     .add-line { width: 100%; min-height: 40px; border: 1px dashed var(--brand); color: var(--brand); background: #fff; border-radius: 8px; font-weight: 900; }
@@ -235,15 +241,26 @@
       `).join("");
     }
 
-    function locationOptions(selected) {
-      return deliveryLocations.map(x => `<option value="${escapeHtml(x)}" ${x === selected ? "selected" : ""}>${escapeHtml(x)}</option>`).join("");
+    function locationButtons(selected) {
+      return visibleLocations().map(x => `
+        <button type="button" class="location-option ${x === selected ? "active" : ""}" data-location-choice="${escapeHtml(x)}">${escapeHtml(x)}</button>
+      `).join("");
+    }
+
+    function visibleLocations() {
+      if (activeDepartment === "3F") return deliveryLocations;
+      return deliveryLocations.length ? [deliveryLocations[0]] : [];
     }
 
     function lineTemplate(mealKey, lineIndex, taiwanCount = 0, cambodiaCount = 0, location = "", note = "") {
-      const selectedLocation = location || deliveryLocations[0] || "";
+      const locations = visibleLocations();
+      const selectedLocation = locations.includes(location) ? location : (locations[0] || "");
       return `
-        <tr class="line" data-line="${lineIndex}">
-          <td><select data-field="delivery_location">${locationOptions(selectedLocation)}</select></td>
+        <tr class="line" data-line="${lineIndex}" data-location="${escapeHtml(selectedLocation)}">
+          <td class="location-cell">
+            <button type="button" class="location-button" data-toggle-location>${escapeHtml(selectedLocation)}</button>
+            <div class="location-panel">${locationButtons(selectedLocation)}</div>
+          </td>
           <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="taiwan_count" value="${taiwanCount}"></td>
           <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="cambodia_count" value="${cambodiaCount}"></td>
           <td><input class="note-input" type="text" data-field="note" value="${escapeHtml(note)}" placeholder="${t.notePlaceholder}"></td>
@@ -291,8 +308,7 @@
                   </tr>
                 </thead>
                 <tbody data-lines="${meal.key}">
-                  ${lineTemplate(meal.key, 1)}
-                  ${lineTemplate(meal.key, 2)}
+                  ${visibleLocations().map((location, index) => lineTemplate(meal.key, index + 1, 0, 0, location)).join("")}
                 </tbody>
               </table>
             </div>
@@ -350,7 +366,7 @@
         box.querySelectorAll(".line").forEach((line, index) => {
           const taiwanCount = Number(line.querySelector('[data-field="taiwan_count"]').value || 0);
           const cambodiaCount = Number(line.querySelector('[data-field="cambodia_count"]').value || 0);
-          const deliveryLocation = line.querySelector('[data-field="delivery_location"]').value;
+          const deliveryLocation = line.dataset.location || deliveryLocations[0] || "";
           const note = line.querySelector('[data-field="note"]').value.trim();
           if (taiwanCount > 0) {
             entries.push({
@@ -406,6 +422,7 @@
       if (department) {
         activeDepartment = department;
         renderDepartmentTabs();
+        renderMeals(currentMenu);
         refreshSummary().catch(err => setStatus(err.message, "err"));
       }
       const mealTab = event.target.closest("[data-meal-tab]")?.dataset.mealTab;
@@ -416,6 +433,19 @@
       }
       const addMeal = event.target.dataset.addLine;
       if (addMeal) addLine(addMeal);
+      if (event.target.dataset.toggleLocation !== undefined) {
+        event.target.closest(".line").classList.toggle("open");
+      }
+      const locationChoice = event.target.dataset.locationChoice;
+      if (locationChoice) {
+        const line = event.target.closest(".line");
+        line.dataset.location = locationChoice;
+        line.querySelector("[data-toggle-location]").textContent = locationChoice;
+        line.querySelectorAll(".location-option").forEach(button => {
+          button.classList.toggle("active", button.dataset.locationChoice === locationChoice);
+        });
+        line.classList.remove("open");
+      }
       if (event.target.dataset.removeLine !== undefined) {
         const box = event.target.closest("[data-lines]");
         if (box.querySelectorAll(".line").length > 1) event.target.closest(".line").remove();

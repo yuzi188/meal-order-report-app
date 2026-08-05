@@ -27,6 +27,12 @@ MEAL_KEYS = ["breakfast", "lunch", "dinner", "late_night"]
 CUISINES = ["taiwan", "cambodia"]
 
 
+def allowed_delivery_locations(unit):
+    if unit == "3F":
+        return DELIVERY_LOCATIONS
+    return [DELIVERY_LOCATIONS[0]]
+
+
 def load_menu():
     return json.loads(MENU_PATH.read_text(encoding="utf-8"))
 
@@ -123,7 +129,7 @@ def save_report(payload):
             raise ValueError("\u9910\u5225\u4e0d\u6b63\u78ba")
         if cuisine not in CUISINES:
             raise ValueError("\u9910\u7a2e\u4e0d\u6b63\u78ba")
-        if delivery_location not in DELIVERY_LOCATIONS:
+        if delivery_location not in allowed_delivery_locations(unit):
             raise ValueError("\u9001\u9910\u5730\u9ede\u4e0d\u6b63\u78ba")
         if count < 0:
             raise ValueError("\u4eba\u6578\u4e0d\u80fd\u5c0f\u65bc 0")
