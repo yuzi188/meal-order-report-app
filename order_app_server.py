@@ -544,6 +544,12 @@ def count_for_units(data, meal, unit_locations, cuisines=None):
     return total
 
 
+def count_from_row(row, cuisines=None):
+    total = empty_count_row()
+    add_count_row(total, row, cuisines)
+    return total
+
+
 def table_line(label, row, note=""):
     if not row["total"]:
         return ""
@@ -588,9 +594,9 @@ def delivery_table_text(report_date):
             "",
         ),
         ("1002-2\u5ba2\u670d", lambda meal: count_for_units(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]), ""),
-        ("MT-3F", lambda meal: count_for_units(data, meal, [("3F", "3F")], ["taiwan", "cambodia"]), ""),
-        ("\u5065\u5eb7\u9910-3F", lambda meal: count_for_units(data, meal, [("3F", "3F")], ["healthy"]), ""),
-        ("3F\u5305\u9910\u76d2", lambda meal: count_for_units(data, meal, [("3F", "3F\u5305\u9910\u76d2")]), ""),
+        ("MT-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]), ""),
+        ("\u5065\u5eb7\u9910-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), ""),
+        ("3F\u5305\u9910\u76d2", lambda meal: count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal]), ""),
         ("68\u516c\u5bd3", lambda meal: add_count_row(data["locations"]["68"][meal].copy(), empty_count_row()), ""),
         ("88\u516c\u5bd3", lambda meal: add_count_row(data["locations"]["88"][meal].copy(), empty_count_row()), ""),
         ("\u6d77\u5357\u96de\u98ef", lambda meal: count_for_units(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]), ""),
