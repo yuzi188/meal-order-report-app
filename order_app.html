@@ -284,6 +284,7 @@
 
     function visibleLocations() {
       if (activeDepartment === "3F") return deliveryLocations.slice(2);
+      if (activeDepartment === "\u4fdd\u59c6\u90e8\u9580") return ["68", "88"];
       if (activeDepartment === "1002-2\u5ba2\u670d") return ["1002-2"];
       return deliveryLocations.length ? [deliveryLocations[0]] : [];
     }
@@ -390,7 +391,7 @@
       document.getElementById("detailRows").innerHTML = rows.length
         ? rows.map(row => `
           <div class="detail-item">
-            ${escapeHtml(row.unit)} | ${mealNames[row.meal_key]} | ${cuisineNames[row.cuisine]} ${row.count} ${t.portion} | ${escapeHtml(row.delivery_location)}
+            ${escapeHtml(row.unit)} | ${mealNames[row.meal_key]} | ${cuisineNames[row.cuisine]} ${row.count} ${t.portion} | ${escapeHtml(row.delivery_location)}${row.note ? ` | ${escapeHtml(row.note)}` : ""}
           </div>
         `).join("")
         : `<div class="detail-item">${activeDepartment} ${t.noReport}</div>`;

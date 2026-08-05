@@ -1,5 +1,4 @@
 import json
-import json
 import os
 import sqlite3
 from datetime import datetime
@@ -33,11 +32,59 @@ DELIVERY_LOCATIONS = [
 ]
 MEAL_KEYS = ["breakfast", "lunch", "dinner", "late_night"]
 CUISINES = ["taiwan", "healthy", "cambodia"]
+FIXED_REPORTS = [
+    {
+        "unit": "1001",
+        "location": "\u90e8\u9580\u73fe\u5834",
+        "cuisine": "taiwan",
+        "counts": {"breakfast": 10, "lunch": 40, "dinner": 40, "late_night": 40},
+        "beef_notes": {"lunch": 10, "dinner": 10, "late_night": 10},
+    },
+    {
+        "unit": "1002-3\u91d1\u6d41",
+        "location": "\u90e8\u9580\u73fe\u5834",
+        "cuisine": "taiwan",
+        "counts": {"breakfast": 3, "lunch": 5, "dinner": 5, "late_night": 5},
+        "beef_notes": {"lunch": 2, "dinner": 2, "late_night": 2},
+    },
+    {
+        "unit": "1002-2\u5ba2\u670d",
+        "location": "1002-2",
+        "cuisine": "taiwan",
+        "counts": {"breakfast": 9, "lunch": 1, "dinner": 3, "late_night": 4},
+    },
+    {
+        "unit": "1002-2\u5ba2\u670d",
+        "location": "1002-2",
+        "cuisine": "cambodia",
+        "counts": {"lunch": 4, "dinner": 4, "late_night": 7},
+    },
+    {
+        "unit": "\u4fdd\u59c6\u90e8\u9580",
+        "location": "68",
+        "cuisine": "cambodia",
+        "counts": {"breakfast": 2, "lunch": 3, "dinner": 3, "late_night": 1},
+    },
+    {
+        "unit": "\u4fdd\u59c6\u90e8\u9580",
+        "location": "88",
+        "cuisine": "cambodia",
+        "counts": {"breakfast": 3, "lunch": 4, "dinner": 4, "late_night": 4},
+    },
+    {
+        "unit": "\u6d77\u5357\u96de\u98ef",
+        "location": "\u90e8\u9580\u73fe\u5834",
+        "cuisine": "cambodia",
+        "counts": {"breakfast": 3, "lunch": 5, "dinner": 5, "late_night": 5},
+    },
+]
 
 
 def allowed_delivery_locations(unit):
     if unit == "3F":
         return DELIVERY_LOCATIONS[2:]
+    if unit == "\u4fdd\u59c6\u90e8\u9580":
+        return ["68", "88"]
     if unit == "1002-2\u5ba2\u670d":
         return ["1002-2"]
     return [DELIVERY_LOCATIONS[0]]
@@ -192,8 +239,48 @@ def save_report(payload):
     return {"ok": True, "saved": len(cleaned), "updated_at": now}
 
 
+def meal_has_beef(report_date, meal_key):
+    day = load_menu().get(report_date)
+    if not day:
+        return False
+    for meal in day.get("meals", []):
+        if meal.get("key") != meal_key:
+            continue
+        return any("\u725b" in str(item.get("dish") or "") for item in meal.get("items", []))
+    return False
+
+
+def fixed_rows(report_date, rows):
+    updated_pairs = {(row["unit"], row["meal_key"]) for row in rows}
+    defaults = []
+    for rule in FIXED_REPORTS:
+        for meal_key, count in rule["counts"].items():
+            if count <= 0 or (rule["unit"], meal_key) in updated_pairs:
+                continue
+            beef_count = rule.get("beef_notes", {}).get(meal_key, 0)
+            note = ""
+            if beef_count and meal_has_beef(report_date, meal_key):
+                note = f"{beef_count}\u4f4d\u4e0d\u5403\u725b"
+            defaults.append(
+                {
+                    "report_date": report_date,
+                    "unit": rule["unit"],
+                    "delivery_location": rule["location"],
+                    "meal_key": meal_key,
+                    "cuisine": rule["cuisine"],
+                    "count": count,
+                    "restrictions": "[]",
+                    "note": note,
+                    "updated_at": "\u6bcf\u65e5\u56fa\u5b9a",
+                    "line_key": f"fixed-{rule['unit']}-{rule['location']}-{rule['cuisine']}-{meal_key}",
+                }
+            )
+    return defaults
+
+
 def summary(report_date):
     rows = db_rows(report_date)
+    rows = rows + fixed_rows(report_date, rows)
     totals = {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
     locations = {
         location: {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
