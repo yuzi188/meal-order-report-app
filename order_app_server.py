@@ -1,4 +1,5 @@
 import json
+import json
 import os
 import sqlite3
 from datetime import datetime
@@ -109,6 +110,7 @@ def save_report(payload):
     entries = payload.get("entries") or []
     now = datetime.now().isoformat(timespec="seconds")
     cleaned = []
+    meal_keys_to_replace = set()
     for entry in entries:
         meal_key = str(entry.get("meal_key") or "")
         cuisine = str(entry.get("cuisine") or "")
@@ -127,6 +129,7 @@ def save_report(payload):
             raise ValueError("\u4eba\u6578\u4e0d\u80fd\u5c0f\u65bc 0")
         if not line_key:
             line_key = f"{meal_key}-{cuisine}-{delivery_location}-{note}"
+        meal_keys_to_replace.add(meal_key)
 
         cleaned.append(
             (
@@ -144,6 +147,14 @@ def save_report(payload):
         )
 
     with sqlite3.connect(DB_PATH) as conn:
+        for meal_key in meal_keys_to_replace:
+            conn.execute(
+                """
+                DELETE FROM reports
+                WHERE report_date = ? AND unit = ? AND meal_key = ?
+                """,
+                (report_date, unit, meal_key),
+            )
         conn.executemany(
             """
             INSERT INTO reports (

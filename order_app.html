@@ -74,10 +74,15 @@
     .dish { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; font-size: 14px; line-height: 1.45; }
     .cat { color: var(--muted); font-weight: 900; }
     .dish-name { font-weight: 760; overflow-wrap: anywhere; }
-    .lines { padding: 0 12px 10px; display: grid; gap: 8px; }
-    .line { border: 1px solid var(--line); background: #fbfdfe; border-radius: 8px; padding: 9px; display: grid; gap: 8px; }
-    .line-main { display: grid; grid-template-columns: 1fr 82px 42px; gap: 7px; }
-    .line-sub { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .lines { padding: 0 12px 10px; }
+    .input-table { width: 100%; min-width: 640px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    .input-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .input-table th, .input-table td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+    .input-table th { background: var(--soft); color: var(--muted); font-weight: 950; }
+    .input-table td:first-child, .input-table th:first-child { text-align: left; padding-left: 8px; }
+    .input-table tr:last-child td { border-bottom: 0; }
+    .input-table select, .input-table input { min-height: 38px; padding: 6px 8px; }
+    .note-input { min-width: 180px; }
     .count-input { text-align: center; font-size: 19px; font-weight: 900; }
     .remove { min-height: 42px; border: 1px solid #ebc7bd; color: var(--danger); background: #fff6f3; border-radius: 8px; font-weight: 900; }
     .add-line { width: 100%; min-height: 40px; border: 1px dashed var(--brand); color: var(--brand); background: #fff; border-radius: 8px; font-weight: 900; }
@@ -99,7 +104,7 @@
     .detail-item { padding: 8px 10px; border-radius: 8px; background: #f7fafb; border: 1px solid var(--line); line-height: 1.45; }
     @media (max-width: 760px) {
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .meal-grid, .actions, .line-main, .line-sub { grid-template-columns: 1fr; }
+      .meal-grid, .actions { grid-template-columns: 1fr; }
       .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
@@ -162,7 +167,7 @@
       submitFail: "\u9001\u51fa\u5931\u6557",
       submitted: "\u5df2\u9001\u51fa\uff0c\u53ef\u4ee5\u4fee\u6539\u5f8c\u518d\u9001\u4e00\u6b21\u3002",
       noReport: "\u5c1a\u672a\u6709\u4eba\u56de\u5831",
-      addLine: "\u65b0\u589e\u4e00\u7b46\u5730\u9ede / \u5099\u8a3b",
+      addLine: "\u65b0\u589e\u4e00\u5217",
       del: "\u522a",
       notePlaceholder: "\u5099\u8a3b\uff1a\u4e0d\u5403\u8c6c\u3001\u4e0d\u5403\u725b\u3001\u4e0d\u5403\u6d77\u9bae\u3001\u5065\u5eb7\u9910\u3001\u5305\u98ef\u76d2",
       taiwan: "\u53f0\u9910",
@@ -234,29 +239,22 @@
       return deliveryLocations.map(x => `<option value="${escapeHtml(x)}" ${x === selected ? "selected" : ""}>${escapeHtml(x)}</option>`).join("");
     }
 
-    function lineTemplate(mealKey, lineIndex, cuisine = "taiwan", count = 0, location = "", note = "") {
+    function lineTemplate(mealKey, lineIndex, taiwanCount = 0, cambodiaCount = 0, location = "", note = "") {
       const selectedLocation = location || deliveryLocations[0] || "";
       return `
-        <div class="line" data-line="${lineIndex}">
-          <div class="line-main">
-            <select data-field="cuisine">
-              <option value="taiwan" ${cuisine === "taiwan" ? "selected" : ""}>${t.taiwan}</option>
-              <option value="cambodia" ${cuisine === "cambodia" ? "selected" : ""}>${t.cambodia}</option>
-            </select>
-            <input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="count" value="${count}">
-            <button class="remove" type="button" data-remove-line>${t.del}</button>
-          </div>
-          <div class="line-sub">
-            <select data-field="delivery_location">${locationOptions(selectedLocation)}</select>
-            <input type="text" data-field="note" value="${escapeHtml(note)}" placeholder="${t.notePlaceholder}">
-          </div>
-        </div>
+        <tr class="line" data-line="${lineIndex}">
+          <td><select data-field="delivery_location">${locationOptions(selectedLocation)}</select></td>
+          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="taiwan_count" value="${taiwanCount}"></td>
+          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="cambodia_count" value="${cambodiaCount}"></td>
+          <td><input class="note-input" type="text" data-field="note" value="${escapeHtml(note)}" placeholder="${t.notePlaceholder}"></td>
+          <td><button class="remove" type="button" data-remove-line>${t.del}</button></td>
+        </tr>
       `;
     }
 
     function addLine(mealKey) {
       const box = document.querySelector(`[data-lines="${mealKey}"]`);
-      box.insertAdjacentHTML("beforeend", lineTemplate(mealKey, box.children.length + 1));
+      box.insertAdjacentHTML("beforeend", lineTemplate(mealKey, box.querySelectorAll(".line").length + 1));
     }
 
     function renderMeals(menu) {
@@ -280,9 +278,24 @@
             <div class="meal-time">${escapeHtml(meal.time)}</div>
           </div>
           <div class="dishes">${dishes}</div>
-          <div class="lines" data-lines="${meal.key}">
-            ${lineTemplate(meal.key, 1, "taiwan", 0)}
-            ${lineTemplate(meal.key, 2, "cambodia", 0)}
+          <div class="lines table-wrap">
+            <div class="input-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>\u9001\u9910\u5730\u9ede</th>
+                    <th>${t.taiwan}</th>
+                    <th>${t.cambodia}</th>
+                    <th>\u5099\u8a3b</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody data-lines="${meal.key}">
+                  ${lineTemplate(meal.key, 1)}
+                  ${lineTemplate(meal.key, 2)}
+                </tbody>
+              </table>
+            </div>
           </div>
           <div style="padding:0 12px 12px">
             <button class="add-line" type="button" data-add-line="${meal.key}">${t.addLine}</button>
@@ -335,15 +348,28 @@
       document.querySelectorAll("[data-lines]").forEach(box => {
         const mealKey = box.dataset.lines;
         box.querySelectorAll(".line").forEach((line, index) => {
-          const count = Number(line.querySelector('[data-field="count"]').value || 0);
-          if (count > 0) {
+          const taiwanCount = Number(line.querySelector('[data-field="taiwan_count"]').value || 0);
+          const cambodiaCount = Number(line.querySelector('[data-field="cambodia_count"]').value || 0);
+          const deliveryLocation = line.querySelector('[data-field="delivery_location"]').value;
+          const note = line.querySelector('[data-field="note"]').value.trim();
+          if (taiwanCount > 0) {
             entries.push({
               meal_key: mealKey,
-              cuisine: line.querySelector('[data-field="cuisine"]').value,
-              count,
-              delivery_location: line.querySelector('[data-field="delivery_location"]').value,
-              note: line.querySelector('[data-field="note"]').value.trim(),
-              line_key: `${mealKey}-${index + 1}`
+              cuisine: "taiwan",
+              count: taiwanCount,
+              delivery_location: deliveryLocation,
+              note,
+              line_key: `${mealKey}-${index + 1}-taiwan`
+            });
+          }
+          if (cambodiaCount > 0) {
+            entries.push({
+              meal_key: mealKey,
+              cuisine: "cambodia",
+              count: cambodiaCount,
+              delivery_location: deliveryLocation,
+              note,
+              line_key: `${mealKey}-${index + 1}-cambodia`
             });
           }
         });
