@@ -79,7 +79,13 @@ FIXED_REPORTS = [
         "unit": "1002-2\u4ee3\u7406",
         "location": "\u90e8\u9580\u73fe\u5834",
         "cuisine": "taiwan",
-        "counts": {"breakfast": 9, "lunch": 5, "dinner": 5, "late_night": 5},
+        "counts": {"breakfast": 9, "lunch": 1, "dinner": 6, "late_night": 6},
+    },
+    {
+        "unit": "1002-2\u4ee3\u7406",
+        "location": "\u90e8\u9580\u73fe\u5834",
+        "cuisine": "cambodia",
+        "counts": {"lunch": 1, "dinner": 1, "late_night": 1},
     },
     {
         "unit": "1002-3\u91d1\u6d41",
@@ -590,8 +596,8 @@ def delivery_table_text(report_date):
         ),
         (
             "1002-2\u4ee3\u7406\U0001f371",
-            lambda meal: count_for_units(data, meal, [("1002-2\u4ee3\u7406", "\u90e8\u9580\u73fe\u5834")], ["taiwan", "healthy"]),
-            "",
+            lambda meal: count_for_units(data, meal, [("1002-2\u4ee3\u7406", "\u90e8\u9580\u73fe\u5834")]),
+            lambda meal: "\U0001f9645" if meal == "dinner" else "",
         ),
         (
             "1002-3\u91d1\u6d41\U0001f371",
