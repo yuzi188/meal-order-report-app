@@ -3,98 +3,104 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OFA 訂餐回報</title>
+  <title>OFA Order Report</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
-      background: #edf3f5;
       color: #1d2935;
+      background: #eef3f6;
       --brand: #195b74;
       --accent: #107764;
       --line: #d8e2e8;
       --muted: #667685;
-      --panel: #ffffff;
       --soft: #f7fafb;
       --danger: #a33a1f;
       --ok: #1f7a53;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: #edf3f5; }
+    body { margin: 0; background: #eef3f6; }
     button, input, select { font: inherit; }
-    .app { max-width: 1080px; margin: 0 auto; padding: 14px; padding-bottom: 30px; }
+    .app { max-width: 1040px; margin: 0 auto; padding: 12px 12px 28px; }
     .hero {
-      margin: -14px -14px 14px;
-      padding: 18px 16px;
+      margin: -12px -12px 12px;
+      padding: 16px 14px;
       background: linear-gradient(135deg, #195b74, #107764);
-      color: white;
+      color: #fff;
       border-radius: 0 0 8px 8px;
     }
-    .hero-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    h1 { margin: 0; font-size: 24px; letter-spacing: 0; }
-    .date-text { margin-top: 6px; font-size: 15px; opacity: .92; }
-    .pill { border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.15); padding: 8px 10px; border-radius: 8px; font-weight: 800; white-space: nowrap; }
-    .toolbar { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 10px; margin-bottom: 12px; align-items: end; }
-    label { display: block; margin-bottom: 6px; color: var(--muted); font-weight: 900; font-size: 13px; }
+    .hero-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    h1 { margin: 0; font-size: 22px; letter-spacing: 0; }
+    .date-text { margin-top: 6px; opacity: .92; font-size: 14px; }
+    .pill { border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.15); padding: 7px 9px; border-radius: 8px; font-weight: 800; white-space: nowrap; font-size: 13px; }
+    .toolbar { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
+    label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; font-weight: 900; }
     input, select {
       width: 100%;
-      min-height: 44px;
-      padding: 9px 10px;
+      min-height: 42px;
+      padding: 8px 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: white;
+      background: #fff;
       color: #1d2935;
       outline: none;
     }
     input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(16,119,100,.14); }
-    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
-    .metric { background: white; border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-height: 76px; }
-    .metric-name { color: var(--muted); font-size: 13px; font-weight: 900; }
-    .metric-total { margin-top: 4px; font-size: 25px; font-weight: 950; }
+    .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+    .tab {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--brand);
+      font-weight: 950;
+    }
+    .tab.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+    .metric { text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 9px; min-height: 126px; color: #1d2935; }
+    .metric.active { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(25,91,116,.14); }
+    .metric-name { color: var(--brand); font-size: 15px; font-weight: 950; }
+    .metric-time { float: right; color: var(--muted); font-size: 13px; font-weight: 900; }
+    .metric-total { margin-top: 4px; font-size: 24px; font-weight: 950; }
     .metric-split { margin-top: 2px; color: var(--muted); font-size: 12px; white-space: nowrap; }
-    .meal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .meal { background: white; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-    .meal-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; background: var(--soft); border-bottom: 1px solid var(--line); }
+    .menu-list { margin-top: 6px; display: grid; gap: 2px; font-size: 12px; line-height: 1.35; color: #334553; }
+    .menu-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .meal-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .meal { background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .meal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 12px; background: var(--soft); border-bottom: 1px solid var(--line); }
     .meal-title { color: var(--brand); font-size: 18px; font-weight: 950; }
     .meal-time { color: var(--muted); font-weight: 850; white-space: nowrap; }
-    .dishes { padding: 12px 14px 8px; display: grid; gap: 6px; }
-    .dish { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; line-height: 1.45; font-size: 15px; }
+    .dishes { padding: 10px 12px 6px; display: grid; gap: 5px; }
+    .dish { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; font-size: 14px; line-height: 1.45; }
     .cat { color: var(--muted); font-weight: 900; }
-    .dish-name { font-weight: 750; overflow-wrap: anywhere; }
-    .lines { padding: 0 14px 12px; display: grid; gap: 10px; }
-    .line { border: 1px solid var(--line); background: #fbfdfe; border-radius: 8px; padding: 10px; display: grid; gap: 8px; }
-    .line-row { display: grid; grid-template-columns: 1fr 96px; gap: 8px; }
-    .line-row.three { grid-template-columns: 1fr 1fr 44px; }
-    .chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-    .chip { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 38px; border: 1px solid var(--line); background: white; border-radius: 8px; color: #1d2935; font-size: 13px; font-weight: 850; }
-    .chip input { width: auto; min-height: auto; padding: 0; }
-    .count-input { text-align: center; font-size: 20px; font-weight: 900; }
-    .remove { min-height: 44px; border: 1px solid #ebc7bd; color: var(--danger); background: #fff6f3; border-radius: 8px; font-weight: 900; }
-    .add-line { width: 100%; min-height: 42px; border: 1px dashed var(--brand); color: var(--brand); background: white; border-radius: 8px; font-weight: 900; }
-    .actions { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 128px; gap: 10px; background: rgba(237,243,245,.92); backdrop-filter: blur(10px); padding-top: 12px; margin-top: 12px; }
+    .dish-name { font-weight: 760; overflow-wrap: anywhere; }
+    .lines { padding: 0 12px 10px; display: grid; gap: 8px; }
+    .line { border: 1px solid var(--line); background: #fbfdfe; border-radius: 8px; padding: 9px; display: grid; gap: 8px; }
+    .line-main { display: grid; grid-template-columns: 1fr 82px 42px; gap: 7px; }
+    .line-sub { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .count-input { text-align: center; font-size: 19px; font-weight: 900; }
+    .remove { min-height: 42px; border: 1px solid #ebc7bd; color: var(--danger); background: #fff6f3; border-radius: 8px; font-weight: 900; }
+    .add-line { width: 100%; min-height: 40px; border: 1px dashed var(--brand); color: var(--brand); background: #fff; border-radius: 8px; font-weight: 900; }
+    .actions { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 116px; gap: 8px; background: rgba(238,243,246,.92); backdrop-filter: blur(10px); padding-top: 10px; margin-top: 10px; }
     button { cursor: pointer; }
-    .primary { min-height: 48px; border: 0; border-radius: 8px; background: var(--brand); color: white; font-weight: 950; }
-    .secondary { min-height: 48px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--brand); font-weight: 950; }
-    .status { min-height: 22px; color: var(--muted); margin: 10px 0 0; font-size: 14px; }
+    .primary { min-height: 48px; border: 0; border-radius: 8px; background: var(--brand); color: #fff; font-weight: 950; }
+    .secondary { min-height: 48px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--brand); font-weight: 950; }
+    .status { min-height: 22px; margin: 9px 0 0; color: var(--muted); font-size: 14px; }
     .status.ok { color: var(--ok); font-weight: 850; }
     .status.err { color: var(--danger); font-weight: 850; }
-    .report { margin-top: 12px; background: white; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-    .report h2 { margin: 0; padding: 12px 14px; color: var(--brand); font-size: 18px; border-bottom: 1px solid var(--line); }
+    .report { margin-top: 10px; background: #fff; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .report h2 { margin: 0; padding: 11px 12px; color: var(--brand); font-size: 18px; border-bottom: 1px solid var(--line); }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+    th, td { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
     th { background: var(--soft); color: var(--muted); font-weight: 950; }
-    td:first-child, th:first-child { text-align: left; padding-left: 14px; }
-    .detail-list { padding: 10px 14px 14px; display: grid; gap: 6px; color: #1d2935; font-size: 14px; }
-    .detail-item { padding: 8px 10px; border-radius: 8px; background: #f7fafb; border: 1px solid var(--line); }
+    td:first-child, th:first-child { text-align: left; padding-left: 12px; }
+    .detail-list { padding: 10px 12px 12px; display: grid; gap: 6px; font-size: 14px; }
+    .detail-item { padding: 8px 10px; border-radius: 8px; background: #f7fafb; border: 1px solid var(--line); line-height: 1.45; }
     @media (max-width: 760px) {
-      .app { padding: 12px; }
-      .hero { margin: -12px -12px 12px; }
-      h1 { font-size: 22px; }
-      .toolbar, .meal-grid, .actions { grid-template-columns: 1fr; }
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .line-row, .line-row.three { grid-template-columns: 1fr; }
-      .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .meal-grid, .actions, .line-main, .line-sub { grid-template-columns: 1fr; }
+      .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -103,43 +109,40 @@
     <section class="hero">
       <div class="hero-row">
         <div>
-          <h1>OFA 訂餐回報</h1>
-          <div class="date-text" id="menuDate">載入今日菜單中</div>
+          <h1>OFA &#35330;&#39184;&#22238;&#22577;</h1>
+          <div class="date-text" id="menuDate">&#36617;&#20837;&#20170;&#26085;&#33756;&#21934;&#20013;</div>
         </div>
-        <div class="pill">部門 + 地點</div>
+        <div class="pill">&#20808;&#36984;&#39184;&#21029;</div>
       </div>
     </section>
 
     <section class="toolbar">
       <div>
-        <label for="dateInput">日期</label>
+        <label for="dateInput">&#26085;&#26399;</label>
         <input id="dateInput" type="date">
-      </div>
-      <div>
-        <label for="unit">部門</label>
-        <select id="unit"></select>
       </div>
     </section>
 
+    <section class="tabs" id="departmentTabs"></section>
     <section class="cards" id="summaryCards"></section>
     <section class="meal-grid" id="meals"></section>
 
     <section class="actions">
-      <button class="primary" id="submit">送出回報</button>
-      <button class="secondary" id="reload">更新統計</button>
+      <button class="primary" id="submit">&#36865;&#20986;&#22238;&#22577;</button>
+      <button class="secondary" id="reload">&#26356;&#26032;</button>
     </section>
     <p class="status" id="status"></p>
 
     <section class="report">
-      <h2>今日統計</h2>
+      <h2 id="reportTitle">&#20170;&#26085;&#32113;&#35336;</h2>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>餐別</th>
-              <th>台餐</th>
-              <th>柬埔寨餐</th>
-              <th>合計</th>
+              <th>&#39184;&#21029;</th>
+              <th>&#21488;&#39184;</th>
+              <th>&#26596;&#22484;&#23528;&#39184;</th>
+              <th>&#21512;&#35336;</th>
             </tr>
           </thead>
           <tbody id="summaryRows"></tbody>
@@ -150,11 +153,31 @@
   </main>
 
   <script>
-    const mealNames = { breakfast: "早餐", lunch: "午餐", dinner: "晚餐", late_night: "宵夜" };
-    const cuisineNames = { taiwan: "台餐", cambodia: "柬埔寨餐" };
+    const t = {
+      app: "\u8a02\u9910\u56de\u5831",
+      todayLoading: "\u8f09\u5165\u4eca\u65e5\u83dc\u55ae\u4e2d",
+      todayMenu: "\u4eca\u65e5\u83dc\u8272",
+      loadFail: "\u83dc\u55ae\u8f09\u5165\u5931\u6557",
+      atLeastOne: "\u8acb\u81f3\u5c11\u586b\u4e00\u7b46\u4eba\u6578",
+      submitFail: "\u9001\u51fa\u5931\u6557",
+      submitted: "\u5df2\u9001\u51fa\uff0c\u53ef\u4ee5\u4fee\u6539\u5f8c\u518d\u9001\u4e00\u6b21\u3002",
+      noReport: "\u5c1a\u672a\u6709\u4eba\u56de\u5831",
+      addLine: "\u65b0\u589e\u4e00\u7b46\u5730\u9ede / \u5099\u8a3b",
+      del: "\u522a",
+      notePlaceholder: "\u5099\u8a3b\uff1a\u4e0d\u5403\u8c6c\u3001\u4e0d\u5403\u725b\u3001\u4e0d\u5403\u6d77\u9bae\u3001\u5065\u5eb7\u9910\u3001\u5305\u98ef\u76d2",
+      taiwan: "\u53f0\u9910",
+      cambodia: "\u67ec\u57d4\u5be8\u9910",
+      portion: "\u4efd"
+    };
+    const mealNames = { breakfast: "\u65e9\u9910", lunch: "\u5348\u9910", dinner: "\u665a\u9910", late_night: "\u5bb5\u591c" };
+    const cuisineNames = { taiwan: t.taiwan, cambodia: t.cambodia };
     let currentDate = "";
     let currentMenu = null;
+    let currentSummary = null;
     let deliveryLocations = [];
+    let departments = [];
+    let activeDepartment = "";
+    let activeMeal = "breakfast";
 
     if (window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.ready();
@@ -175,128 +198,136 @@
       el.textContent = text;
     }
 
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
     async function load(date = todayTaipei()) {
       currentDate = date;
       document.getElementById("dateInput").value = date;
       const res = await fetch(`/api/today?date=${encodeURIComponent(date)}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "菜單載入失敗");
+      if (!res.ok) throw new Error(data.error || t.loadFail);
       currentMenu = data.menu;
-      deliveryLocations = data.delivery_locations || ["部門現場"];
-      renderDepartments(data.units);
+      deliveryLocations = data.delivery_locations || [];
+      departments = data.units || [];
+      if (!activeDepartment || !departments.includes(activeDepartment)) activeDepartment = departments[0] || "";
+      renderDepartmentTabs();
       renderMeals(data.menu);
       renderSummary(data.summary);
       setStatus("");
     }
 
-    function renderDepartments(units) {
-      const unit = document.getElementById("unit");
-      if (unit.options.length) return;
-      unit.innerHTML = units.map(x => `<option value="${x}">${x}</option>`).join("");
+    function renderDepartmentTabs() {
+      document.getElementById("departmentTabs").innerHTML = departments.map(unit => `
+        <button type="button" class="tab ${unit === activeDepartment ? "active" : ""}" data-department="${unit}">${unit}</button>
+      `).join("");
     }
 
-    function locationOptions(selected = "部門現場") {
-      return deliveryLocations.map(x => `<option value="${x}" ${x === selected ? "selected" : ""}>${x}</option>`).join("");
+    function locationOptions(selected) {
+      return deliveryLocations.map(x => `<option value="${escapeHtml(x)}" ${x === selected ? "selected" : ""}>${escapeHtml(x)}</option>`).join("");
     }
 
-    function lineTemplate(mealKey, lineIndex, cuisine = "taiwan", count = 0, location = "部門現場", note = "") {
+    function lineTemplate(mealKey, lineIndex, cuisine = "taiwan", count = 0, location = "", note = "") {
+      const selectedLocation = location || deliveryLocations[0] || "";
       return `
         <div class="line" data-line="${lineIndex}">
-          <div class="line-row three">
+          <div class="line-main">
             <select data-field="cuisine">
-              <option value="taiwan" ${cuisine === "taiwan" ? "selected" : ""}>台餐</option>
-              <option value="cambodia" ${cuisine === "cambodia" ? "selected" : ""}>柬埔寨餐</option>
+              <option value="taiwan" ${cuisine === "taiwan" ? "selected" : ""}>${t.taiwan}</option>
+              <option value="cambodia" ${cuisine === "cambodia" ? "selected" : ""}>${t.cambodia}</option>
             </select>
             <input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="count" value="${count}">
-            <button class="remove" type="button" data-remove-line>刪</button>
+            <button class="remove" type="button" data-remove-line>${t.del}</button>
           </div>
-          <div class="line-row">
-            <select data-field="delivery_location">${locationOptions(location)}</select>
-            <input type="text" data-field="note" value="${note}" placeholder="備註，例如：包飯盒、不吃豬、MT部門">
-          </div>
-          <div class="chips">
-            <label class="chip"><input type="checkbox" value="不吃豬" data-field="restriction">不吃豬</label>
-            <label class="chip"><input type="checkbox" value="不吃牛" data-field="restriction">不吃牛</label>
-            <label class="chip"><input type="checkbox" value="不吃海鮮" data-field="restriction">不吃海鮮</label>
-            <label class="chip"><input type="checkbox" value="健康餐" data-field="restriction">健康餐</label>
+          <div class="line-sub">
+            <select data-field="delivery_location">${locationOptions(selectedLocation)}</select>
+            <input type="text" data-field="note" value="${escapeHtml(note)}" placeholder="${t.notePlaceholder}">
           </div>
         </div>
       `;
     }
 
-    function addLine(mealKey, defaults = {}) {
+    function addLine(mealKey) {
       const box = document.querySelector(`[data-lines="${mealKey}"]`);
-      const index = box.children.length + 1;
-      box.insertAdjacentHTML("beforeend", lineTemplate(mealKey, index, defaults.cuisine, defaults.count, defaults.location, defaults.note));
+      box.insertAdjacentHTML("beforeend", lineTemplate(mealKey, box.children.length + 1));
     }
 
     function renderMeals(menu) {
-      document.getElementById("menuDate").textContent = `${menu.display_date} 今日菜色`;
-      document.getElementById("meals").innerHTML = menu.meals.map(meal => {
-        const dishes = meal.items
-          .filter(item => item.dish)
-          .map(item => `
-            <div class="dish">
-              <div class="cat">${item.category}</div>
-              <div class="dish-name">${item.dish}</div>
-            </div>
-          `)
-          .join("");
-        return `
-          <article class="meal" data-meal="${meal.key}">
-            <div class="meal-head">
-              <div class="meal-title">${meal.label}</div>
-              <div class="meal-time">${meal.time}</div>
-            </div>
-            <div class="dishes">${dishes}</div>
-            <div class="lines" data-lines="${meal.key}">
-              ${lineTemplate(meal.key, 1, "taiwan", 0, "部門現場", "")}
-              ${lineTemplate(meal.key, 2, "cambodia", 0, "部門現場", "")}
-            </div>
-            <div style="padding:0 14px 14px">
-              <button class="add-line" type="button" data-add-line="${meal.key}">新增一筆地點 / 備註</button>
-            </div>
-          </article>
-        `;
-      }).join("");
+      document.getElementById("menuDate").textContent = `${menu.display_date} ${t.todayMenu}`;
+      const meal = menu.meals.find(item => item.key === activeMeal) || menu.meals[0];
+      if (!meal) return;
+      activeMeal = meal.key;
+      const dishes = meal.items
+        .filter(item => item.dish)
+        .map(item => `
+          <div class="dish">
+            <div class="cat">${escapeHtml(item.category)}</div>
+            <div class="dish-name">${escapeHtml(item.dish)}</div>
+          </div>
+        `)
+        .join("");
+      document.getElementById("meals").innerHTML = `
+        <article class="meal" data-meal="${meal.key}">
+          <div class="meal-head">
+            <div class="meal-title">${escapeHtml(meal.label)}</div>
+            <div class="meal-time">${escapeHtml(meal.time)}</div>
+          </div>
+          <div class="dishes">${dishes}</div>
+          <div class="lines" data-lines="${meal.key}">
+            ${lineTemplate(meal.key, 1, "taiwan", 0)}
+            ${lineTemplate(meal.key, 2, "cambodia", 0)}
+          </div>
+          <div style="padding:0 12px 12px">
+            <button class="add-line" type="button" data-add-line="${meal.key}">${t.addLine}</button>
+          </div>
+        </article>
+      `;
     }
 
     function renderSummary(summary) {
-      const entries = Object.entries(summary.totals || {});
-      document.getElementById("summaryCards").innerHTML = entries.map(([key, row]) => `
-        <div class="metric">
-          <div class="metric-name">${mealNames[key]}</div>
-          <div class="metric-total">${row.total}</div>
-          <div class="metric-split">台 ${row.taiwan} / 柬 ${row.cambodia}</div>
-        </div>
-      `).join("");
+      currentSummary = summary;
+      const entries = currentMenu ? currentMenu.meals.map(meal => [meal.key, summary.totals[meal.key] || { taiwan: 0, cambodia: 0, total: 0 }, meal]) : [];
+      document.getElementById("summaryCards").innerHTML = entries.map(([key, row, meal]) => {
+        const menuLines = meal.items
+          .filter(item => item.dish)
+          .map(item => `<div class="menu-line">${escapeHtml(item.category)} ${escapeHtml(item.dish)}</div>`)
+          .join("");
+        return `
+          <button type="button" class="metric ${key === activeMeal ? "active" : ""}" data-meal-tab="${key}">
+            <div class="metric-name">${mealNames[key]} <span class="metric-time">${escapeHtml(meal.time)}</span></div>
+            <div class="metric-total">${row.total}</div>
+            <div class="metric-split">${t.taiwan} ${row.taiwan} / ${t.cambodia} ${row.cambodia}</div>
+            <div class="menu-list">${menuLines}</div>
+          </button>
+        `;
+      }).join("");
 
-      document.getElementById("summaryRows").innerHTML = entries.map(([key, row]) => `
+      const activeTotal = summary.totals[activeMeal] || { taiwan: 0, cambodia: 0, total: 0 };
+      document.getElementById("reportTitle").textContent = `${mealNames[activeMeal]} ${t.todayMenu}`;
+      document.getElementById("summaryRows").innerHTML = `
         <tr>
-          <td>${mealNames[key]}</td>
-          <td>${row.taiwan}</td>
-          <td>${row.cambodia}</td>
-          <td>${row.total}</td>
+          <td>${mealNames[activeMeal]}</td>
+          <td>${activeTotal.taiwan}</td>
+          <td>${activeTotal.cambodia}</td>
+          <td>${activeTotal.total}</td>
         </tr>
-      `).join("");
+      `;
 
-      const rows = summary.rows || [];
+      const rows = (summary.rows || []).filter(row => row.unit === activeDepartment && row.meal_key === activeMeal);
       document.getElementById("detailRows").innerHTML = rows.length
         ? rows.map(row => `
           <div class="detail-item">
-            ${row.unit}｜${mealNames[row.meal_key]}｜${cuisineNames[row.cuisine]} ${row.count} 份｜${row.delivery_location}${formatRestrictions(row.restrictions)}${row.note ? `｜${row.note}` : ""}
+            ${escapeHtml(row.unit)} | ${mealNames[row.meal_key]} | ${cuisineNames[row.cuisine]} ${row.count} ${t.portion} | ${escapeHtml(row.delivery_location)}${row.note ? ` | ${escapeHtml(row.note)}` : ""}
           </div>
         `).join("")
-        : `<div class="detail-item">尚未有人回報</div>`;
-    }
-
-    function formatRestrictions(raw) {
-      try {
-        const list = typeof raw === "string" ? JSON.parse(raw || "[]") : raw;
-        return Array.isArray(list) && list.length ? `｜${list.join("、")}` : "";
-      } catch {
-        return "";
-      }
+        : `<div class="detail-item">${activeDepartment} ${t.noReport}</div>`;
     }
 
     function collectEntries() {
@@ -304,19 +335,14 @@
       document.querySelectorAll("[data-lines]").forEach(box => {
         const mealKey = box.dataset.lines;
         box.querySelectorAll(".line").forEach((line, index) => {
-          const cuisine = line.querySelector('[data-field="cuisine"]').value;
           const count = Number(line.querySelector('[data-field="count"]').value || 0);
-          const delivery_location = line.querySelector('[data-field="delivery_location"]').value;
-          const restrictions = [...line.querySelectorAll('[data-field="restriction"]:checked')].map(item => item.value);
-          const note = line.querySelector('[data-field="note"]').value.trim();
           if (count > 0) {
             entries.push({
               meal_key: mealKey,
-              cuisine,
+              cuisine: line.querySelector('[data-field="cuisine"]').value,
               count,
-              delivery_location,
-              restrictions,
-              note,
+              delivery_location: line.querySelector('[data-field="delivery_location"]').value,
+              note: line.querySelector('[data-field="note"]').value.trim(),
               line_key: `${mealKey}-${index + 1}`
             });
           }
@@ -327,16 +353,16 @@
 
     async function submitReport() {
       const entries = collectEntries();
-      if (!entries.length) throw new Error("請至少填一筆人數");
-      const payload = { date: currentDate, unit: document.getElementById("unit").value, entries };
+      if (!entries.length) throw new Error(t.atLeastOne);
+      const payload = { date: currentDate, unit: activeDepartment, entries };
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "送出失敗");
-      setStatus("已送出，可以修改後再送一次。", "ok");
+      if (!res.ok) throw new Error(data.error || t.submitFail);
+      setStatus(`${activeDepartment} ${t.submitted}`, "ok");
       if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
         Telegram.WebApp.HapticFeedback.notificationOccurred("success");
       }
@@ -350,13 +376,23 @@
     }
 
     document.addEventListener("click", event => {
+      const department = event.target.dataset.department;
+      if (department) {
+        activeDepartment = department;
+        renderDepartmentTabs();
+        refreshSummary().catch(err => setStatus(err.message, "err"));
+      }
+      const mealTab = event.target.closest("[data-meal-tab]")?.dataset.mealTab;
+      if (mealTab) {
+        activeMeal = mealTab;
+        renderMeals(currentMenu);
+        renderSummary(currentSummary);
+      }
       const addMeal = event.target.dataset.addLine;
       if (addMeal) addLine(addMeal);
       if (event.target.dataset.removeLine !== undefined) {
         const box = event.target.closest("[data-lines]");
-        if (box.querySelectorAll(".line").length > 1) {
-          event.target.closest(".line").remove();
-        }
+        if (box.querySelectorAll(".line").length > 1) event.target.closest(".line").remove();
       }
     });
 
