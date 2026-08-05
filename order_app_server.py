@@ -656,7 +656,9 @@ def count_from_row(row, cuisines=None):
 
 def display_location(location):
     labels = {
+        "\u4e0d\u5403\u725b": "\U0001f42e\u4e0d\u5403\u725b",
         "\u4e0d\u5403\u8c6c": "\U0001f437\u4e0d\u5403\u8c6c",
+        "\u4e0d\u5403\u6d77\u9bae": "\U0001f99e\u4e0d\u5403\u6d77\u9bae",
     }
     return labels.get(location, location)
 
@@ -708,19 +710,22 @@ def table_line_with_bucket_counts(label, row, note="", bucket_counts=None):
     return f"{label}\uff1a{bucket_count_text(row, bucket_counts)}{suffix}"
 
 
-def meal_total_line(row, bucket_row=None, pork_row=None, bucket_counts=None):
+def meal_total_line(row, bucket_row=None, restriction_rows=None, bucket_counts=None):
     bucket_row = bucket_row or empty_count_row()
-    pork_row = pork_row or empty_count_row()
+    restriction_rows = restriction_rows or []
     bucket_counts = bucket_counts or {}
-    taiwan_box = max(0, row["taiwan"] - bucket_row["taiwan"] - pork_row["taiwan"])
+    restricted_taiwan = sum(item["row"]["taiwan"] for item in restriction_rows)
+    taiwan_box = max(0, row["taiwan"] - bucket_row["taiwan"] - restricted_taiwan)
     cambodia_box = max(0, row["cambodia"] - bucket_row["cambodia"])
     parts = []
     if taiwan_box:
         parts.append(f"\U0001f1f9\U0001f1fc\U0001f371\u5171 {taiwan_box}")
     if bucket_row["taiwan"]:
         parts.append(f"\U0001f1f9\U0001f1fc\U0001faa3\u5171 {bucket_row['taiwan']}")
-    if pork_row["taiwan"]:
-        parts.append(f"\U0001f437\u4e0d\u5403\u8c6c\U0001f371 {pork_row['taiwan']}\uff08MT\uff09")
+    for item in restriction_rows:
+        count = item["row"]["taiwan"]
+        if count:
+            parts.append(f"{item['label']}\U0001f371 {count}\uff08MT\uff09")
     if row["healthy"]:
         parts.append(f"\u5065\u5eb7\u9910\U0001f966 {row['healthy']}")
     if cambodia_box:
@@ -748,8 +753,16 @@ def bucket_total_for_meal(data, meal):
     return total
 
 
-def pork_restriction_total_for_meal(data, meal):
-    return count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")], ["taiwan"])
+def restriction_totals_for_meal(data, meal):
+    restrictions = [
+        ("\U0001f42e\u4e0d\u5403\u725b", "\u4e0d\u5403\u725b"),
+        ("\U0001f437\u4e0d\u5403\u8c6c", "\u4e0d\u5403\u8c6c"),
+        ("\U0001f99e\u4e0d\u5403\u6d77\u9bae", "\u4e0d\u5403\u6d77\u9bae"),
+    ]
+    return [
+        {"label": label, "location": location, "row": count_for_units(data, meal, [("3F", location)], ["taiwan"])}
+        for label, location in restrictions
+    ]
 
 
 def bucket_count_for_meal(data, meal):
@@ -825,9 +838,9 @@ def delivery_table_text(report_date):
         ("\u4fdd\u59c6 68\U0001f371", lambda meal: count_for_units(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "68")]), ""),
         ("\u4fdd\u59c6 88\U0001f371", lambda meal: count_for_units(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "88")]), ""),
         ("\u6d77\u5357\u96de\u98ef\U0001f371", lambda meal: count_for_units(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]), ""),
-        ("\u4e0d\u5403\u725b\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u725b")]), "\u5099\u8a3b"),
+        ("\U0001f42e\u4e0d\u5403\u725b\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u725b")]), "MT"),
         ("\U0001f437\u4e0d\u5403\u8c6c\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")]), "MT"),
-        ("\u4e0d\u5403\u6d77\u9bae\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u6d77\u9bae")]), "\u5099\u8a3b"),
+        ("\U0001f99e\u4e0d\u5403\u6d77\u9bae\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "\u4e0d\u5403\u6d77\u9bae")]), "MT"),
     ]
     def visible_total_for_meal(meal):
         total_row = empty_count_row()
@@ -848,7 +861,7 @@ def delivery_table_text(report_date):
             meal_total_line(
                 visible_total,
                 bucket_total_for_meal(data, meal),
-                pork_restriction_total_for_meal(data, meal),
+                restriction_totals_for_meal(data, meal),
                 bucket_counts,
             )
         )
