@@ -281,6 +281,77 @@ def init_db():
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+
+
+def get_setting(key):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        row = conn.execute("SELECT value FROM app_settings WHERE key = ?", (key,)).fetchone()
+    return row[0] if row else None
+
+
+def set_setting(key, value):
+    init_db()
+    now = datetime.now().isoformat(timespec="seconds")
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO app_settings (key, value, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(key)
+            DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+            """,
+            (key, value, now),
+        )
+
+
+def fixed_reports_config():
+    stored = get_setting("fixed_reports")
+    if not stored:
+        return json.loads(json.dumps(FIXED_REPORTS, ensure_ascii=False))
+    try:
+        reports = json.loads(stored)
+    except Exception:
+        return json.loads(json.dumps(FIXED_REPORTS, ensure_ascii=False))
+    return reports if isinstance(reports, list) else json.loads(json.dumps(FIXED_REPORTS, ensure_ascii=False))
+
+
+def save_fixed_reports_config(reports):
+    if not isinstance(reports, list):
+        raise ValueError("固定人數格式不正確")
+    cleaned = []
+    for rule in reports:
+        unit = str(rule.get("unit") or "").strip()
+        location = str(rule.get("location") or "").strip()
+        cuisine = str(rule.get("cuisine") or "").strip()
+        if unit not in DEPARTMENTS:
+            raise ValueError("部門不正確")
+        if cuisine not in CUISINES:
+            raise ValueError("餐種不正確")
+        if location not in allowed_delivery_locations(unit):
+            raise ValueError("送餐地點不正確")
+        counts = {}
+        for meal in MEAL_KEYS:
+            value = int((rule.get("counts") or {}).get(meal) or 0)
+            if value < 0:
+                raise ValueError("人數不能小於 0")
+            if value:
+                counts[meal] = value
+        cleaned_rule = {"unit": unit, "location": location, "cuisine": cuisine, "counts": counts}
+        if isinstance(rule.get("beef_notes"), dict):
+            cleaned_rule["beef_notes"] = {meal: int(rule["beef_notes"].get(meal) or 0) for meal in MEAL_KEYS}
+        cleaned.append(cleaned_rule)
+    set_setting("fixed_reports", json.dumps(cleaned, ensure_ascii=False))
+    return {"ok": True, "reports": cleaned}
 
 
 def db_rows(report_date):
@@ -813,7 +884,7 @@ def meal_has_beef(report_date, meal_key):
 def fixed_rows(report_date, rows):
     updated_pairs = {(row["unit"], row["meal_key"]) for row in rows}
     defaults = []
-    for rule in FIXED_REPORTS:
+    for rule in fixed_reports_config():
         for meal_key, count in rule["counts"].items():
             if count <= 0 or (rule["unit"], meal_key) in updated_pairs:
                 continue
@@ -1267,6 +1338,17 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.send_json(storage_status())
             return
+        if parsed.path == "/api/admin/fixed-reports":
+            if not self.require_admin():
+                return
+            self.send_json({"reports": fixed_reports_config(), "units": DEPARTMENTS, "cuisines": CUISINES, "meals": MEAL_KEYS})
+            return
+        if parsed.path == "/api/admin/delivery-table":
+            if not self.require_admin():
+                return
+            date = params.get("date", [today_key()])[0]
+            self.send_json({"date": date, "text": delivery_table_text(date)})
+            return
         self.send_json({"error": "not found"}, 404)
 
     def do_POST(self):
@@ -1309,6 +1391,16 @@ class Handler(BaseHTTPRequestHandler):
                 length = int(self.headers.get("Content-Length", "0"))
                 payload = json.loads(self.rfile.read(length).decode("utf-8"))
                 self.send_json(save_cost(payload))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 400)
+            return
+        if parsed.path == "/api/admin/fixed-reports":
+            if not self.require_admin():
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                self.send_json(save_fixed_reports_config(payload.get("reports")))
             except Exception as exc:
                 self.send_json({"error": str(exc)}, 400)
             return

@@ -25,7 +25,7 @@
     h1 { margin: 0; font-size: 24px; color: var(--yellow); }
     .sub { color: var(--muted); margin-top: 4px; font-size: 14px; }
     .controls { display: grid; grid-template-columns: 1fr 1fr 120px; gap: 8px; margin: 10px 0; }
-    .tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+    .tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 12px 0; }
     .tab { background: transparent; color: var(--yellow); }
     .tab.active { background: var(--yellow); color: #1b1403; }
     .tab-panel { display: none; }
@@ -63,6 +63,8 @@
     .detail-box strong { color: var(--yellow); display: block; margin-bottom: 6px; }
     .money { max-width: 105px; text-align: center; }
     .count { max-width: 92px; text-align: center; }
+    .fixed-count { max-width: 72px; text-align: center; }
+    .preview-box { width: 100%; min-height: 420px; border: 1px solid var(--line); border-radius: 8px; background: #0d131c; color: var(--text); padding: 12px; white-space: pre-wrap; font: 16px/1.55 "Noto Sans TC", system-ui, sans-serif; }
     .save { min-width: 68px; }
     .status { min-height: 22px; margin: 10px 0 0; color: var(--muted); }
     .logout { background: transparent; color: var(--yellow); }
@@ -103,6 +105,8 @@
       <button class="tab" data-tab="input">每日輸入</button>
       <button class="tab" data-tab="daily">每日紀錄</button>
       <button class="tab" data-tab="period">每5天</button>
+      <button class="tab" data-tab="delivery">送餐表</button>
+      <button class="tab" data-tab="fixed">固定人數</button>
       <button class="tab" data-tab="storage">資料庫</button>
     </section>
 
@@ -185,6 +189,39 @@
         </table>
       </div>
     </section>
+
+    <section class="panel tab-panel" data-panel="delivery">
+      <h2>員工送餐表預覽</h2>
+      <div style="padding: 12px;">
+        <button id="loadDelivery">更新送餐表</button>
+        <button id="copyDelivery" class="logout">複製文字</button>
+        <div id="deliveryPreview" class="preview-box" style="margin-top: 10px;"></div>
+      </div>
+    </section>
+
+    <section class="panel tab-panel" data-panel="fixed">
+      <h2>固定人數設定</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>部門</th>
+              <th>地點</th>
+              <th>餐種</th>
+              <th>早餐</th>
+              <th>午餐</th>
+              <th>晚餐</th>
+              <th>宵夜</th>
+            </tr>
+          </thead>
+          <tbody id="fixedRows"></tbody>
+        </table>
+      </div>
+      <div class="expense-actions">
+        <button id="saveFixed">儲存固定人數</button>
+        <div class="hint">修改後會直接影響小程序、成本後台、Telegram /總數。</div>
+      </div>
+    </section>
   </main>
 
   <script>
@@ -204,6 +241,7 @@
       "rice_cost",
       "ice_cost"
     ];
+    let fixedReports = [];
 
     function todayTaipei() {
       const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
@@ -253,6 +291,8 @@
       currentRows = data.rows;
       render(data);
       populateExpenseForm();
+      await loadDeliveryPreview();
+      await loadFixedReports();
       setStatus("");
     }
 
@@ -352,6 +392,62 @@
       `).join("");
     }
 
+    function cuisineLabel(cuisine) {
+      return { taiwan: "🇹🇼", healthy: "健康🥦", cambodia: "🇰🇭" }[cuisine] || cuisine;
+    }
+
+    async function loadDeliveryPreview() {
+      const date = selectedDate();
+      const box = document.getElementById("deliveryPreview");
+      if (!box) return;
+      const res = await fetch(`/api/admin/delivery-table?date=${encodeURIComponent(date)}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "送餐表讀取失敗");
+      box.textContent = data.text || "";
+    }
+
+    async function loadFixedReports() {
+      const tbody = document.getElementById("fixedRows");
+      if (!tbody) return;
+      const res = await fetch("/api/admin/fixed-reports", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "固定人數讀取失敗");
+      fixedReports = data.reports || [];
+      tbody.innerHTML = fixedReports.map((rule, index) => `
+        <tr data-fixed-index="${index}">
+          <td>${rule.unit}</td>
+          <td>${rule.location}</td>
+          <td>${cuisineLabel(rule.cuisine)}</td>
+          ${["breakfast", "lunch", "dinner", "late_night"].map(meal => `
+            <td><input class="fixed-count" type="number" min="0" step="1" data-fixed-meal="${meal}" value="${(rule.counts || {})[meal] || 0}"></td>
+          `).join("")}
+        </tr>
+      `).join("");
+    }
+
+    async function saveFixedReports() {
+      document.querySelectorAll("[data-fixed-index]").forEach(row => {
+        const index = Number(row.dataset.fixedIndex);
+        const counts = {};
+        row.querySelectorAll("[data-fixed-meal]").forEach(input => {
+          const value = Number(input.value || 0);
+          if (value > 0) counts[input.dataset.fixedMeal] = value;
+        });
+        fixedReports[index].counts = counts;
+      });
+      const res = await fetch("/api/admin/fixed-reports", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reports: fixedReports })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "固定人數儲存失敗");
+      fixedReports = data.reports || fixedReports;
+      setStatus("固定人數已儲存", "good");
+      await load();
+    }
+
     async function saveRow(date) {
       const tr = document.querySelector(`tr[data-date="${date}"]`);
       const payload = { date };
@@ -389,7 +485,7 @@
     }
 
     function isEditingCostTable() {
-      return Boolean(document.activeElement && (document.activeElement.closest("#rows") || document.activeElement.closest("#expenseForm")));
+      return Boolean(document.activeElement && (document.activeElement.closest("#rows") || document.activeElement.closest("#expenseForm") || document.activeElement.closest("#fixedRows")));
     }
 
     async function autoRefresh() {
@@ -416,6 +512,12 @@
     });
     document.getElementById("reload").addEventListener("click", () => load().catch(err => setStatus(err.message, "bad")));
     document.getElementById("saveExpense").addEventListener("click", () => saveExpense().catch(err => setStatus(err.message, "bad")));
+    document.getElementById("loadDelivery").addEventListener("click", () => loadDeliveryPreview().catch(err => setStatus(err.message, "bad")));
+    document.getElementById("copyDelivery").addEventListener("click", async () => {
+      await navigator.clipboard.writeText(document.getElementById("deliveryPreview").textContent || "");
+      setStatus("送餐表已複製", "good");
+    });
+    document.getElementById("saveFixed").addEventListener("click", () => saveFixedReports().catch(err => setStatus(err.message, "bad")));
     document.getElementById("logout").addEventListener("click", async () => {
       await fetch("/api/admin/logout", { method: "POST", cache: "no-store" });
       window.location.href = "/admin";
