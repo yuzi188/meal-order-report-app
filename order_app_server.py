@@ -572,6 +572,8 @@ def parse_bot_3f_report(text):
         if count is None:
             continue
         location = "1002-2" if unit == "1002-2\u5ba2\u670d" else normalize_delivery_location(line)
+        if unit == "3F" and current_meal == "late_night" and cuisine == "cambodia" and "\u9910\u6876" in line:
+            location = "3F"
         line_key = f"bot-{current_meal}-{cuisine}-{location}"
         if line_key in entries_by_key:
             entries_by_key[line_key]["count"] += count
@@ -670,6 +672,24 @@ def count_text(row, bucket_cuisines=None):
     return " / ".join(parts)
 
 
+def bucket_count_text(row, bucket_counts=None):
+    bucket_counts = bucket_counts or {}
+    parts = []
+    if row["taiwan"]:
+        if bucket_counts.get("taiwan"):
+            parts.append(f"\U0001f1f9\U0001f1fc\U0001faa3{bucket_counts['taiwan']}\u6876")
+        else:
+            parts.append(f"\U0001f1f9\U0001f1fc{row['taiwan']}")
+    if row["healthy"]:
+        parts.append(f"\u5065\u5eb7\u9910\U0001f966{row['healthy']}")
+    if row["cambodia"]:
+        if bucket_counts.get("cambodia"):
+            parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3{bucket_counts['cambodia']}\u6876")
+        else:
+            parts.append(f"\U0001f1f0\U0001f1ed{row['cambodia']}")
+    return " / ".join(parts)
+
+
 def table_line(label, row, note="", bucket_cuisines=None):
     if not row["total"]:
         return ""
@@ -677,9 +697,17 @@ def table_line(label, row, note="", bucket_cuisines=None):
     return f"{label}\uff1a{count_text(row, bucket_cuisines)}{suffix}"
 
 
-def meal_total_line(row, bucket_row=None, pork_row=None):
+def table_line_with_bucket_counts(label, row, note="", bucket_counts=None):
+    if not row["total"]:
+        return ""
+    suffix = f"\uff08{note}\uff09" if note else ""
+    return f"{label}\uff1a{bucket_count_text(row, bucket_counts)}{suffix}"
+
+
+def meal_total_line(row, bucket_row=None, pork_row=None, bucket_counts=None):
     bucket_row = bucket_row or empty_count_row()
     pork_row = pork_row or empty_count_row()
+    bucket_counts = bucket_counts or {}
     taiwan_box = max(0, row["taiwan"] - bucket_row["taiwan"] - pork_row["taiwan"])
     cambodia_box = max(0, row["cambodia"] - bucket_row["cambodia"])
     parts = []
@@ -694,7 +722,10 @@ def meal_total_line(row, bucket_row=None, pork_row=None):
     if cambodia_box:
         parts.append(f"\U0001f1f0\U0001f1ed\U0001f371\u5171 {cambodia_box}")
     if bucket_row["cambodia"]:
-        parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3\u5171 {bucket_row['cambodia']}")
+        if bucket_counts.get("cambodia"):
+            parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3\u5171 {bucket_counts['cambodia']}\u6876")
+        else:
+            parts.append(f"\U0001f1f0\U0001f1ed\U0001faa3\u5171 {bucket_row['cambodia']}")
     return "\uff5c".join(parts)
 
 
@@ -707,11 +738,36 @@ def bucket_total_for_meal(data, meal):
             ["taiwan"],
         )
     add_count_row(total, count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]), ["taiwan", "cambodia"])
+    if meal == "late_night":
+        add_count_row(total, count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal], ["cambodia"]), ["cambodia"])
     return total
 
 
 def pork_restriction_total_for_meal(data, meal):
     return count_for_units(data, meal, [("3F", "\u4e0d\u5403\u8c6c")], ["taiwan"])
+
+
+def bucket_count_for_meal(data, meal):
+    counts = {}
+    late_night_cambodia = (
+        data["locations"]["3F"][meal]["cambodia"]
+        + data["locations"]["3F\u5305\u9910\u76d2"][meal]["cambodia"]
+    ) if meal == "late_night" else 0
+    if meal == "late_night" and late_night_cambodia:
+        counts["cambodia"] = 2
+    return counts
+
+
+def mt_3f_count_for_meal(data, meal):
+    total = count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"])
+    if meal == "late_night":
+        add_count_row(total, count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal], ["cambodia"]), ["cambodia"])
+    return total
+
+
+def package_box_count_for_meal(data, meal):
+    cuisines = ["taiwan", "healthy"] if meal == "late_night" else None
+    return count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal], cuisines)
 
 
 def delivery_table_text(report_date):
@@ -741,12 +797,12 @@ def delivery_table_text(report_date):
         ("1002-2\u5ba2\u670d\U0001f371", lambda meal: count_for_units(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]), ""),
         (
             "MT-3F\U0001faa3",
-            lambda meal: count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]),
+            lambda meal: mt_3f_count_for_meal(data, meal),
             lambda meal: "MT",
             lambda meal: ["cambodia"] if meal == "late_night" and data["locations"]["3F"][meal]["cambodia"] else [],
         ),
         ("\u5065\u5eb7\u9910\U0001f966-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), "MT"),
-        ("\u5305\u98ef\u76d2\U0001f371-3F", lambda meal: count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal]), "MT"),
+        ("\u5305\u98ef\u76d2\U0001f371-3F", lambda meal: package_box_count_for_meal(data, meal), "MT"),
         ("68\u516c\u5bd3\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "68")]), "MT"),
         ("88\u516c\u5bd3\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "88")]), "MT"),
         ("\u4fdd\u59c6 68\U0001f371", lambda meal: count_for_units(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "68")]), ""),
@@ -770,11 +826,13 @@ def delivery_table_text(report_date):
             continue
         lines.append("")
         lines.append(f"{meal_names[meal]}")
+        bucket_counts = bucket_count_for_meal(data, meal)
         lines.append(
             meal_total_line(
                 visible_total,
                 bucket_total_for_meal(data, meal),
                 pork_restriction_total_for_meal(data, meal),
+                bucket_counts,
             )
         )
         for row_def in rows:
@@ -782,7 +840,11 @@ def delivery_table_text(report_date):
             meal_label = label(meal) if callable(label) else label
             bucket_cuisines = row_def[3](meal) if len(row_def) > 3 and callable(row_def[3]) else (row_def[3] if len(row_def) > 3 else [])
             meal_note = note(meal) if callable(note) else note
-            line = table_line(meal_label, getter(meal), meal_note, bucket_cuisines)
+            row = getter(meal)
+            if meal_label == "MT-3F\U0001faa3" and bucket_counts:
+                line = table_line_with_bucket_counts(meal_label, row, meal_note, bucket_counts)
+            else:
+                line = table_line(meal_label, row, meal_note, bucket_cuisines)
             if line:
                 lines.append(line)
     return "\n".join(lines)
