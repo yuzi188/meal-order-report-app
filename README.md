@@ -8,6 +8,24 @@ Telegram WebApp / Railway app for daily meal count reporting.
 python order_app_server.py
 ```
 
+## URLs
+
+- Order report app: `/`
+- Cost admin: `/admin`
+
+## Admin Login
+
+Default admin login:
+
+- Username: `ofa5153`
+- Password: `585858`
+
+For production, set Railway variables:
+
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+- `ADMIN_SESSION_SECRET`
+
 ## Railway Persistence
 
 The app stores reports in SQLite. Railway deploys use an ephemeral filesystem unless a Volume is mounted.

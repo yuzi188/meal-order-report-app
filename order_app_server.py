@@ -1,6 +1,10 @@
+import base64
+import hashlib
+import hmac
 import json
 import os
 import sqlite3
+import time
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -17,6 +21,11 @@ DATA_DIR = Path(
 DB_PATH = DATA_DIR / "meal_order_reports.sqlite3"
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8787"))
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "ofa5153")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "585858")
+ADMIN_SESSION_SECRET = os.environ.get("ADMIN_SESSION_SECRET", ADMIN_PASSWORD)
+ADMIN_COOKIE = "ofa_admin_session"
+ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12
 
 DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3\u91d1\u6d41", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "1002-2\u5ba2\u670d"]
 DELIVERY_LOCATIONS = [
@@ -102,6 +111,37 @@ def today_key():
     return datetime.now().strftime("%Y-%m-%d")
 
 
+def session_cookie_value(username):
+    expires = int(time.time()) + ADMIN_SESSION_TTL_SECONDS
+    payload = f"{username}:{expires}"
+    signature = hmac.new(
+        ADMIN_SESSION_SECRET.encode("utf-8"),
+        payload.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    token = f"{payload}:{signature}".encode("utf-8")
+    return base64.urlsafe_b64encode(token).decode("ascii")
+
+
+def verify_session_cookie(value):
+    if not value:
+        return False
+    try:
+        decoded = base64.urlsafe_b64decode(value.encode("ascii")).decode("utf-8")
+        username, expires, signature = decoded.rsplit(":", 2)
+        if username != ADMIN_USERNAME or int(expires) < int(time.time()):
+            return False
+        payload = f"{username}:{expires}"
+        expected = hmac.new(
+            ADMIN_SESSION_SECRET.encode("utf-8"),
+            payload.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        return hmac.compare_digest(signature, expected)
+    except Exception:
+        return False
+
+
 def init_db():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(DB_PATH) as conn:
@@ -146,6 +186,19 @@ def init_db():
             """
             CREATE UNIQUE INDEX IF NOT EXISTS idx_reports_line
             ON reports (report_date, unit, meal_key, line_key)
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS daily_costs (
+                report_date TEXT PRIMARY KEY,
+                taiwan_cost REAL NOT NULL DEFAULT 0,
+                cambodia_cost REAL NOT NULL DEFAULT 0,
+                taiwan_count INTEGER NOT NULL DEFAULT 0,
+                cambodia_count INTEGER NOT NULL DEFAULT 0,
+                note TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL
+            )
             """
         )
 
@@ -324,9 +377,166 @@ def summary(report_date):
     }
 
 
+def default_cost_counts(report_date):
+    totals = summary(report_date)["totals"]
+    taiwan = sum(totals[meal]["taiwan"] + totals[meal]["healthy"] for meal in MEAL_KEYS)
+    cambodia = sum(totals[meal]["cambodia"] for meal in MEAL_KEYS)
+    return {"taiwan": taiwan, "cambodia": cambodia}
+
+
+def db_cost_rows(start_date, end_date):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT report_date, taiwan_cost, cambodia_cost, taiwan_count,
+                   cambodia_count, note, updated_at
+            FROM daily_costs
+            WHERE report_date >= ? AND report_date <= ?
+            ORDER BY report_date
+            """,
+            (start_date, end_date),
+        ).fetchall()
+    return {row["report_date"]: dict(row) for row in rows}
+
+
+def build_cost_row(report_date, stored):
+    defaults = default_cost_counts(report_date)
+    taiwan_count = int(stored["taiwan_count"]) if stored else defaults["taiwan"]
+    cambodia_count = int(stored["cambodia_count"]) if stored else defaults["cambodia"]
+    taiwan_cost = float(stored.get("taiwan_cost") or 0) if stored else 0.0
+    cambodia_cost = float(stored.get("cambodia_cost") or 0) if stored else 0.0
+    total_cost = taiwan_cost + cambodia_cost
+    total_count = taiwan_count + cambodia_count
+    avg = round(total_cost / total_count, 4) if total_count else 0
+    return {
+        "date": report_date,
+        "taiwan_cost": taiwan_cost,
+        "cambodia_cost": cambodia_cost,
+        "total_cost": round(total_cost, 2),
+        "taiwan_count": taiwan_count,
+        "cambodia_count": cambodia_count,
+        "total_count": total_count,
+        "average": avg,
+        "over_limit": avg > 1.32 if total_count else False,
+        "note": stored.get("note", "") if stored else "",
+        "saved": bool(stored),
+    }
+
+
+def cost_report(start_date, end_date):
+    from datetime import date, timedelta
+
+    start = date.fromisoformat(start_date)
+    end = date.fromisoformat(end_date)
+    stored = db_cost_rows(start_date, end_date)
+    rows = []
+    current = start
+    while current <= end:
+        key = current.isoformat()
+        rows.append(build_cost_row(key, stored.get(key)))
+        current += timedelta(days=1)
+
+    def empty_group(label):
+        return {"label": label, "cost": 0.0, "count": 0, "average": 0.0, "over_limit": False}
+
+    month = empty_group("month")
+    weeks = {}
+    for row in rows:
+        month["cost"] += row["total_cost"]
+        month["count"] += row["total_count"]
+        week_label = date.fromisoformat(row["date"]).strftime("%G-W%V")
+        weeks.setdefault(week_label, empty_group(week_label))
+        weeks[week_label]["cost"] += row["total_cost"]
+        weeks[week_label]["count"] += row["total_count"]
+
+    for group in [month, *weeks.values()]:
+        group["cost"] = round(group["cost"], 2)
+        group["average"] = round(group["cost"] / group["count"], 4) if group["count"] else 0.0
+        group["over_limit"] = group["average"] > 1.32 if group["count"] else False
+
+    return {"rows": rows, "month": month, "weeks": list(weeks.values()), "limit": 1.32}
+
+
+def save_cost(payload):
+    report_date = str(payload.get("date") or today_key())
+    now = datetime.now().isoformat(timespec="seconds")
+    values = (
+        report_date,
+        float(payload.get("taiwan_cost") or 0),
+        float(payload.get("cambodia_cost") or 0),
+        int(payload.get("taiwan_count") or 0),
+        int(payload.get("cambodia_count") or 0),
+        str(payload.get("note") or "").strip(),
+        now,
+    )
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO daily_costs (
+                report_date, taiwan_cost, cambodia_cost, taiwan_count,
+                cambodia_count, note, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(report_date)
+            DO UPDATE SET
+                taiwan_cost = excluded.taiwan_cost,
+                cambodia_cost = excluded.cambodia_cost,
+                taiwan_count = excluded.taiwan_count,
+                cambodia_count = excluded.cambodia_count,
+                note = excluded.note,
+                updated_at = excluded.updated_at
+            """,
+            values,
+        )
+    return {"ok": True, "row": build_cost_row(report_date, db_cost_rows(report_date, report_date).get(report_date))}
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, _format, *_args):
         return
+
+    def admin_cookie(self):
+        cookies = self.headers.get("Cookie", "")
+        for part in cookies.split(";"):
+            key, _, value = part.strip().partition("=")
+            if key == ADMIN_COOKIE:
+                return value
+        return ""
+
+    def is_admin(self):
+        return verify_session_cookie(self.admin_cookie())
+
+    def require_admin(self):
+        if self.is_admin():
+            return True
+        self.send_json({"error": "需要登入後台"}, 401)
+        return False
+
+    def send_admin_session(self, username):
+        cookie = session_cookie_value(username)
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Set-Cookie", f"{ADMIN_COOKIE}={cookie}; Path=/; HttpOnly; SameSite=Lax; Max-Age={ADMIN_SESSION_TTL_SECONDS}")
+        body = json.dumps({"ok": True}, ensure_ascii=False).encode("utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def clear_admin_session(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Set-Cookie", f"{ADMIN_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0")
+        body = json.dumps({"ok": True}, ensure_ascii=False).encode("utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def send_json(self, data, status=200):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -354,6 +564,15 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/":
             self.send_file(BASE_DIR / "order_app.html", "text/html; charset=utf-8")
             return
+        if parsed.path == "/admin":
+            if not self.is_admin():
+                self.send_file(BASE_DIR / "admin_login.html", "text/html; charset=utf-8")
+                return
+            self.send_file(BASE_DIR / "admin_app.html", "text/html; charset=utf-8")
+            return
+        if parsed.path == "/api/admin/session":
+            self.send_json({"authenticated": self.is_admin()})
+            return
         if parsed.path == "/api/today":
             date = params.get("date", [today_key()])[0]
             menu = load_menu()
@@ -376,10 +595,45 @@ class Handler(BaseHTTPRequestHandler):
             date = params.get("date", [today_key()])[0]
             self.send_json({"date": date, "summary": summary(date)})
             return
+        if parsed.path == "/api/costs":
+            if not self.require_admin():
+                return
+            start_date = params.get("start", [today_key()])[0]
+            end_date = params.get("end", [start_date])[0]
+            self.send_json(cost_report(start_date, end_date))
+            return
         self.send_json({"error": "not found"}, 404)
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/admin/login":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                username = str(payload.get("username") or "")
+                password = str(payload.get("password") or "")
+                valid_user = hmac.compare_digest(username, ADMIN_USERNAME)
+                valid_password = hmac.compare_digest(password, ADMIN_PASSWORD)
+                if not (valid_user and valid_password):
+                    self.send_json({"error": "帳號或密碼錯誤"}, 401)
+                    return
+                self.send_admin_session(username)
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 400)
+            return
+        if parsed.path == "/api/admin/logout":
+            self.clear_admin_session()
+            return
+        if parsed.path == "/api/cost":
+            if not self.require_admin():
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                self.send_json(save_cost(payload))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 400)
+            return
         if parsed.path != "/api/report":
             self.send_json({"error": "not found"}, 404)
             return

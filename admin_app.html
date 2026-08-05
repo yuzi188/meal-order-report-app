@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OFA Cost Admin</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+      --bg: #080b10;
+      --panel: #111720;
+      --soft: #171d26;
+      --line: #29313d;
+      --text: #f6f3e7;
+      --muted: #aeb7c2;
+      --yellow: #f5c84b;
+      --bad: #ff7a59;
+      --good: #70d88b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    button, input { font: inherit; }
+    .app { max-width: 1180px; margin: 0 auto; padding: 14px; }
+    .hero { padding: 16px 0 12px; display: flex; justify-content: space-between; gap: 12px; align-items: end; }
+    h1 { margin: 0; font-size: 24px; color: var(--yellow); }
+    .sub { color: var(--muted); margin-top: 4px; font-size: 14px; }
+    .controls { display: grid; grid-template-columns: 1fr 1fr 120px; gap: 8px; margin: 10px 0; }
+    label { display: block; color: var(--muted); font-weight: 900; font-size: 13px; margin-bottom: 5px; }
+    input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); padding: 7px 9px; }
+    input[type="date"], input[type="month"] { color-scheme: dark; }
+    button { min-height: 40px; border-radius: 8px; border: 1px solid var(--yellow); background: var(--yellow); color: #1b1403; font-weight: 950; }
+    .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .card-name { color: var(--muted); font-weight: 900; font-size: 13px; }
+    .card-value { margin-top: 4px; font-size: 26px; font-weight: 950; }
+    .bad { color: var(--bad); }
+    .good { color: var(--good); }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-top: 10px; }
+    .panel h2 { margin: 0; padding: 12px; color: var(--yellow); font-size: 18px; border-bottom: 1px solid var(--line); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; min-width: 920px; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 8px; text-align: center; white-space: nowrap; }
+    th { background: var(--soft); color: var(--muted); font-weight: 950; }
+    td:first-child, th:first-child { text-align: left; }
+    .money { max-width: 105px; text-align: center; }
+    .count { max-width: 92px; text-align: center; }
+    .save { min-width: 68px; }
+    .status { min-height: 22px; margin: 10px 0 0; color: var(--muted); }
+    .logout { background: transparent; color: var(--yellow); }
+    @media (max-width: 760px) {
+      .hero { display: block; }
+      .controls, .cards { grid-template-columns: 1fr; }
+      .app { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div>
+        <h1>OFA 成本後台</h1>
+        <div class="sub">每日菜金 / 人數 / 平均成本，標準上限 $1.32</div>
+      </div>
+      <button class="logout" id="logout">登出</button>
+    </section>
+
+    <section class="controls">
+      <div>
+        <label for="monthInput">月份</label>
+        <input id="monthInput" type="month">
+      </div>
+      <div>
+        <label for="todayInput">快速日期</label>
+        <input id="todayInput" type="date">
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button id="reload">更新</button>
+      </div>
+    </section>
+
+    <section class="cards" id="cards"></section>
+    <p class="status" id="status"></p>
+
+    <section class="panel">
+      <h2>每日紀錄</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>台餐菜金</th>
+              <th>台餐份數</th>
+              <th>台餐平均</th>
+              <th>柬餐菜金</th>
+              <th>柬餐份數</th>
+              <th>柬餐平均</th>
+              <th>總菜金</th>
+              <th>總份數</th>
+              <th>總平均</th>
+              <th>備註</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>每週統計</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>週別</th><th>總菜金</th><th>總份數</th><th>平均</th></tr></thead>
+          <tbody id="weeks"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const limit = 1.32;
+    let currentRows = [];
+
+    function todayTaipei() {
+      const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+      const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+      return `${map.year}-${map.month}-${map.day}`;
+    }
+
+    function monthRange(value) {
+      const [year, month] = value.split("-").map(Number);
+      const start = `${year}-${String(month).padStart(2, "0")}-01`;
+      const endDate = new Date(Date.UTC(year, month, 0));
+      const end = `${year}-${String(month).padStart(2, "0")}-${String(endDate.getUTCDate()).padStart(2, "0")}`;
+      return { start, end };
+    }
+
+    function money(value) {
+      return `$${Number(value || 0).toFixed(2)}`;
+    }
+
+    function avgClass(value) {
+      return Number(value || 0) > limit ? "bad" : "good";
+    }
+
+    function setStatus(text, type = "") {
+      const el = document.getElementById("status");
+      el.textContent = text;
+      el.className = `status ${type}`;
+    }
+
+    async function load() {
+      const range = monthRange(document.getElementById("monthInput").value);
+      const res = await fetch(`/api/costs?start=${range.start}&end=${range.end}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "載入失敗");
+      currentRows = data.rows;
+      render(data);
+      setStatus("");
+    }
+
+    function render(data) {
+      const month = data.month;
+      document.getElementById("cards").innerHTML = `
+        <div class="card"><div class="card-name">本月總菜金</div><div class="card-value">${money(month.cost)}</div></div>
+        <div class="card"><div class="card-name">本月總份數</div><div class="card-value">${month.count}</div></div>
+        <div class="card"><div class="card-name">本月平均</div><div class="card-value ${avgClass(month.average)}">$${Number(month.average || 0).toFixed(2)}</div></div>
+      `;
+      document.getElementById("rows").innerHTML = data.rows.map(row => {
+        const taiwanAvg = row.taiwan_count ? row.taiwan_cost / row.taiwan_count : 0;
+        const cambodiaAvg = row.cambodia_count ? row.cambodia_cost / row.cambodia_count : 0;
+        return `
+          <tr data-date="${row.date}">
+            <td>${row.date}</td>
+            <td><input class="money" data-field="taiwan_cost" type="number" step="0.01" min="0" value="${row.taiwan_cost || ""}"></td>
+            <td><input class="count" data-field="taiwan_count" type="number" step="1" min="0" value="${row.taiwan_count}"></td>
+            <td class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</td>
+            <td><input class="money" data-field="cambodia_cost" type="number" step="0.01" min="0" value="${row.cambodia_cost || ""}"></td>
+            <td><input class="count" data-field="cambodia_count" type="number" step="1" min="0" value="${row.cambodia_count}"></td>
+            <td class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</td>
+            <td>${money(row.total_cost)}</td>
+            <td>${row.total_count}</td>
+            <td class="${avgClass(row.average)}">${money(row.average)}</td>
+            <td><input data-field="note" value="${row.note || ""}"></td>
+            <td><button class="save" data-save="${row.date}">保存</button></td>
+          </tr>
+        `;
+      }).join("");
+      document.getElementById("weeks").innerHTML = data.weeks.map(row => `
+        <tr>
+          <td>${row.label}</td>
+          <td>${money(row.cost)}</td>
+          <td>${row.count}</td>
+          <td class="${avgClass(row.average)}">${money(row.average)}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function saveRow(date) {
+      const tr = document.querySelector(`tr[data-date="${date}"]`);
+      const payload = { date };
+      tr.querySelectorAll("[data-field]").forEach(input => {
+        payload[input.dataset.field] = input.value;
+      });
+      const res = await fetch("/api/cost", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "保存失敗");
+      setStatus(`${date} 已保存`, "good");
+      await load();
+    }
+
+    document.addEventListener("click", event => {
+      const date = event.target.dataset.save;
+      if (date) saveRow(date).catch(err => setStatus(err.message, "bad"));
+    });
+    document.getElementById("reload").addEventListener("click", () => load().catch(err => setStatus(err.message, "bad")));
+    document.getElementById("logout").addEventListener("click", async () => {
+      await fetch("/api/admin/logout", { method: "POST", cache: "no-store" });
+      window.location.href = "/admin";
+    });
+    document.getElementById("todayInput").addEventListener("change", event => {
+      document.getElementById("monthInput").value = event.target.value.slice(0, 7);
+      load().catch(err => setStatus(err.message, "bad"));
+    });
+
+    const today = todayTaipei();
+    document.getElementById("todayInput").value = today;
+    document.getElementById("monthInput").value = today.slice(0, 7);
+    load().catch(err => setStatus(err.message, "bad"));
+  </script>
+</body>
+</html>
