@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OFA Cost Admin</title>
+  <title>OFA 成本後台</title>
   <style>
     :root {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
@@ -16,6 +16,7 @@
       --yellow: #f5c84b;
       --bad: #ff7a59;
       --good: #70d88b;
+      --blue: #61a8ff;
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--text); }
@@ -30,24 +31,28 @@
     .tab.active { background: var(--yellow); color: #1b1403; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
-    .expense-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px; }
-    .expense-actions { display: flex; gap: 8px; align-items: center; padding: 0 12px 12px; }
-    .expense-actions button { min-width: 120px; }
-    .hint { color: var(--muted); font-size: 13px; line-height: 1.45; }
-    .storage { margin: 8px 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 13px; line-height: 1.45; }
-    .storage.good { border-color: rgba(112, 216, 139, 0.65); color: var(--good); }
-    .storage.bad { border-color: rgba(255, 122, 89, 0.7); color: var(--bad); }
     label { display: block; color: var(--muted); font-weight: 900; font-size: 13px; margin-bottom: 5px; }
     input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); padding: 7px 9px; }
     input[type="date"], input[type="month"] { color-scheme: dark; }
     button { min-height: 40px; border-radius: 8px; border: 1px solid var(--yellow); background: var(--yellow); color: #1b1403; font-weight: 950; }
-    .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
-    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .logout, .ghost { background: transparent; color: var(--yellow); }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+    .card, .chart-card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+    .card { padding: 12px; }
     .card-name { color: var(--muted); font-weight: 900; font-size: 13px; }
     .card-value { margin-top: 4px; font-size: 26px; font-weight: 950; }
+    .card-note { color: var(--muted); margin-top: 3px; font-size: 12px; }
     .bad { color: var(--bad); }
     .good { color: var(--good); }
-    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-top: 10px; }
+    .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 10px; margin: 12px 0; }
+    .chart-card { overflow: hidden; }
+    .chart-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid var(--line); }
+    .chart-head h2 { margin: 0; color: var(--yellow); font-size: 17px; }
+    .chart-head span { color: var(--muted); font-weight: 800; font-size: 12px; }
+    .chart-svg { min-height: 240px; padding: 8px; }
+    .chart-svg svg { width: 100%; height: auto; display: block; }
+    .chart-empty { color: var(--muted); min-height: 220px; display: grid; place-items: center; text-align: center; }
+    .panel { overflow: hidden; margin-top: 10px; }
     .panel h2 { margin: 0; padding: 12px; color: var(--yellow); font-size: 18px; border-bottom: 1px solid var(--line); }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; min-width: 920px; border-collapse: collapse; font-size: 14px; }
@@ -61,17 +66,24 @@
     .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; text-align: left; white-space: normal; }
     .detail-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
     .detail-box strong { color: var(--yellow); display: block; margin-bottom: 6px; }
+    .expense-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+    .expense-actions { display: flex; gap: 8px; align-items: center; padding: 0 12px 12px; flex-wrap: wrap; }
+    .expense-actions button { min-width: 120px; }
+    .hint { color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .storage { margin: 8px 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .storage.good { border-color: rgba(112, 216, 139, 0.65); color: var(--good); }
+    .storage.bad { border-color: rgba(255, 122, 89, 0.7); color: var(--bad); }
     .money { max-width: 105px; text-align: center; }
-    .count { max-width: 92px; text-align: center; }
     .fixed-count { max-width: 72px; text-align: center; }
     .preview-box { width: 100%; min-height: 420px; border: 1px solid var(--line); border-radius: 8px; background: #0d131c; color: var(--text); padding: 12px; white-space: pre-wrap; font: 16px/1.55 "Noto Sans TC", system-ui, sans-serif; }
-    .save { min-width: 68px; }
     .status { min-height: 22px; margin: 10px 0 0; color: var(--muted); }
-    .logout { background: transparent; color: var(--yellow); }
     @media (max-width: 760px) {
       .hero { display: block; }
-      .controls, .cards, .expense-grid, .detail-grid, .tabs { grid-template-columns: 1fr 1fr; }
+      .controls, .cards, .expense-grid, .detail-grid, .dashboard-grid { grid-template-columns: 1fr; }
+      .tabs { grid-template-columns: 1fr 1fr; }
       .app { padding: 10px; }
+      .card-value { font-size: 24px; }
+      .chart-svg { min-height: 210px; }
     }
   </style>
 </head>
@@ -100,27 +112,39 @@
       </div>
     </section>
 
-    <section class="tabs" aria-label="後台分頁">
+    <section class="tabs" aria-label="成本後台分頁">
       <button class="tab active" data-tab="overview">總覽</button>
       <button class="tab" data-tab="input">每日輸入</button>
       <button class="tab" data-tab="daily">每日紀錄</button>
       <button class="tab" data-tab="period">每5天</button>
-      <button class="tab" data-tab="delivery">送餐表</button>
+      <button class="tab" data-tab="delivery">送餐總表</button>
       <button class="tab" data-tab="fixed">固定人數</button>
       <button class="tab" data-tab="storage">資料庫</button>
     </section>
 
     <section class="tab-panel active" data-panel="overview">
       <section class="cards" id="cards"></section>
+      <section class="dashboard-grid">
+        <div class="chart-card">
+          <div class="chart-head">
+            <h2>每日平均成本</h2>
+            <span>紅色代表超過 $1.32</span>
+          </div>
+          <div id="dailyAverageChart" class="chart-svg"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head">
+            <h2>每5天成本</h2>
+            <span>菜金 + 其他成本</span>
+          </div>
+          <div id="periodCostChart" class="chart-svg"></div>
+        </div>
+      </section>
       <p class="status" id="status"></p>
     </section>
 
-    <section class="tab-panel" data-panel="storage">
-      <section class="storage" id="storageStatus">資料庫狀態讀取中...</section>
-    </section>
-
     <section class="panel tab-panel" data-panel="input">
-      <h2>每日成本輸入</h2>
+      <h2>每日菜金輸入</h2>
       <div class="expense-grid" id="expenseForm">
         <div><label for="pork_cost">豬肉商</label><input id="pork_cost" data-expense="pork_cost" type="number" step="0.01" min="0"></div>
         <div><label for="vegetable_cost">青菜商</label><input id="vegetable_cost" data-expense="vegetable_cost" type="number" step="0.01" min="0"></div>
@@ -135,8 +159,8 @@
         <div><label for="ice_cost">冰塊</label><input id="ice_cost" data-expense="ice_cost" type="number" step="0.01" min="0"></div>
       </div>
       <div class="expense-actions">
-        <button id="saveExpense">保存今日成本</button>
-        <div class="hint">豬肉商、青菜商、冷凍商、柬餐菜金算每日菜金；其他項目只進每5天總成本。</div>
+        <button id="saveExpense">儲存今日菜金</button>
+        <div class="hint">豬肉商、青菜商、冷凍商納入台餐菜金；柬餐菜金跟柬餐人數計算。雜貨、瓦斯、水、餐盒、柑仔店、大米、冰塊不算每日菜金平均，但會進入每5天總成本。</div>
       </div>
     </section>
 
@@ -147,9 +171,9 @@
           <thead>
             <tr>
               <th>日期</th>
-              <th>總菜金</th>
-              <th>總份數</th>
-              <th>總平均</th>
+              <th>菜金</th>
+              <th>人數</th>
+              <th>菜金平均</th>
               <th>其他成本</th>
               <th>總成本</th>
             </tr>
@@ -180,7 +204,7 @@
               <th>菜金</th>
               <th>其他成本</th>
               <th>總成本</th>
-              <th>總份數</th>
+              <th>人數</th>
               <th>菜金平均</th>
               <th>總成本平均</th>
             </tr>
@@ -191,10 +215,10 @@
     </section>
 
     <section class="panel tab-panel" data-panel="delivery">
-      <h2>員工送餐表預覽</h2>
+      <h2>送餐總表預覽</h2>
       <div style="padding: 12px;">
-        <button id="loadDelivery">更新送餐表</button>
-        <button id="copyDelivery" class="logout">複製文字</button>
+        <button id="loadDelivery">更新送餐總表</button>
+        <button id="copyDelivery" class="ghost">複製內容</button>
         <div id="deliveryPreview" class="preview-box" style="margin-top: 10px;"></div>
       </div>
     </section>
@@ -207,7 +231,7 @@
             <tr>
               <th>部門</th>
               <th>地點</th>
-              <th>餐種</th>
+              <th>餐別</th>
               <th>早餐</th>
               <th>午餐</th>
               <th>晚餐</th>
@@ -219,8 +243,12 @@
       </div>
       <div class="expense-actions">
         <button id="saveFixed">儲存固定人數</button>
-        <div class="hint">修改後會直接影響小程序、成本後台、Telegram /總數。</div>
+        <div class="hint">這裡是每天固定會自動帶入的人數；Telegram 回報會再加到同一天的人數裡。</div>
       </div>
+    </section>
+
+    <section class="tab-panel" data-panel="storage">
+      <section class="storage" id="storageStatus">資料庫狀態讀取中...</section>
     </section>
   </main>
 
@@ -228,6 +256,7 @@
     const limit = 1.32;
     let currentRows = [];
     let currentData = null;
+    let fixedReports = [];
     const expenseFields = [
       "pork_cost",
       "vegetable_cost",
@@ -241,11 +270,10 @@
       "rice_cost",
       "ice_cost"
     ];
-    let fixedReports = [];
 
     function todayTaipei() {
       const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
-      const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+      const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
       return `${map.year}-${map.month}-${map.day}`;
     }
 
@@ -271,6 +299,102 @@
       el.className = `status ${type}`;
     }
 
+    function selectedDate() {
+      return document.getElementById("todayInput").value || todayTaipei();
+    }
+
+    function selectedRow() {
+      return currentRows.find(row => row.date === selectedDate()) || null;
+    }
+
+    function chartEmpty(text) {
+      return `<div class="chart-empty">${text}</div>`;
+    }
+
+    function dailyChart(rows) {
+      const plotted = rows.filter(row => row.total_count > 0 && Number(row.average) > 0);
+      if (!plotted.length) return chartEmpty("目前沒有可畫圖的每日菜金資料");
+      const w = 720;
+      const h = 260;
+      const pad = { left: 46, right: 20, top: 22, bottom: 42 };
+      const maxAvg = Math.max(limit, ...plotted.map(row => Number(row.average || 0))) * 1.2;
+      const x = index => pad.left + (plotted.length === 1 ? 0 : index * (w - pad.left - pad.right) / (plotted.length - 1));
+      const y = value => h - pad.bottom - (Number(value || 0) / maxAvg) * (h - pad.top - pad.bottom);
+      const points = plotted.map((row, index) => `${x(index)},${y(row.average)}`).join(" ");
+      const limitY = y(limit);
+      const labels = plotted.map((row, index) => {
+        const show = index === 0 || index === plotted.length - 1 || index % 5 === 0;
+        return show ? `<text x="${x(index)}" y="246" text-anchor="middle" fill="#aeb7c2" font-size="12">${Number(row.date.slice(-2))}</text>` : "";
+      }).join("");
+      const dots = plotted.map((row, index) => {
+        const color = Number(row.average || 0) > limit ? "#ff7a59" : "#70d88b";
+        return `<circle cx="${x(index)}" cy="${y(row.average)}" r="4.5" fill="${color}"><title>${row.date} 平均 ${money(row.average)}</title></circle>`;
+      }).join("");
+      return `
+        <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="每日平均成本折線圖">
+          <rect x="0" y="0" width="${w}" height="${h}" rx="8" fill="#0d131c"></rect>
+          <line x1="${pad.left}" y1="${limitY}" x2="${w - pad.right}" y2="${limitY}" stroke="#ff7a59" stroke-dasharray="6 6"></line>
+          <text x="${pad.left}" y="${limitY - 7}" fill="#ff7a59" font-size="12">$1.32</text>
+          <polyline fill="none" stroke="#f5c84b" stroke-width="3" points="${points}"></polyline>
+          ${dots}
+          <line x1="${pad.left}" y1="${h - pad.bottom}" x2="${w - pad.right}" y2="${h - pad.bottom}" stroke="#29313d"></line>
+          <line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${h - pad.bottom}" stroke="#29313d"></line>
+          ${labels}
+        </svg>
+      `;
+    }
+
+    function periodChart(weeks) {
+      const plotted = weeks.filter(row => Number(row.total_expense_cost || 0) > 0 || Number(row.cost || 0) > 0);
+      if (!plotted.length) return chartEmpty("目前沒有每5天成本資料");
+      const w = 540;
+      const h = 260;
+      const pad = { left: 42, right: 18, top: 24, bottom: 50 };
+      const maxCost = Math.max(...plotted.map(row => Number(row.total_expense_cost || row.cost || 0))) * 1.15;
+      const slot = (w - pad.left - pad.right) / plotted.length;
+      const barW = Math.min(54, slot * 0.56);
+      const y = value => h - pad.bottom - (Number(value || 0) / maxCost) * (h - pad.top - pad.bottom);
+      const bars = plotted.map((row, index) => {
+        const x = pad.left + index * slot + (slot - barW) / 2;
+        const food = Number(row.cost || 0);
+        const other = Number(row.other_cost || 0);
+        const total = food + other;
+        const totalY = y(total);
+        const foodY = y(food);
+        const totalH = h - pad.bottom - totalY;
+        const foodH = h - pad.bottom - foodY;
+        return `
+          <g>
+            <rect x="${x}" y="${totalY}" width="${barW}" height="${totalH}" rx="5" fill="#2b3a4c"></rect>
+            <rect x="${x}" y="${foodY}" width="${barW}" height="${foodH}" rx="5" fill="#f5c84b"></rect>
+            <text x="${x + barW / 2}" y="${totalY - 7}" text-anchor="middle" fill="#f6f3e7" font-size="12">${money(total)}</text>
+            <text x="${x + barW / 2}" y="244" text-anchor="middle" fill="#aeb7c2" font-size="12">${row.label}</text>
+          </g>
+        `;
+      }).join("");
+      return `
+        <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="每5天成本柱狀圖">
+          <rect x="0" y="0" width="${w}" height="${h}" rx="8" fill="#0d131c"></rect>
+          <line x1="${pad.left}" y1="${h - pad.bottom}" x2="${w - pad.right}" y2="${h - pad.bottom}" stroke="#29313d"></line>
+          <line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${h - pad.bottom}" stroke="#29313d"></line>
+          ${bars}
+          <g transform="translate(${pad.left},16)">
+            <rect x="0" y="-8" width="10" height="10" fill="#f5c84b"></rect>
+            <text x="16" y="1" fill="#aeb7c2" font-size="12">菜金</text>
+            <rect x="62" y="-8" width="10" height="10" fill="#2b3a4c"></rect>
+            <text x="78" y="1" fill="#aeb7c2" font-size="12">其他成本</text>
+          </g>
+        </svg>
+      `;
+    }
+
+    function renderCharts(data) {
+      const cutoff = data.summary_end_date;
+      const activeRows = data.rows.filter(row => row.date <= cutoff);
+      document.getElementById("dailyAverageChart").innerHTML = dailyChart(activeRows);
+      document.getElementById("periodCostChart").innerHTML = periodChart(data.weeks);
+    }
+
     function activateTab(name) {
       document.querySelectorAll("[data-tab]").forEach(button => {
         button.classList.toggle("active", button.dataset.tab === name);
@@ -278,22 +402,6 @@
       document.querySelectorAll("[data-panel]").forEach(panel => {
         panel.classList.toggle("active", panel.dataset.panel === name);
       });
-    }
-
-    async function load() {
-      const range = monthRange(document.getElementById("monthInput").value);
-      const summaryEnd = selectedDate();
-      await loadStorageStatus();
-      const res = await fetch(`/api/costs?start=${range.start}&end=${range.end}&summary_end=${encodeURIComponent(summaryEnd)}`, { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "載入失敗");
-      currentData = data;
-      currentRows = data.rows;
-      render(data);
-      populateExpenseForm();
-      await loadDeliveryPreview();
-      await loadFixedReports();
-      setStatus("");
     }
 
     async function loadStorageStatus() {
@@ -307,16 +415,24 @@
       }
       box.className = `storage ${data.persistent ? "good" : "bad"}`;
       box.textContent = data.persistent
-        ? `資料庫已使用持久化路徑：${data.source}，部署後資料會保留。`
+        ? `資料庫已掛載 Volume：${data.source}，部署後資料會保留。`
         : `警告：目前資料庫在 ${data.source}，部署後資料可能會消失。請在 Railway 掛 Volume。`;
     }
 
-    function selectedDate() {
-      return document.getElementById("todayInput").value || todayTaipei();
-    }
-
-    function selectedRow() {
-      return currentRows.find(row => row.date === selectedDate()) || null;
+    async function load() {
+      const range = monthRange(document.getElementById("monthInput").value);
+      const summaryEnd = selectedDate();
+      await loadStorageStatus();
+      const res = await fetch(`/api/costs?start=${range.start}&end=${range.end}&summary_end=${encodeURIComponent(summaryEnd)}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "資料讀取失敗");
+      currentData = data;
+      currentRows = data.rows;
+      render(data);
+      populateExpenseForm();
+      await loadDeliveryPreview();
+      await loadFixedReports();
+      setStatus("");
     }
 
     function populateExpenseForm() {
@@ -329,13 +445,30 @@
 
     function render(data) {
       const month = data.month;
+      const today = selectedRow();
       document.getElementById("cards").innerHTML = `
-        <div class="card"><div class="card-name">統計到 ${data.summary_end_date}</div><div class="card-value">${money(month.cost)}</div></div>
-        <div class="card"><div class="card-name">其他成本</div><div class="card-value">${money(month.other_cost)}</div></div>
-        <div class="card"><div class="card-name">總成本</div><div class="card-value">${money(month.total_expense_cost)}</div></div>
-        <div class="card"><div class="card-name">總份數</div><div class="card-value">${month.count}</div></div>
-        <div class="card"><div class="card-name">菜金平均</div><div class="card-value ${avgClass(month.average)}">$${Number(month.average || 0).toFixed(2)}</div></div>
+        <div class="card">
+          <div class="card-name">統計到 ${data.summary_end_date}</div>
+          <div class="card-value">${money(month.total_expense_cost)}</div>
+          <div class="card-note">本月目前總成本</div>
+        </div>
+        <div class="card">
+          <div class="card-name">本月目前人數</div>
+          <div class="card-value">${month.count}</div>
+          <div class="card-note">只算到快速日期</div>
+        </div>
+        <div class="card">
+          <div class="card-name">本月菜金平均</div>
+          <div class="card-value ${avgClass(month.average)}">${money(month.average)}</div>
+          <div class="card-note">菜金上限 $1.32</div>
+        </div>
+        <div class="card">
+          <div class="card-name">今日人數 / 平均</div>
+          <div class="card-value ${avgClass(today?.average)}">${today ? `${today.total_count} / ${money(today.average)}` : "0 / $0.00"}</div>
+          <div class="card-note">${selectedDate()}</div>
+        </div>
       `;
+
       document.getElementById("rows").innerHTML = data.rows.map(row => {
         const taiwanAvg = row.taiwan_average || 0;
         const cambodiaAvg = row.cambodia_average || 0;
@@ -352,14 +485,14 @@
             <td colspan="6">
               <div class="detail-grid">
                 <div class="detail-box">
-                  <strong>菜金明細</strong>
-                  台餐菜金 ${money(row.taiwan_cost)} / 台餐+健康餐 ${row.taiwan_count} / 平均 <span class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</span><br>
+                  <strong>餐別成本</strong>
+                  台餐菜金 ${money(row.taiwan_food_cost)} / 台餐+健康餐 ${row.taiwan_count} / 平均 <span class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</span><br>
                   柬餐菜金 ${money(row.cambodia_cost)} / 柬餐 ${row.cambodia_count} / 平均 <span class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</span><br>
-                  台餐食材 ${money(row.taiwan_food_cost)}
+                  總菜金 ${money(row.total_cost)}
                 </div>
                 <div class="detail-box">
-                  <strong>供應商</strong>
-                  豬肉 ${money(row.pork_cost)} / 青菜 ${money(row.vegetable_cost)} / 冷凍 ${money(row.frozen_cost)}<br>
+                  <strong>供應商細項</strong>
+                  豬肉商 ${money(row.pork_cost)} / 青菜商 ${money(row.vegetable_cost)} / 冷凍商 ${money(row.frozen_cost)}<br>
                   雜貨 ${money(row.grocery_cost)} / 瓦斯 ${money(row.gas_cost)} / 水 ${money(row.water_cost)}<br>
                   餐盒 ${money(row.meal_box_cost)} / 柑仔店 ${money(row.corner_store_cost)} / 大米 ${money(row.rice_cost)} / 冰塊 ${money(row.ice_cost)}
                 </div>
@@ -368,6 +501,7 @@
           </tr>
         `;
       }).join("");
+
       document.getElementById("weeks").innerHTML = data.weeks.map(row => `
         <tr>
           <td>${row.label}</td>
@@ -390,10 +524,12 @@
           <td>${money(row.expense_average)}</td>
         </tr>
       `).join("");
+
+      renderCharts(data);
     }
 
     function cuisineLabel(cuisine) {
-      return { taiwan: "🇹🇼", healthy: "健康🥦", cambodia: "🇰🇭" }[cuisine] || cuisine;
+      return { taiwan: "台餐", healthy: "健康餐", cambodia: "柬餐" }[cuisine] || cuisine;
     }
 
     async function loadDeliveryPreview() {
@@ -402,7 +538,7 @@
       if (!box) return;
       const res = await fetch(`/api/admin/delivery-table?date=${encodeURIComponent(date)}`, { cache: "no-store" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "送餐表讀取失敗");
+      if (!res.ok) throw new Error(data.error || "送餐總表讀取失敗");
       box.textContent = data.text || "";
     }
 
@@ -448,24 +584,6 @@
       await load();
     }
 
-    async function saveRow(date) {
-      const tr = document.querySelector(`tr[data-date="${date}"]`);
-      const payload = { date };
-      tr.querySelectorAll("[data-field]").forEach(input => {
-        payload[input.dataset.field] = input.value;
-      });
-      const res = await fetch("/api/cost", {
-        method: "POST",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "保存失敗");
-      setStatus(`${date} 已保存`, "good");
-      await load();
-    }
-
     async function saveExpense() {
       const date = selectedDate();
       const payload = { date };
@@ -479,13 +597,13 @@
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "保存失敗");
-      setStatus(`${date} 成本已保存`, "good");
+      if (!res.ok) throw new Error(data.error || "儲存失敗");
+      setStatus(`${date} 菜金已儲存`, "good");
       await load();
     }
 
     function isEditingCostTable() {
-      return Boolean(document.activeElement && (document.activeElement.closest("#rows") || document.activeElement.closest("#expenseForm") || document.activeElement.closest("#fixedRows")));
+      return Boolean(document.activeElement && (document.activeElement.closest("#expenseForm") || document.activeElement.closest("#fixedRows")));
     }
 
     async function autoRefresh() {
@@ -502,8 +620,6 @@
     document.addEventListener("click", event => {
       const tab = event.target.dataset.tab;
       if (tab) activateTab(tab);
-      const date = event.target.dataset.save;
-      if (date) saveRow(date).catch(err => setStatus(err.message, "bad"));
       const toggleDate = event.target.closest("[data-toggle-date]")?.dataset.toggleDate;
       if (toggleDate) {
         document.querySelector(`[data-toggle-date="${toggleDate}"]`)?.classList.toggle("open");
@@ -515,7 +631,7 @@
     document.getElementById("loadDelivery").addEventListener("click", () => loadDeliveryPreview().catch(err => setStatus(err.message, "bad")));
     document.getElementById("copyDelivery").addEventListener("click", async () => {
       await navigator.clipboard.writeText(document.getElementById("deliveryPreview").textContent || "");
-      setStatus("送餐表已複製", "good");
+      setStatus("送餐總表已複製", "good");
     });
     document.getElementById("saveFixed").addEventListener("click", () => saveFixedReports().catch(err => setStatus(err.message, "bad")));
     document.getElementById("logout").addEventListener("click", async () => {
@@ -526,6 +642,7 @@
       document.getElementById("monthInput").value = event.target.value.slice(0, 7);
       load().catch(err => setStatus(err.message, "bad"));
     });
+    document.getElementById("monthInput").addEventListener("change", () => load().catch(err => setStatus(err.message, "bad")));
 
     const today = todayTaipei();
     document.getElementById("todayInput").value = today;
