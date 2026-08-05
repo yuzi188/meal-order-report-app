@@ -53,7 +53,7 @@ def storage_status():
         "warning": "" if is_persistent else "尚未掛載 Railway Volume，部署後資料可能會消失。",
     }
 
-DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3\u91d1\u6d41", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "1002-2\u5ba2\u670d"]
+DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3\u91d1\u6d41", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "168\u5ba2\u670d"]
 DELIVERY_LOCATIONS = [
     "\u90e8\u9580\u73fe\u5834",
     "1002-2",
@@ -83,13 +83,13 @@ FIXED_REPORTS = [
         "beef_notes": {"lunch": 2, "dinner": 2, "late_night": 2},
     },
     {
-        "unit": "1002-2\u5ba2\u670d",
+        "unit": "168\u5ba2\u670d",
         "location": "1002-2",
         "cuisine": "taiwan",
         "counts": {"breakfast": 9, "lunch": 1, "dinner": 3, "late_night": 4},
     },
     {
-        "unit": "1002-2\u5ba2\u670d",
+        "unit": "168\u5ba2\u670d",
         "location": "1002-2",
         "cuisine": "cambodia",
         "counts": {"lunch": 4, "dinner": 4, "late_night": 7},
@@ -120,7 +120,7 @@ def allowed_delivery_locations(unit):
         return DELIVERY_LOCATIONS[2:]
     if unit == "\u4fdd\u59c6\u90e8\u9580":
         return ["68", "88"]
-    if unit == "1002-2\u5ba2\u670d":
+    if unit == "168\u5ba2\u670d":
         return ["1002-2"]
     return [DELIVERY_LOCATIONS[0]]
 
