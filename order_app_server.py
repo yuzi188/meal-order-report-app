@@ -593,7 +593,11 @@ def delivery_table_text(report_date):
             "",
         ),
         ("1002-2\u5ba2\u670d\U0001f371", lambda meal: count_for_units(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]), ""),
-        ("MT-3F\U0001faa3", lambda meal: count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]), "MT"),
+        (
+            "MT-3F\U0001faa3",
+            lambda meal: count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]),
+            lambda meal: "MT\uff0c\u67ec\u9910\U0001faa3" if meal == "late_night" and data["locations"]["3F"][meal]["cambodia"] else "MT",
+        ),
         ("\u5065\u5eb7\u9910\U0001f966-3F\U0001faa3", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), "MT"),
         ("\u5305\u98ef\u76d2\U0001f371-3F", lambda meal: count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal]), "MT"),
         ("68\u516c\u5bd3\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "68")]), "MT"),
@@ -613,7 +617,8 @@ def delivery_table_text(report_date):
         lines.append("")
         lines.append(f"{meal_names[meal]}")
         for label, getter, note in rows:
-            line = table_line(label, getter(meal), note)
+            meal_note = note(meal) if callable(note) else note
+            line = table_line(label, getter(meal), meal_note)
             if line:
                 lines.append(line)
     return "\n".join(lines)
