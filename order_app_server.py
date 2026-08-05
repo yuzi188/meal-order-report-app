@@ -598,7 +598,7 @@ def delivery_table_text(report_date):
             lambda meal: count_from_row(data["locations"]["3F"][meal], ["taiwan", "cambodia"]),
             lambda meal: "MT\uff0c\u67ec\u9910\U0001faa3" if meal == "late_night" and data["locations"]["3F"][meal]["cambodia"] else "MT",
         ),
-        ("\u5065\u5eb7\u9910\U0001f966-3F\U0001faa3", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), "MT"),
+        ("\u5065\u5eb7\u9910\U0001f966-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), "MT"),
         ("\u5305\u98ef\u76d2\U0001f371-3F", lambda meal: count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal]), "MT"),
         ("68\u516c\u5bd3\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "68")]), "MT"),
         ("88\u516c\u5bd3\U0001f371", lambda meal: count_for_units(data, meal, [("3F", "88")]), "MT"),
