@@ -258,7 +258,7 @@
     async function load(date = todayTaipei()) {
       currentDate = date;
       document.getElementById("dateInput").value = date;
-      const res = await fetch(`/api/today?date=${encodeURIComponent(date)}`);
+      const res = await fetch(`/api/today?date=${encodeURIComponent(date)}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t.loadFail);
       currentMenu = data.menu;
@@ -455,6 +455,7 @@
       const payload = { date: currentDate, unit: activeDepartment, entries };
       const res = await fetch("/api/report", {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -468,7 +469,7 @@
     }
 
     async function refreshSummary() {
-      const res = await fetch(`/api/summary?date=${encodeURIComponent(currentDate)}`);
+      const res = await fetch(`/api/summary?date=${encodeURIComponent(currentDate)}`, { cache: "no-store" });
       const data = await res.json();
       currentSummary = data.summary;
       renderSummary(data.summary);
