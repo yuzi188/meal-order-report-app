@@ -89,6 +89,9 @@
     .location-option { min-height: 34px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: #1d2935; font-weight: 850; font-size: 13px; }
     .location-option.active { background: var(--brand); color: #fff; border-color: var(--brand); }
     .note-input { min-width: 150px; }
+    .note-cell { min-width: 190px; }
+    .note-presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: 6px; }
+    .note-preset { min-height: 32px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--brand); font-weight: 850; font-size: 13px; }
     .count-input { text-align: center; font-size: 19px; font-weight: 900; }
     .remove { min-height: 42px; border: 1px solid #ebc7bd; color: var(--danger); background: #fff6f3; border-radius: 8px; font-weight: 900; }
     .add-line { width: 100%; min-height: 40px; border: 1px dashed var(--brand); color: var(--brand); background: #fff; border-radius: 8px; font-weight: 900; }
@@ -182,6 +185,7 @@
     };
     const mealNames = { breakfast: "\u65e9\u9910", lunch: "\u5348\u9910", dinner: "\u665a\u9910", late_night: "\u5bb5\u591c" };
     const cuisineNames = { taiwan: t.taiwan, cambodia: t.cambodia };
+    const notePresets = ["\u5065\u5eb7\u9910", "\u4e0d\u5403\u725b", "\u4e0d\u5403\u8c6c", "\u4e0d\u5403\u6d77\u9bae"];
     let currentDate = "";
     let currentMenu = null;
     let currentSummary = null;
@@ -252,6 +256,15 @@
       return deliveryLocations.length ? [deliveryLocations[0]] : [];
     }
 
+    function notePresetButtons() {
+      if (activeDepartment !== "3F") return "";
+      return `
+        <div class="note-presets">
+          ${notePresets.map(text => `<button type="button" class="note-preset" data-note-preset="${text}">${text}</button>`).join("")}
+        </div>
+      `;
+    }
+
     function lineTemplate(mealKey, lineIndex, taiwanCount = 0, cambodiaCount = 0, location = "", note = "") {
       const locations = visibleLocations();
       const selectedLocation = locations.includes(location) ? location : (locations[0] || "");
@@ -263,7 +276,10 @@
           </td>
           <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="taiwan_count" value="${taiwanCount}"></td>
           <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="cambodia_count" value="${cambodiaCount}"></td>
-          <td><input class="note-input" type="text" data-field="note" value="${escapeHtml(note)}" placeholder="${t.notePlaceholder}"></td>
+          <td class="note-cell">
+            <input class="note-input" type="text" data-field="note" value="${escapeHtml(note)}" placeholder="${t.notePlaceholder}">
+            ${notePresetButtons()}
+          </td>
           <td><button class="remove" type="button" data-remove-line>${t.del}</button></td>
         </tr>
       `;
@@ -445,6 +461,13 @@
           button.classList.toggle("active", button.dataset.locationChoice === locationChoice);
         });
         line.classList.remove("open");
+      }
+      const notePreset = event.target.dataset.notePreset;
+      if (notePreset) {
+        const input = event.target.closest(".line").querySelector('[data-field="note"]');
+        const current = input.value.split(/[,\u3001\uff0c]/).map(item => item.trim()).filter(Boolean);
+        if (!current.includes(notePreset)) current.push(notePreset);
+        input.value = current.join("\u3001");
       }
       if (event.target.dataset.removeLine !== undefined) {
         const box = event.target.closest("[data-lines]");
