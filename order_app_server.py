@@ -553,11 +553,11 @@ def count_from_row(row, cuisines=None):
 def count_text(row):
     parts = []
     if row["taiwan"]:
-        parts.append(f"\U0001f1f9\U0001f1fc \u53f0\u7063{row['taiwan']}")
+        parts.append(f"\U0001f1f9\U0001f1fc{row['taiwan']}")
     if row["healthy"]:
         parts.append(f"\u5065\u5eb7\u9910\U0001f966{row['healthy']}")
     if row["cambodia"]:
-        parts.append(f"\U0001f1f0\U0001f1ed \u67ec\u9910{row['cambodia']}")
+        parts.append(f"\U0001f1f0\U0001f1ed{row['cambodia']}")
     return " / ".join(parts)
 
 
@@ -639,17 +639,17 @@ def totals_report_text(report_date):
         add_count_row(grand, row)
         lines.append(
             f"{meal_names[meal]}\uff1a"
-            f"\U0001f1f9\U0001f1fc \u53f0\u7063{row['taiwan']} / "
+            f"\U0001f1f9\U0001f1fc{row['taiwan']} / "
             f"\u5065\u5eb7\u9910\U0001f966{row['healthy']} / "
-            f"\U0001f1f0\U0001f1ed \u67ec\u9910{row['cambodia']} / "
+            f"\U0001f1f0\U0001f1ed{row['cambodia']} / "
             f"\u5408\u8a08{row['total']}"
         )
     lines.append("")
     lines.append(
         f"\u5168\u5929\u7e3d\u6578\uff1a"
-        f"\U0001f1f9\U0001f1fc \u53f0\u7063{grand['taiwan']} / "
+        f"\U0001f1f9\U0001f1fc{grand['taiwan']} / "
         f"\u5065\u5eb7\u9910\U0001f966{grand['healthy']} / "
-        f"\U0001f1f0\U0001f1ed \u67ec\u9910{grand['cambodia']} / "
+        f"\U0001f1f0\U0001f1ed{grand['cambodia']} / "
         f"\u5408\u8a08{grand['total']}"
     )
     return "\n".join(lines)
