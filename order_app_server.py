@@ -569,7 +569,7 @@ def delivery_table_text(report_date):
     data = summary(report_date)
     rows = [
         (
-            "1001 3A/\u9245\u57ce",
+            "1001 3A",
             lambda meal: count_for_units(data, meal, [("1001", "\u90e8\u9580\u73fe\u5834")], ["taiwan", "healthy"]),
             "",
         ),
