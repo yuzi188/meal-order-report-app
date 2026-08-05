@@ -375,72 +375,103 @@ def normalize_report_date(text):
 
 
 def normalize_meal_key(line):
-    if "早餐" in line or re.search(r"(^|\s)早[:：]?", line):
+    if re.search(r"(\u65e9\u9910|\u65e9\u73ed|Breakfast)", line, re.IGNORECASE):
         return "breakfast"
-    if "午餐" in line or "中餐" in line:
+    if re.search(r"(\u5348\u9910|\u4e2d\u9910|Lunch)", line, re.IGNORECASE):
         return "lunch"
-    if "晚餐" in line:
+    if re.search(r"(\u665a\u9910|Dinner)", line, re.IGNORECASE):
         return "dinner"
-    if "宵夜" in line or "消夜" in line:
+    if re.search(r"(\u5bb5\u591c|Supper)", line, re.IGNORECASE):
         return "late_night"
     return None
 
 
 def normalize_delivery_location(text):
-    if "不吃牛" in text:
+    if "\u4e0d\u5403\u725b" in text:
         return "\u4e0d\u5403\u725b"
-    if "不吃豬" in text or "不吃猪" in text:
+    if "\u4e0d\u5403\u8c6c" in text or "\u4e0d\u5403\u732a" in text or '"\u8c6c"' in text or '"\u732a"' in text:
         return "\u4e0d\u5403\u8c6c"
-    if "不吃海鮮" in text or "不吃海鲜" in text:
+    if "\u4e0d\u5403\u6d77\u9bae" in text or "\u4e0d\u5403\u6d77\u9c9c" in text:
         return "\u4e0d\u5403\u6d77\u9bae"
-    if "68" in text:
-        return "68"
-    if "88" in text:
-        return "88"
-    if "包飯盒" in text or "包饭盒" in text or "餐桶" in text:
+    if "\u5305\u98ef\u76d2" in text or "\u5305\u996d\u76d2" in text or "\u9910\u6876" in text:
         return "3F\u5305\u9910\u76d2"
+    if re.search(r"(^|[^0-9])68([^0-9]|$)", text):
+        return "68"
+    if re.search(r"(^|[^0-9])88([^0-9]|$)", text):
+        return "88"
     return "3F"
 
 
 def cuisine_from_text(text):
-    if "胖胖" in text or "健康" in text:
+    if re.search(r"(\u80d6\u80d6|\u5065\u5eb7|Healthy)", text, re.IGNORECASE):
         return "healthy"
-    if "束餐" in text or "柬餐" in text or "柬埔寨" in text:
+    if re.search(r"(\u675f\u9910|\u67ec\u9910|\u67ec\u57d4\u5be8|KH\s*Food|KH\b|Cambodia)", text, re.IGNORECASE):
         return "cambodia"
-    if "台餐" in text:
+    if re.search(r"(\u53f0\u9910|TW\s*Food|TW\b|Taiwan)", text, re.IGNORECASE):
         return "taiwan"
     return None
 
 
+def count_from_text(text):
+    patterns = [
+        r"[-\uff1a:]\s*([0-9]+)\b",
+        r"([0-9]+)\s*\u4efd",
+        r"\b([0-9]+)\s*(?:\u4f4d|\u4eba)\b",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return int(match.group(1))
+    numbers = [int(value) for value in re.findall(r"\b([0-9]+)\b", text)]
+    if not numbers:
+        return None
+    useful_numbers = [value for value in numbers if value not in {3, 68, 88, 1002}]
+    return useful_numbers[0] if useful_numbers else numbers[0]
+
+
+def report_unit_from_text(text):
+    if "\u5ba2\u670d" in text:
+        return "1002-2\u5ba2\u670d"
+    if any(mark in text for mark in ["3F", "3\u6a13", "3\u697c", "MT", "\u81ea\u7531\u5973\u795e"]):
+        return "3F"
+    return None
+
+
 def parse_bot_3f_report(text):
-    if not text or not any(mark in text for mark in ["3F", "3樓", "3楼", "MT", "自由女神"]):
-        raise ValueError("目前只支援 3F 報餐文字")
+    unit = report_unit_from_text(text or "")
+    if not unit:
+        raise ValueError("\u76ee\u524d\u53ea\u652f\u63f4 3F \u6216 1002-2\u5ba2\u670d \u7684\u5831\u9910\u6587\u5b57")
 
     report_date = normalize_report_date(text)
     current_meal = None
     entries_by_key = {}
     for raw_line in text.splitlines():
         line = raw_line.strip()
-        if not line or set(line) <= {"-", "—", "_"}:
+        if not line or set(line) <= {"-", "_"}:
             continue
         meal_key = normalize_meal_key(line)
         if meal_key:
             current_meal = meal_key
-            remainder = re.split(r"[：:]", line, maxsplit=1)
-            if len(remainder) == 1:
+            line = re.sub(
+                r"^(\u65e9\u9910|\u5348\u9910|\u4e2d\u9910|\u665a\u9910|\u5bb5\u591c|Breakfast|Lunch|Dinner|Supper)\s*[-\uff1a:]?",
+                "",
+                line,
+                flags=re.IGNORECASE,
+            ).strip()
+            if not line:
                 continue
-            line = remainder[1].strip()
         if not current_meal:
             continue
 
         cuisine = cuisine_from_text(line)
+        if unit == "1002-2\u5ba2\u670d" and current_meal == "breakfast" and not cuisine:
+            cuisine = "taiwan"
         if not cuisine:
             continue
-        count_match = re.search(r"([0-9]+)", line)
-        if not count_match:
+        count = count_from_text(line)
+        if count is None:
             continue
-        count = int(count_match.group(1))
-        location = normalize_delivery_location(line)
+        location = "1002-2" if unit == "1002-2\u5ba2\u670d" else normalize_delivery_location(line)
         line_key = f"bot-{current_meal}-{cuisine}-{location}-{len(entries_by_key)}"
         entries_by_key[line_key] = {
             "meal_key": current_meal,
@@ -453,23 +484,19 @@ def parse_bot_3f_report(text):
 
     entries = list(entries_by_key.values())
     if not entries:
-        raise ValueError("沒有讀到可寫入的人數，請確認有餐別、台餐/胖胖餐/束餐和份數")
-    payload = {"date": report_date, "unit": "3F", "entries": entries}
-    return payload
+        raise ValueError("\u6c92\u6709\u8b80\u5230\u53ef\u5beb\u5165\u7684\u4eba\u6578\uff0c\u8acb\u78ba\u8a8d\u6709\u9910\u5225\u3001\u53f0\u9910/\u80d6\u80d6\u9910/\u675f\u9910\u6216\u67ec\u9910\u548c\u4efd\u6578")
+    return {"date": report_date, "unit": unit, "entries": entries}
 
 
 def summarize_bot_report(payload):
     meal_names = {
-        "breakfast": "早餐",
-        "lunch": "午餐",
-        "dinner": "晚餐",
-        "late_night": "宵夜",
+        "breakfast": "\u65e9\u9910",
+        "lunch": "\u5348\u9910",
+        "dinner": "\u665a\u9910",
+        "late_night": "\u5bb5\u591c",
     }
-    cuisine_names = {"taiwan": "台餐", "healthy": "健康餐", "cambodia": "柬餐"}
-    totals = {
-        meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0}
-        for meal in MEAL_KEYS
-    }
+    cuisine_names = {"taiwan": "\u53f0\u9910", "healthy": "\u5065\u5eb7\u9910", "cambodia": "\u67ec\u9910"}
+    totals = {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
     location_lines = []
     for entry in payload["entries"]:
         meal = entry["meal_key"]
@@ -477,22 +504,18 @@ def summarize_bot_report(payload):
         count = int(entry["count"])
         totals[meal][cuisine] += count
         totals[meal]["total"] += count
-        location_lines.append(
-            f"{meal_names[meal]} {entry['delivery_location']} {cuisine_names[cuisine]} {count}"
-        )
-    lines = [f"請確認是否寫入：", f"{payload['date']} 3F"]
+        location_lines.append(f"{meal_names[meal]} {entry['delivery_location']} {cuisine_names[cuisine]} {count}")
+    lines = ["\u5df2\u8b80\u5230\u4eba\u6578\uff0c\u8acb\u78ba\u8a8d", f"{payload['date']} {payload['unit']}"]
     for meal in MEAL_KEYS:
         row = totals[meal]
         if not row["total"]:
             continue
-        lines.append(
-            f"{meal_names[meal]} 台餐{row['taiwan']} 健康餐{row['healthy']} 柬餐{row['cambodia']}，合計{row['total']}"
-        )
+        lines.append(f"{meal_names[meal]} \u53f0\u9910{row['taiwan']} \u5065\u5eb7\u9910{row['healthy']} \u67ec\u9910{row['cambodia']}\uff0c\u5408\u8a08{row['total']}")
     lines.append("")
-    lines.append("位置明細：")
+    lines.append("\u660e\u7d30\uff1a")
     lines.extend(location_lines)
     lines.append("")
-    lines.append("回覆「確認」寫入，或「取消」放棄。")
+    lines.append("\u78ba\u8a8d\u7121\u8aa4\u8acb\u56de\u8986\uff1a\u78ba\u8a8d")
     return "\n".join(lines)
 
 
@@ -569,34 +592,35 @@ def handle_telegram_update(update):
         return {"ok": True, "ignored": "chat not allowed"}
 
     normalized = re.sub(r"\s+", "", text)
-    if normalized in {"確認", "确认", "ok", "OK"}:
+    if normalized in {"\u78ba\u8a8d", "\u786e\u8ba4", "ok", "OK"}:
         payload = load_pending_bot_report(chat_id)
         if not payload:
-            telegram_send_message(chat_id, "沒有待確認的人數資料，請先貼 3F 報餐文字。", message_id)
+            telegram_send_message(chat_id, "\u6c92\u6709\u5f85\u78ba\u8a8d\u7684\u4eba\u6578\u8cc7\u6599\uff0c\u8acb\u5148\u7528 /\u4eba\u6578 \u89e3\u6790\u5831\u9910\u6587\u5b57\u3002", message_id)
             return {"ok": True, "action": "no_pending"}
         result = save_report(payload)
         clear_pending_bot_report(chat_id)
         telegram_send_message(
             chat_id,
-            f"已更新 {payload['date']} 3F 人數。\n寫入 {result['saved']} 筆。",
+            f"\u5df2\u5beb\u5165 {payload['date']} {payload['unit']} \u4eba\u6578\n\u5beb\u5165 {result['saved']} \u7b46\uff0c\u5c0f\u7a0b\u5f0f\u5df2\u540c\u6b65\u3002",
             message_id,
         )
         return {"ok": True, "action": "saved", "result": result}
 
-    if normalized in {"取消", "放棄", "放弃", "cancel", "Cancel"}:
+    if normalized in {"\u53d6\u6d88", "cancel", "Cancel"}:
         clear_pending_bot_report(chat_id)
-        telegram_send_message(chat_id, "已取消這次待確認資料。", message_id)
+        telegram_send_message(chat_id, "\u5df2\u53d6\u6d88\u9019\u6b21\u4eba\u6578\u5beb\u5165\u3002", message_id)
         return {"ok": True, "action": "cancelled"}
 
-    if text.startswith("/test") or text.startswith("/測試"):
-        telegram_send_message(chat_id, f"bot 有收到訊息。\nchat_id: {chat_id}", message_id)
+    if text.startswith("/test") or text.startswith("/\u6e2c\u8a66") or text.startswith("/\u6d4b\u8bd5"):
+        telegram_send_message(chat_id, f"bot \u6709\u6536\u5230\u8a0a\u606f\nchat_id: {chat_id}", message_id)
         return {"ok": True, "action": "test", "chat_id": chat_id}
 
     parse_text = text
-    if text.startswith("/人數") or text.startswith("/人数") or text.startswith("/parse"):
-        parse_text = text.split(maxsplit=1)[1] if len(text.split(maxsplit=1)) > 1 else reply_text
+    if text.startswith("/\u4eba\u6578") or text.startswith("/\u4eba\u6570") or text.startswith("/parse"):
+        parts = text.split(maxsplit=1)
+        parse_text = parts[1] if len(parts) > 1 else reply_text
         if not parse_text:
-            telegram_send_message(chat_id, "請在 /人數 後面貼報餐文字，或回覆報餐訊息輸入 /人數。", message_id)
+            telegram_send_message(chat_id, "\u8acb\u7528 /\u4eba\u6578 \u52a0\u4e0a\u5831\u9910\u6587\u5b57\uff0c\u6216\u56de\u8986\u5831\u9910\u8a0a\u606f\u5f8c\u8f38\u5165 /\u4eba\u6578\u3002", message_id)
             return {"ok": True, "action": "parse_help"}
 
     try:
@@ -604,10 +628,10 @@ def handle_telegram_update(update):
         summary_text = summarize_bot_report(payload)
         save_pending_bot_report(chat_id, payload, summary_text)
         telegram_send_message(chat_id, summary_text, message_id)
-        return {"ok": True, "action": "pending", "date": payload["date"], "entries": len(payload["entries"])}
+        return {"ok": True, "action": "pending", "date": payload["date"], "unit": payload["unit"], "entries": len(payload["entries"])}
     except Exception as exc:
-        if any(mark in text for mark in ["台餐", "胖胖", "束餐", "柬餐", "早餐", "午餐", "晚餐", "宵夜"]):
-            telegram_send_message(chat_id, f"沒有寫入：{exc}", message_id)
+        if any(mark in text for mark in ["\u53f0\u9910", "\u80d6\u80d6", "\u67ec\u9910", "\u675f\u9910", "\u65e9\u9910", "\u5348\u9910", "\u4e2d\u9910", "\u665a\u9910", "\u5bb5\u591c", "3F", "MT", "\u5ba2\u670d"]):
+            telegram_send_message(chat_id, f"\u6c92\u6709\u5beb\u5165\uff1a{exc}", message_id)
         return {"ok": True, "ignored": str(exc)}
 
 
