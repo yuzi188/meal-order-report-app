@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>訂餐人數回報</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f7fb;
+      color: #172033;
+    }
+    body { margin: 0; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
+    .top { display: flex; gap: 12px; align-items: end; justify-content: space-between; flex-wrap: wrap; }
+    h1 { font-size: 24px; margin: 0 0 6px; color: #17466f; }
+    .date { color: #627089; font-size: 14px; }
+    .panel { background: #fff; border: 1px solid #d8e0ea; border-radius: 8px; padding: 14px; margin-top: 14px; }
+    label { display: block; font-weight: 700; margin-bottom: 6px; }
+    select, input, button {
+      font: inherit;
+      border: 1px solid #b9c6d6;
+      border-radius: 7px;
+      padding: 10px;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    button { background: #17466f; color: #fff; border-color: #17466f; font-weight: 700; cursor: pointer; }
+    button.secondary { background: #eef3f8; color: #17466f; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .meal { border: 1px solid #d8e0ea; border-radius: 8px; padding: 12px; background: #fbfdff; }
+    .meal h2 { font-size: 18px; margin: 0 0 8px; color: #17466f; }
+    .items { font-size: 14px; line-height: 1.7; margin-bottom: 10px; }
+    .counts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .summary { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border: 1px solid #d8e0ea; padding: 8px; text-align: center; white-space: nowrap; }
+    th { background: #17466f; color: #fff; }
+    .missing { color: #b42318; font-weight: 700; }
+    .ok { color: #1f7a4d; font-weight: 700; }
+    @media (max-width: 720px) {
+      .wrap { padding: 12px; }
+      .grid { grid-template-columns: 1fr; }
+      .counts { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div>
+        <h1>訂餐人數回報</h1>
+        <div class="date" id="menuDate">載入中</div>
+      </div>
+      <div>
+        <label for="unit">單位</label>
+        <select id="unit"></select>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div class="grid" id="meals"></div>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+        <button id="submit">送出回報</button>
+        <button class="secondary" id="reload">重新整理統計</button>
+      </div>
+      <p id="status"></p>
+    </section>
+
+    <section class="panel summary">
+      <h2 style="margin-top:0;color:#17466f">今日統計</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>餐別</th>
+            <th>台餐</th>
+            <th>柬埔寨餐</th>
+            <th>合計</th>
+          </tr>
+        </thead>
+        <tbody id="summaryRows"></tbody>
+      </table>
+      <p id="missing"></p>
+    </section>
+  </main>
+
+  <script>
+    const mealNames = { breakfast: "早餐", lunch: "午餐", dinner: "晚餐", late_night: "宵夜" };
+    let currentDate = "";
+    let currentMenu = null;
+
+    if (window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.ready();
+      Telegram.WebApp.expand();
+    }
+
+    function todayTaipei() {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit"
+      }).formatToParts(new Date());
+      const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
+      return `${map.year}-${map.month}-${map.day}`;
+    }
+
+    async function load() {
+      currentDate = todayTaipei();
+      const res = await fetch(`/api/today?date=${currentDate}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "載入失敗");
+      currentMenu = data.menu;
+      renderUnits(data.units);
+      renderMeals(data.menu);
+      renderSummary(data.summary);
+    }
+
+    function renderUnits(units) {
+      const unit = document.getElementById("unit");
+      if (unit.options.length) return;
+      unit.innerHTML = units.map(x => `<option value="${x}">${x}</option>`).join("");
+    }
+
+    function renderMeals(menu) {
+      document.getElementById("menuDate").textContent = `${menu.display_date} 今日菜色`;
+      document.getElementById("meals").innerHTML = menu.meals.map(meal => {
+        const dishes = meal.items
+          .filter(item => item.dish)
+          .map(item => `${item.category}：${item.dish}`)
+          .join("<br>");
+        return `
+          <div class="meal" data-meal="${meal.key}">
+            <h2>${meal.label} ${meal.time}</h2>
+            <div class="items">${dishes}</div>
+            <div class="counts">
+              <div>
+                <label>台餐人數</label>
+                <input type="number" min="0" step="1" inputmode="numeric" data-cuisine="taiwan" data-meal="${meal.key}" value="0">
+              </div>
+              <div>
+                <label>柬埔寨餐人數</label>
+                <input type="number" min="0" step="1" inputmode="numeric" data-cuisine="cambodia" data-meal="${meal.key}" value="0">
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderSummary(summary) {
+      document.getElementById("summaryRows").innerHTML = Object.entries(summary.totals).map(([key, row]) => `
+        <tr>
+          <td>${mealNames[key]}</td>
+          <td>${row.taiwan}</td>
+          <td>${row.cambodia}</td>
+          <td>${row.total}</td>
+        </tr>
+      `).join("");
+      const missing = summary.missing_units || [];
+      document.getElementById("missing").innerHTML = missing.length
+        ? `<span class="missing">未完整回報：${missing.join("、")}</span>`
+        : `<span class="ok">所有單位已完整回報</span>`;
+    }
+
+    async function submitReport() {
+      const entries = [...document.querySelectorAll("input[data-meal]")].map(input => ({
+        meal_key: input.dataset.meal,
+        cuisine: input.dataset.cuisine,
+        count: Number(input.value || 0)
+      }));
+      const payload = { date: currentDate, unit: document.getElementById("unit").value, entries };
+      const res = await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "送出失敗");
+      document.getElementById("status").textContent = "已送出，可以重新修改後再送一次。";
+      if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+      }
+      await refreshSummary();
+    }
+
+    async function refreshSummary() {
+      const res = await fetch(`/api/summary?date=${currentDate}`);
+      const data = await res.json();
+      renderSummary(data.summary);
+    }
+
+    document.getElementById("submit").addEventListener("click", () => submitReport().catch(err => {
+      document.getElementById("status").textContent = err.message;
+    }));
+    document.getElementById("reload").addEventListener("click", () => refreshSummary());
+    load().catch(err => document.getElementById("status").textContent = err.message);
+  </script>
+</body>
+</html>

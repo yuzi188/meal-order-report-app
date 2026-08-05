@@ -1,0 +1,3009 @@
+{
+  "2026-08-01": {
+    "display_date": "8/1",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "皮蛋瘦肉粥"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": ""
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯雞"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "紫菜魚丸湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒豬肉"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "香菇雞湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "宮保雞丁(不辣)"
+          },
+          {
+            "category": "副食",
+            "dish": "螞蟻上樹"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蘿蔔肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-02": {
+    "display_date": "8/2",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "火腿蛋吐司"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "奶茶"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷肉飯"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬瓜蛤蜊湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蔥爆牛肉(另備15份豬肉)"
+          },
+          {
+            "category": "副食",
+            "dish": "番茄炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒地瓜葉"
+          },
+          {
+            "category": "湯品",
+            "dish": "蓮藕排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": "滷豆干"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "金針雞絲湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-03": {
+    "display_date": "8/3",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "乾米粉"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "貢丸湯"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "糖醋里肌"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒油菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "玉米濃湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "香菇燒雞"
+          },
+          {
+            "category": "副食",
+            "dish": "麻婆豆腐(不辣)"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "羅宋湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷豬腳"
+          },
+          {
+            "category": "副食",
+            "dish": "蒸蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬菜肉絲湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-04": {
+    "display_date": "8/4",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "鮪魚蛋餅"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "豆漿"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "泰式打拋豬(不辣)"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "番茄蔬菜湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "香煎豬排"
+          },
+          {
+            "category": "副食",
+            "dish": "香菇豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "當歸羊肉湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒雞柳"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒茄子"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "味噌魚丸湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-05": {
+    "display_date": "8/5",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蘿蔔糕"
+          },
+          {
+            "category": "副食",
+            "dish": "荷包蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "紅茶"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "咖哩雞飯"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "大黃瓜魚丸湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒鴨肉"
+          },
+          {
+            "category": "副食",
+            "dish": "豆干炒肉絲"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒地瓜葉"
+          },
+          {
+            "category": "湯品",
+            "dish": "菜脯雞湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蒜香豬肉片"
+          },
+          {
+            "category": "副食",
+            "dish": "蠔油豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "香菇肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-06": {
+    "display_date": "8/6",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "炒麵"
+          },
+          {
+            "category": "副食",
+            "dish": "滷蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": ""
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "莧菜吻仔魚湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "清蒸鱸魚"
+          },
+          {
+            "category": "副食",
+            "dish": "香菇豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "山藥排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "洋蔥豬柳"
+          },
+          {
+            "category": "副食",
+            "dish": "番茄炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒油菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "玉米雞蓉湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-07": {
+    "display_date": "8/7",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "饅頭夾蛋"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "豆漿"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒豬柳"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "南瓜濃湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯雞"
+          },
+          {
+            "category": "副食",
+            "dish": "滷豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "牛蒡排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "沙茶肉片"
+          },
+          {
+            "category": "副食",
+            "dish": "蒸蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "高麗菜肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-08": {
+    "display_date": "8/8",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "玉米瘦肉粥"
+          },
+          {
+            "category": "副食",
+            "dish": "肉鬆"
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": ""
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "椒鹽雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蘿蔔魚板湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蒜香豬排"
+          },
+          {
+            "category": "副食",
+            "dish": "豆腐燴菇"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬瓜肉片湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒雞翅"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒油菜、蠔油白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "金針菇雞湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-09": {
+    "display_date": "8/9",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "培根蛋吐司"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "奶茶"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷排骨"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "絲瓜蛤蜊湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒牛柳(另備15份豬肉)"
+          },
+          {
+            "category": "副食",
+            "dish": "家常豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蒜頭雞湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "洋蔥雞丁"
+          },
+          {
+            "category": "副食",
+            "dish": "滷海帶"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "海帶芽肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-10": {
+    "display_date": "8/10",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": ""
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "河粉湯"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯豬肉"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒地瓜葉"
+          },
+          {
+            "category": "湯品",
+            "dish": "青菜豆皮湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "香菇雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": "番茄炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬瓜蛤蜊湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒肉"
+          },
+          {
+            "category": "副食",
+            "dish": "滷豆干"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蘿蔔魚丸湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-11": {
+    "display_date": "8/11",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蔥抓餅"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "豆漿"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蒜泥白肉"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "玉米雞蓉湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "沙茶雞柳"
+          },
+          {
+            "category": "副食",
+            "dish": "豆腐燴白菜"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "香菇雞湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": "蒸蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬瓜肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-12": {
+    "display_date": "8/12",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "廣東粥"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": ""
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "咖哩豬肉飯"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蘿蔔魚丸湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒鴨肉"
+          },
+          {
+            "category": "副食",
+            "dish": "豆干炒肉絲"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "竹筍排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蒜香雞丁"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "白菜肉絲湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-13": {
+    "display_date": "8/13",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "炒麵"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "貢丸湯"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "糖醋雞丁"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "香菇肉羹湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒豬排"
+          },
+          {
+            "category": "副食",
+            "dish": "香菇豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒地瓜葉"
+          },
+          {
+            "category": "湯品",
+            "dish": "羅宋湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "宮保雞丁(不辣)"
+          },
+          {
+            "category": "副食",
+            "dish": "番茄炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒油菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "金針雞絲湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-14": {
+    "display_date": "8/14",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "火腿蛋三明治"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "奶茶"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬瓜海帶湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "清蒸檸檬魚"
+          },
+          {
+            "category": "副食",
+            "dish": "蠔油豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "山藥排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "洋蔥豬肉片"
+          },
+          {
+            "category": "副食",
+            "dish": "滷蛋豆干"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "玉米肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-15": {
+    "display_date": "8/15",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": ""
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "肉絲米粉湯"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯雞"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "南瓜濃湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "沙茶牛肉(另備15份豬肉)"
+          },
+          {
+            "category": "副食",
+            "dish": "豆腐燴菇"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蘿蔔羊肉湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": "蒸蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬菜肉絲湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-16": {
+    "display_date": "8/16",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蛋餅"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "紅茶"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷肉飯"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒油菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "絲瓜蛤蜊湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蒜香豬排"
+          },
+          {
+            "category": "副食",
+            "dish": "番茄炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "香菇雞湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒雞丁"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "高麗菜肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-17": {
+    "display_date": "8/17",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "香菇雞粥"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": ""
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "泰式打拋雞(不辣)"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "大黃瓜魚板湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒豬腳"
+          },
+          {
+            "category": "副食",
+            "dish": "豆干炒肉絲"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "苦瓜排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "洋蔥雞柳"
+          },
+          {
+            "category": "副食",
+            "dish": "蠔油茄子"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "金針肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-18": {
+    "display_date": "8/18",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "刈包"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "四神湯"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒豬柳"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "番茄蔬菜湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯鴨肉"
+          },
+          {
+            "category": "副食",
+            "dish": "家常豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬瓜蛤蜊湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷雞翅"
+          },
+          {
+            "category": "副食",
+            "dish": "蒸蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒油菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蘿蔔肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-19": {
+    "display_date": "8/19",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "肉燥麵"
+          },
+          {
+            "category": "副食",
+            "dish": "滷蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": ""
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "咖哩雞飯"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒地瓜葉"
+          },
+          {
+            "category": "湯品",
+            "dish": "青菜豆皮湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒豬排"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "當歸羊肉湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蒜香豬肉片"
+          },
+          {
+            "category": "副食",
+            "dish": "滷海帶豆干"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "玉米雞蓉湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-20": {
+    "display_date": "8/20",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "燒餅夾蛋"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "豆漿"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "五香滷排骨"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "莧菜吻仔魚湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "鳳梨燒雞"
+          },
+          {
+            "category": "副食",
+            "dish": "香菇炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "絲瓜蛤蜊湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "洋蔥豬柳"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "海帶芽肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-21": {
+    "display_date": "8/21",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "鮪魚蛋吐司"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "奶茶"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯雞"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "香菇雞絲湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蒜香豬排"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蓮藕排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒雞柳"
+          },
+          {
+            "category": "副食",
+            "dish": "蒸蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "玉米肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-22": {
+    "display_date": "8/22",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "皮蛋瘦肉粥"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": ""
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷排骨"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "南瓜濃湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "香菇鴨肉"
+          },
+          {
+            "category": "副食",
+            "dish": "豆干炒肉絲"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "山藥排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒豬肉"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜、蠔油白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "金針雞絲湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-23": {
+    "display_date": "8/23",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蔥抓餅"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "豆漿"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "咖哩雞飯"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒地瓜葉"
+          },
+          {
+            "category": "湯品",
+            "dish": "大黃瓜魚丸湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "清蒸鱸魚"
+          },
+          {
+            "category": "副食",
+            "dish": "番茄炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬瓜蛤蜊湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯雞丁"
+          },
+          {
+            "category": "副食",
+            "dish": "滷豆干"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒油菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬菜肉絲湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-24": {
+    "display_date": "8/24",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": ""
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "肉絲米粉湯"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒豬柳"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "番茄蔬菜湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": "麻婆豆腐(不辣)"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "牛蒡排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "洋蔥豬肉片"
+          },
+          {
+            "category": "副食",
+            "dish": "蒸蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蘿蔔魚板湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-25": {
+    "display_date": "8/25",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "火腿蛋三明治"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "紅茶"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "糖醋雞丁"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "玉米雞蓉湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯鴨肉"
+          },
+          {
+            "category": "副食",
+            "dish": "蠔油豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蘿蔔羊肉湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蒜香豬柳"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒茄子"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "高麗菜肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-26": {
+    "display_date": "8/26",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "廣東粥"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": ""
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷肉飯"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "絲瓜魚板湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒牛柳(另備15份豬肉)"
+          },
+          {
+            "category": "副食",
+            "dish": "香菇炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "香菇雞湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒雞翅"
+          },
+          {
+            "category": "副食",
+            "dish": "滷海帶"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒油菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬瓜肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-27": {
+    "display_date": "8/27",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蘿蔔糕"
+          },
+          {
+            "category": "副食",
+            "dish": "荷包蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "奶茶"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "泰式打拋豬(不辣)"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "蘿蔔貢丸湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "鳳梨燒雞"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "絲瓜蛤蜊湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "洋蔥雞丁"
+          },
+          {
+            "category": "副食",
+            "dish": "蒸蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "玉米排骨湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-28": {
+    "display_date": "8/28",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": ""
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "河粉湯"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "青菜豆皮湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒豬腳"
+          },
+          {
+            "category": "副食",
+            "dish": "豆干炒肉絲"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "苦瓜排骨湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "黑胡椒雞柳"
+          },
+          {
+            "category": "副食",
+            "dish": "蠔油茄子"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "金針肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-29": {
+    "display_date": "8/29",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蛋餅"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "豆漿"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯豬肉"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒油菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "莧菜吻仔魚湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "香煎鯖魚"
+          },
+          {
+            "category": "副食",
+            "dish": "家常豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "竹筍雞湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "滷雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": "番茄炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒小白菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "白菜肉絲湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-30": {
+    "display_date": "8/30",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "香菇雞粥"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": ""
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "咖哩豬肉飯"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒空心菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "紫菜魚片湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "蒜香雞腿"
+          },
+          {
+            "category": "副食",
+            "dish": "香菇豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒菠菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "冬瓜蛤蜊湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒肉"
+          },
+          {
+            "category": "副食",
+            "dish": "蒸蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒青江菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "菜頭肉片湯"
+          }
+        ]
+      }
+    ]
+  },
+  "2026-08-31": {
+    "display_date": "8/31",
+    "meals": [
+      {
+        "key": "breakfast",
+        "label": "早餐",
+        "time": "06:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "刈包"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": ""
+          },
+          {
+            "category": "湯品",
+            "dish": "四神湯"
+          }
+        ]
+      },
+      {
+        "key": "lunch",
+        "label": "午餐",
+        "time": "12:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "五香滷排骨"
+          },
+          {
+            "category": "副食",
+            "dish": ""
+          },
+          {
+            "category": "青菜",
+            "dish": "炒A菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "金針菇肉絲湯"
+          }
+        ]
+      },
+      {
+        "key": "dinner",
+        "label": "晚餐",
+        "time": "17:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "紅燒豬肉"
+          },
+          {
+            "category": "副食",
+            "dish": "番茄炒蛋"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒地瓜葉"
+          },
+          {
+            "category": "湯品",
+            "dish": "當歸羊肉湯"
+          }
+        ]
+      },
+      {
+        "key": "late_night",
+        "label": "宵夜",
+        "time": "21:00",
+        "items": [
+          {
+            "category": "主食",
+            "dish": "三杯雞丁"
+          },
+          {
+            "category": "副食",
+            "dish": "紅燒豆腐"
+          },
+          {
+            "category": "青菜",
+            "dish": "炒高麗菜"
+          },
+          {
+            "category": "湯品",
+            "dish": "玉米雞蓉湯"
+          }
+        ]
+      }
+    ]
+  }
+}
