@@ -17,26 +17,30 @@
       --soft: #171d26;
       --panel: #111720;
       --panel-2: #0d121a;
+      --panel-3: #141b25;
       --danger: #ff8a65;
       --ok: #7bd88f;
+      --kh: #68b7ff;
+      --tw: #ff9f7a;
       --text: #f6f3e7;
       --button-text: #1b1403;
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: #080b10; color: var(--text); }
     button, input, select { font: inherit; }
-    .app { max-width: 1040px; margin: 0 auto; padding: 12px 12px 28px; }
+    .app { max-width: 1040px; margin: 0 auto; padding: 12px 12px 30px; }
     .hero {
       margin: -12px -12px 12px;
-      padding: 16px 14px;
-      background: linear-gradient(135deg, #0d121a, #1f2732);
+      padding: 18px 14px 16px;
+      background: #101720;
       color: var(--text);
       border-radius: 0 0 8px 8px;
+      border-bottom: 1px solid var(--line);
     }
     .hero-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    h1 { margin: 0; font-size: 22px; letter-spacing: 0; }
+    h1 { margin: 0; font-size: 24px; letter-spacing: 0; }
     .date-text { margin-top: 6px; opacity: .92; font-size: 14px; }
-    .pill { border: 1px solid rgba(245,200,75,.42); background: rgba(245,200,75,.12); color: var(--brand); padding: 7px 9px; border-radius: 8px; font-weight: 800; white-space: nowrap; font-size: 13px; }
+    .pill { border: 1px solid rgba(245,200,75,.48); background: rgba(245,200,75,.12); color: var(--brand); padding: 8px 10px; border-radius: 8px; font-weight: 900; white-space: nowrap; font-size: 13px; }
     .toolbar { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
     label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; font-weight: 900; }
     input, select {
@@ -50,24 +54,29 @@
       outline: none;
     }
     input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,200,75,.18); }
-    .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+    .section-label { margin: 12px 0 7px; color: var(--muted); font-size: 12px; font-weight: 950; letter-spacing: 0; }
+    .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-bottom: 10px; }
     .tab {
-      min-height: 42px;
+      min-height: 44px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: var(--panel);
+      background: var(--panel-2);
       color: var(--brand);
       font-weight: 950;
     }
-    .tab.active { background: var(--brand); color: var(--button-text); border-color: var(--brand); }
+    .tab.active { background: var(--brand); color: var(--button-text); border-color: var(--brand); box-shadow: 0 8px 18px rgba(245,200,75,.14); }
     .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
-    .metric { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px; min-height: 126px; color: var(--text); }
+    .metric { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-height: 132px; color: var(--text); position: relative; overflow: hidden; }
     .metric.active { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(245,200,75,.22); }
-    .metric-name { color: var(--brand); font-size: 15px; font-weight: 950; }
+    .metric-name { color: var(--brand); font-size: 16px; font-weight: 950; }
     .metric-time { float: right; color: var(--muted); font-size: 13px; font-weight: 900; }
-    .metric-total { margin-top: 4px; font-size: 24px; font-weight: 950; }
-    .metric-split { margin-top: 2px; color: var(--muted); font-size: 12px; white-space: nowrap; }
-    .menu-list { margin-top: 6px; display: grid; gap: 2px; font-size: 12px; line-height: 1.35; color: #d8dee7; }
+    .metric-total { margin-top: 5px; font-size: 28px; line-height: 1; font-weight: 950; }
+    .metric-split { margin-top: 7px; display: flex; gap: 5px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+    .split-pill { display: inline-flex; align-items: center; min-height: 24px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; background: var(--panel-2); font-weight: 850; }
+    .split-pill.tw { color: var(--tw); }
+    .split-pill.healthy { color: var(--ok); }
+    .split-pill.kh { color: var(--kh); }
+    .menu-list { margin-top: 8px; display: grid; gap: 3px; font-size: 12px; line-height: 1.35; color: #d8dee7; }
     .menu-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .meal-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
     .meal { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -78,14 +87,18 @@
     .dish { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; font-size: 14px; line-height: 1.45; }
     .cat { color: var(--muted); font-weight: 900; }
     .dish-name { font-weight: 760; overflow-wrap: anywhere; }
+    .meal-current { margin: 0 12px 10px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .meal-current div { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); padding: 8px 7px; text-align: center; }
+    .meal-current strong { display: block; font-size: 18px; line-height: 1; margin-bottom: 4px; }
+    .meal-current span { color: var(--muted); font-size: 12px; font-weight: 850; }
     .lines { padding: 0 12px 10px; }
     .input-table { width: 100%; min-width: 460px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
     .input-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .input-table th, .input-table td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+    .input-table th, .input-table td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
     .input-table th { background: var(--soft); color: var(--muted); font-weight: 950; }
     .input-table td:first-child, .input-table th:first-child { text-align: left; padding-left: 8px; }
     .input-table tr:last-child td { border-bottom: 0; }
-    .input-table input { min-height: 38px; padding: 6px 8px; }
+    .input-table input { min-height: 42px; padding: 6px 8px; background: #0b1119; }
     .location-cell { min-width: 108px; color: var(--brand); font-weight: 950; }
     .location-button { width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--brand); font-weight: 950; }
     .location-panel {
@@ -119,11 +132,11 @@
       font-weight: 950;
     }
     .location-option:active { background: rgba(255,255,255,.12); }
-    .count-input { text-align: center; font-size: 19px; font-weight: 900; }
+    .count-input { text-align: center; font-size: 20px; font-weight: 950; }
     input[type="date"] { color-scheme: dark; }
     input::placeholder { color: #778292; }
-    .remove { min-height: 42px; border: 1px solid rgba(255,138,101,.45); color: #1b1403; background: #ffb257; border-radius: 8px; font-weight: 900; }
-    .add-line { width: 100%; min-height: 40px; border: 1px dashed var(--brand); color: var(--brand); background: transparent; border-radius: 8px; font-weight: 900; }
+    .remove { min-height: 42px; border: 1px solid rgba(255,138,101,.45); color: #1b1403; background: #ffb257; border-radius: 8px; font-weight: 950; }
+    .add-line { width: 100%; min-height: 42px; border: 1px dashed var(--brand); color: var(--brand); background: rgba(245,200,75,.06); border-radius: 8px; font-weight: 950; }
     .actions { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 116px; gap: 8px; background: rgba(8,11,16,.92); backdrop-filter: blur(10px); padding-top: 10px; margin-top: 10px; }
     button { cursor: pointer; }
     .primary { min-height: 48px; border: 0; border-radius: 8px; background: var(--brand); color: var(--button-text); font-weight: 950; }
@@ -143,6 +156,7 @@
     .detail-item { padding: 8px 10px; border-radius: 8px; background: var(--soft); border: 1px solid var(--line); line-height: 1.45; }
     @media (max-width: 760px) {
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .meal-current { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .meal-grid, .actions { grid-template-columns: 1fr; }
       .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
@@ -167,8 +181,11 @@
       </div>
     </section>
 
+    <div class="section-label">&#37096;&#38272;</div>
     <section class="tabs" id="departmentTabs"></section>
+    <div class="section-label">&#20170;&#26085;&#22235;&#39184;</div>
     <section class="cards" id="summaryCards"></section>
+    <div class="section-label">&#20154;&#25976;&#22238;&#22577;</div>
     <section class="meal-grid" id="meals"></section>
 
     <section class="actions">
@@ -323,6 +340,11 @@
       return counts;
     }
 
+    function currentMealTotal(mealKey) {
+      if (!currentSummary) return { taiwan: 0, healthy: 0, cambodia: 0, total: 0 };
+      return currentSummary.totals[mealKey] || { taiwan: 0, healthy: 0, cambodia: 0, total: 0 };
+    }
+
     function renderMeals(menu) {
       document.getElementById("menuDate").textContent = `${menu.display_date} ${t.todayMenu}`;
       const meal = menu.meals.find(item => item.key === activeMeal) || menu.meals[0];
@@ -337,6 +359,7 @@
           </div>
         `)
         .join("");
+      const activeTotal = currentMealTotal(meal.key);
       document.getElementById("meals").innerHTML = `
         <article class="meal" data-meal="${meal.key}">
           <div class="meal-head">
@@ -344,6 +367,12 @@
             <div class="meal-time">${escapeHtml(meal.time)}</div>
           </div>
           <div class="dishes">${dishes}</div>
+          <div class="meal-current">
+            <div><strong>${activeTotal.total}</strong><span>合計</span></div>
+            <div><strong>${activeTotal.taiwan}</strong><span>台餐</span></div>
+            <div><strong>${activeTotal.healthy}</strong><span>健康餐</span></div>
+            <div><strong>${activeTotal.cambodia}</strong><span>柬餐</span></div>
+          </div>
           <div class="lines table-wrap">
             <div class="input-table">
               <table>
@@ -384,7 +413,11 @@
           <button type="button" class="metric ${key === activeMeal ? "active" : ""}" data-meal-tab="${key}">
             <div class="metric-name">${mealNames[key]} <span class="metric-time">${escapeHtml(meal.time)}</span></div>
             <div class="metric-total">${row.total}</div>
-            <div class="metric-split">${t.taiwan} ${row.taiwan} / ${t.healthy} ${row.healthy} / ${t.cambodia} ${row.cambodia}</div>
+            <div class="metric-split">
+              <span class="split-pill tw">台 ${row.taiwan}</span>
+              <span class="split-pill healthy">健 ${row.healthy}</span>
+              <span class="split-pill kh">柬 ${row.cambodia}</span>
+            </div>
             <div class="menu-list">${menuLines}</div>
           </button>
         `;
