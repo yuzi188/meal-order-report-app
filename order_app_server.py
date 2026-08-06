@@ -33,6 +33,10 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_ALLOWED_CHAT_ID = os.environ.get("TELEGRAM_ALLOWED_CHAT_ID", "")
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
 BOT_CONFIRM_TTL_SECONDS = 60 * 30
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_IMAGE_MODEL = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1")
+OPENAI_IMAGE_FORMAT = os.environ.get("OPENAI_IMAGE_FORMAT", "webp")
+DISH_IMAGE_DIR = DATA_DIR / "dish_images"
 
 
 def storage_status():
@@ -165,6 +169,71 @@ def dish_image_url(item):
 
 def image_url_for_item(item):
     return dish_image_url(item)
+
+
+def dish_image_key(dish, category):
+    return hashlib.sha1(f"{category}|{dish}".encode("utf-8")).hexdigest()
+
+
+def dish_image_path(dish, category):
+    return DISH_IMAGE_DIR / f"{dish_image_key(dish, category)}.{OPENAI_IMAGE_FORMAT}"
+
+
+def dish_image_content_type(path):
+    suffix = path.suffix.lower()
+    if suffix == ".jpg" or suffix == ".jpeg":
+        return "image/jpeg"
+    if suffix == ".png":
+        return "image/png"
+    if suffix == ".webp":
+        return "image/webp"
+    return "application/octet-stream"
+
+
+def ai_dish_prompt(dish, category):
+    kind_hint = "\u6e6f\u54c1\u8981\u662f\u4e00\u7897\u6e6f\uff0c\u770b\u5f97\u5230\u6e6f\u6c41\u548c\u4e3b\u8981\u98df\u6750\u3002" if category == "\u6e6f\u54c1" else "\u8981\u662f\u4e00\u76e4\u6210\u54c1\u83dc\uff0c\u4e3b\u9ad4\u53ea\u6709\u9019\u9053\u83dc\u3002"
+    return (
+        f"\u8acb\u751f\u6210\u4e00\u5f35\u771f\u5be6\u98df\u7269\u651d\u5f71\u98a8\u683c\u7684\u5716\u7247\uff1a{dish}\u3002"
+        f"\u83dc\u8272\u985e\u5225\uff1a{category}\u3002{kind_hint}"
+        "\u98a8\u683c\uff1a\u53f0\u7063\u5718\u81b3\u5eda\u623f\u5be6\u969b\u51fa\u9910\u7167\uff0c\u81ea\u7136\u5149\uff0c\u6e05\u695a\uff0c\u6b63\u5e38\u9910\u76e4\u6216\u6e6f\u7897\uff0c\u4e0d\u8981\u8c6a\u83ef\u9910\u5ef3\u64fa\u76e4\u3002"
+        "\u5fc5\u9808\u7b26\u5408\u83dc\u540d\uff0c\u4e0d\u8981\u51fa\u73fe\u4e0d\u76f8\u95dc\u7684\u98df\u7269\u3001\u98f2\u6599\u3001\u751c\u9ede\u6216\u5176\u4ed6\u83dc\u3002"
+        "\u5716\u7247\u5167\u4e0d\u8981\u4efb\u4f55\u6587\u5b57\u3001\u6c34\u5370\u3001logo\u3001\u4eba\u7269\u3001\u624b\u3002"
+    )
+
+
+def generate_ai_dish_image(dish, category):
+    if not OPENAI_API_KEY:
+        return None
+    path = dish_image_path(dish, category)
+    if path.exists() and path.stat().st_size > 0:
+        return path
+    DISH_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "model": OPENAI_IMAGE_MODEL,
+        "prompt": ai_dish_prompt(dish, category),
+        "size": "1024x1024",
+        "output_format": OPENAI_IMAGE_FORMAT,
+    }
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    request = urllib.request.Request(
+        "https://api.openai.com/v1/images/generations",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        b64_image = ((data.get("data") or [{}])[0] or {}).get("b64_json")
+        if not b64_image:
+            return None
+        path.write_bytes(base64.b64decode(b64_image))
+        return path
+    except Exception:
+        return None
 
 
 def dish_image_svg(dish, category):
@@ -1599,8 +1668,12 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/dish-image":
             dish = params.get("dish", [""])[0]
             category = params.get("category", [""])[0]
-            body = dish_image_svg(dish, category).encode("utf-8")
-            self.send_bytes(body, "image/svg+xml; charset=utf-8")
+            image_path = generate_ai_dish_image(dish, category)
+            if image_path:
+                self.send_file(image_path, dish_image_content_type(image_path))
+            else:
+                body = dish_image_svg(dish, category).encode("utf-8")
+                self.send_bytes(body, "image/svg+xml; charset=utf-8")
             return
         if parsed.path == "/api/costs":
             if not self.require_admin():
