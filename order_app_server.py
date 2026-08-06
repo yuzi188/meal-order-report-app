@@ -1565,6 +1565,30 @@ def send_cost_menu(chat_id, report_date=None, reply_to_message_id=None):
     return {"ok": True, "action": "cost_menu", "date": report_date}
 
 
+def today_menu_text(report_date):
+    day = load_menu().get(report_date)
+    if not day:
+        return f"\u627e\u4e0d\u5230 {report_date} \u83dc\u55ae"
+    lines = [f"{day.get('display_date', report_date)} \u4eca\u65e5\u83dc\u55ae"]
+    for meal in day.get("meals", []):
+        lines.append("")
+        lines.append(f"{meal.get('label')} {meal.get('time')}")
+        for item in meal.get("items", []):
+            dish = str(item.get("dish") or "").strip()
+            if dish:
+                lines.append(f"{item.get('category')}\uff1a{dish}")
+    return "\n".join(lines)
+
+
+def people_report_help():
+    return (
+        "\u4eba\u6578\u56de\u5831\n\n"
+        "\u7528\u6cd5 1\uff1a\u76f4\u63a5\u8cbc\u4e0a 3F / \u5ba2\u670d\u7684\u5831\u9910\u6587\u5b57\uff0c\u6a5f\u5668\u4eba\u6703\u81ea\u52d5\u5beb\u5165\u3002\n"
+        "\u7528\u6cd5 2\uff1a\u56de\u8986\u5831\u9910\u8a0a\u606f\uff0c\u8f38\u5165 /people\n"
+        "\u7528\u6cd5 3\uff1a/people \u5f8c\u9762\u76f4\u63a5\u8cbc\u5831\u9910\u6587\u5b57"
+    )
+
+
 def handle_cost_callback(chat_id, message_id, callback_id, data):
     if data == "cost_cancel":
         clear_pending_bot_cost(chat_id)
@@ -1700,11 +1724,15 @@ def handle_telegram_update(update):
         telegram_send_message(chat_id, f"bot \u6709\u6536\u5230\u8a0a\u606f\nchat_id: {chat_id}", message_id)
         return {"ok": True, "action": "test", "chat_id": chat_id}
 
-    if text.startswith("/\u7e3d\u8868") or text.startswith("/\u603b\u8868") or text.startswith("/\u9001\u9910\u8868"):
+    if text.startswith("/menu") or text.startswith("/today") or text.startswith("/\u4eca\u65e5\u83dc\u55ae") or text.startswith("/\u83dc\u55ae"):
+        telegram_send_message(chat_id, today_menu_text(normalize_report_date(text)), message_id)
+        return {"ok": True, "action": "today_menu"}
+
+    if text.startswith("/\u7e3d\u8868") or text.startswith("/\u603b\u8868") or text.startswith("/\u9001\u9910\u8868") or text.startswith("/table"):
         telegram_send_message(chat_id, delivery_table_text(normalize_report_date(text)), message_id)
         return {"ok": True, "action": "delivery_table"}
 
-    if text.startswith("/\u7e3d\u6578") or text.startswith("/\u603b\u6570"):
+    if text.startswith("/\u7e3d\u6578") or text.startswith("/\u603b\u6570") or text.startswith("/total"):
         telegram_send_message(chat_id, delivery_table_text(normalize_report_date(text)), message_id)
         return {"ok": True, "action": "employee_totals_report"}
 
@@ -1726,11 +1754,11 @@ def handle_telegram_update(update):
             return {"ok": True, "action": "menu_change_failed", "error": str(exc)}
 
     parse_text = text
-    if text.startswith("/\u4eba\u6578") or text.startswith("/\u4eba\u6570") or text.startswith("/parse"):
+    if text.startswith("/\u4eba\u6578") or text.startswith("/\u4eba\u6570") or text.startswith("/parse") or text.startswith("/people"):
         parts = text.split(maxsplit=1)
         parse_text = parts[1] if len(parts) > 1 else reply_text
         if not parse_text:
-            telegram_send_message(chat_id, "\u8acb\u7528 /\u4eba\u6578 \u52a0\u4e0a\u5831\u9910\u6587\u5b57\uff0c\u6216\u56de\u8986\u5831\u9910\u8a0a\u606f\u5f8c\u8f38\u5165 /\u4eba\u6578\u3002", message_id)
+            telegram_send_message(chat_id, people_report_help(), message_id)
             return {"ok": True, "action": "parse_help"}
 
     try:
