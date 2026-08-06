@@ -650,6 +650,18 @@ def normalize_meal_key(line):
     return None
 
 
+def normalize_short_meal_key(text):
+    if re.search(r"(\u65e9\u9910|\u65e9\b|\u65e9\u73ed|Breakfast)", text, re.IGNORECASE):
+        return "breakfast"
+    if re.search(r"(\u5348\u9910|\u4e2d\u9910|\u4e2d\b|\u5348\b|Lunch)", text, re.IGNORECASE):
+        return "lunch"
+    if re.search(r"(\u665a\u9910|\u665a\b|Dinner)", text, re.IGNORECASE):
+        return "dinner"
+    if re.search(r"(\u5bb5\u591c|\u5bb5\b|Supper)", text, re.IGNORECASE):
+        return "late_night"
+    return None
+
+
 def normalize_delivery_location(text):
     if "\u4e0d\u5403\u725b" in text:
         return "\u4e0d\u5403\u725b"
@@ -694,6 +706,8 @@ def count_from_text(text):
 
 
 def report_unit_from_text(text):
+    if "\u6a02\u53f0" in text:
+        return "\u6a02\u53f0\u98f2\u6599\u5e97"
     if "\u5ba2\u670d" in text:
         return "1002-2\u5ba2\u670d"
     if any(mark in text for mark in ["3F", "3\u6a13", "3\u697c", "MT", "\u81ea\u7531\u5973\u795e"]):
@@ -701,7 +715,44 @@ def report_unit_from_text(text):
     return None
 
 
+def parse_letai_short_report(text):
+    raw = str(text or "").strip()
+    if "\u6a02\u53f0" not in raw:
+        return None
+    meal_key = normalize_short_meal_key(raw)
+    if not meal_key:
+        return None
+    compact = re.sub(r"\s+", " ", raw)
+    count_match = re.search(r"(?:\u65e9\u9910|\u65e9|\u4e2d\u9910|\u5348\u9910|\u4e2d|\u5348|\u665a\u9910|\u665a|\u5bb5\u591c|\u5bb5|Breakfast|Lunch|Dinner|Supper)\s*([0-9]+)", compact, re.IGNORECASE)
+    if not count_match:
+        numbers = [int(value) for value in re.findall(r"\b([0-9]+)\b", compact)]
+        numbers = [value for value in numbers if value not in {datetime.now().year, 7, 8, 9, 10, 11, 12}]
+        count = numbers[-1] if numbers else None
+    else:
+        count = int(count_match.group(1))
+    if count is None:
+        return None
+    return {
+        "date": normalize_report_date(raw),
+        "unit": "\u6a02\u53f0\u98f2\u6599\u5e97",
+        "entries": [
+            {
+                "meal_key": meal_key,
+                "cuisine": "taiwan",
+                "delivery_location": "\u90e8\u9580\u73fe\u5834",
+                "count": count,
+                "line_key": f"letai-{meal_key}-taiwan",
+                "note": "",
+            }
+        ],
+        "merge": False,
+    }
+
+
 def parse_bot_3f_report(text):
+    letai_payload = parse_letai_short_report(text)
+    if letai_payload:
+        return letai_payload
     unit = report_unit_from_text(text or "")
     if not unit:
         raise ValueError("\u76ee\u524d\u53ea\u652f\u63f4 3F \u6216 1002-2\u5ba2\u670d \u7684\u5831\u9910\u6587\u5b57")
