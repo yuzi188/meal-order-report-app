@@ -75,6 +75,25 @@ DELIVERY_LOCATIONS = [
 ]
 MEAL_KEYS = ["breakfast", "lunch", "dinner", "late_night"]
 CUISINES = ["taiwan", "healthy", "cambodia"]
+COST_FIELD_LABELS = {
+    "pork_cost": "\u8c6c\u8089\u5546",
+    "vegetable_cost": "\u9752\u83dc\u5546",
+    "frozen_cost": "\u51b7\u51cd\u5546",
+    "cambodia_cost": "\u67ec\u9910",
+    "grocery_cost": "\u96dc\u8ca8",
+    "gas_cost": "\u74e6\u65af",
+    "water_cost": "\u6c34",
+    "meal_box_cost": "\u9910\u76d2",
+    "corner_store_cost": "\u67d1\u4ed4\u5e97",
+    "rice_cost": "\u5927\u7c73",
+    "ice_cost": "\u51b0\u584a",
+}
+COST_MENU_ROWS = [
+    ["pork_cost", "vegetable_cost", "frozen_cost"],
+    ["cambodia_cost"],
+    ["grocery_cost", "gas_cost", "water_cost"],
+    ["meal_box_cost", "corner_store_cost", "rice_cost", "ice_cost"],
+]
 FIXED_REPORTS = [
     {
         "unit": "1001",
@@ -496,6 +515,16 @@ def init_db():
                 report_date TEXT NOT NULL,
                 payload TEXT NOT NULL,
                 summary_text TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS bot_pending_costs (
+                chat_id TEXT PRIMARY KEY,
+                report_date TEXT NOT NULL,
+                payload TEXT NOT NULL,
                 created_at INTEGER NOT NULL
             )
             """
@@ -1420,15 +1449,81 @@ def clear_pending_bot_report(chat_id):
         conn.execute("DELETE FROM bot_pending_reports WHERE chat_id = ?", (str(chat_id),))
 
 
-def telegram_send_message(chat_id, text, reply_to_message_id=None):
+def save_pending_bot_cost(chat_id, payload):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO bot_pending_costs (chat_id, report_date, payload, created_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(chat_id)
+            DO UPDATE SET
+                report_date = excluded.report_date,
+                payload = excluded.payload,
+                created_at = excluded.created_at
+            """,
+            (str(chat_id), payload["date"], json.dumps(payload, ensure_ascii=False), int(time.time())),
+        )
+
+
+def load_pending_bot_cost(chat_id):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT payload, created_at FROM bot_pending_costs WHERE chat_id = ?",
+            (str(chat_id),),
+        ).fetchone()
+    if not row:
+        return None
+    if int(time.time()) - int(row["created_at"]) > BOT_CONFIRM_TTL_SECONDS:
+        clear_pending_bot_cost(chat_id)
+        return None
+    return json.loads(row["payload"])
+
+
+def clear_pending_bot_cost(chat_id):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM bot_pending_costs WHERE chat_id = ?", (str(chat_id),))
+
+
+def parse_money_amount(text):
+    match = re.search(r"([0-9][0-9,]*(?:\.[0-9]+)?)", str(text or ""))
+    if not match:
+        return None
+    return round(float(match.group(1).replace(",", "")), 2)
+
+
+def cost_menu_keyboard(report_date):
+    keyboard = []
+    for row in COST_MENU_ROWS:
+        keyboard.append(
+            [
+                {"text": COST_FIELD_LABELS[field], "callback_data": f"cost|{report_date}|{field}"}
+                for field in row
+            ]
+        )
+    return {"inline_keyboard": keyboard}
+
+
+def cost_confirm_keyboard():
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "\u78ba\u8a8d\u5beb\u5165", "callback_data": "cost_confirm"},
+                {"text": "\u53d6\u6d88", "callback_data": "cost_cancel"},
+            ]
+        ]
+    }
+
+
+def telegram_api(method, payload):
     if not TELEGRAM_BOT_TOKEN:
         return {"ok": False, "error": "TELEGRAM_BOT_TOKEN not set"}
-    payload = {"chat_id": chat_id, "text": text}
-    if reply_to_message_id:
-        payload["reply_to_message_id"] = reply_to_message_id
     data = urllib.parse.urlencode(payload).encode("utf-8")
     req = urllib.request.Request(
-        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+        f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/{method}",
         data=data,
         method="POST",
     )
@@ -1439,7 +1534,114 @@ def telegram_send_message(chat_id, text, reply_to_message_id=None):
         return {"ok": False, "error": str(exc)}
 
 
+def telegram_send_message(chat_id, text, reply_to_message_id=None, reply_markup=None):
+    if not TELEGRAM_BOT_TOKEN:
+        return {"ok": False, "error": "TELEGRAM_BOT_TOKEN not set"}
+    payload = {"chat_id": chat_id, "text": text}
+    if reply_to_message_id:
+        payload["reply_to_message_id"] = reply_to_message_id
+    if reply_markup:
+        payload["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
+    return telegram_api("sendMessage", payload)
+
+
+def telegram_answer_callback(callback_query_id, text=""):
+    if not callback_query_id:
+        return {"ok": False, "error": "callback_query_id missing"}
+    payload = {"callback_query_id": callback_query_id}
+    if text:
+        payload["text"] = text
+    return telegram_api("answerCallbackQuery", payload)
+
+
+def send_cost_menu(chat_id, report_date=None, reply_to_message_id=None):
+    report_date = report_date or today_key()
+    telegram_send_message(
+        chat_id,
+        f"\u6bcf\u65e5\u83dc\u91d1\u8f38\u5165\n{report_date}\n\n\u8acb\u9078\u64c7\u5ee0\u5546 / \u6210\u672c\u985e\u5225\uff1a",
+        reply_to_message_id,
+        cost_menu_keyboard(report_date),
+    )
+    return {"ok": True, "action": "cost_menu", "date": report_date}
+
+
+def handle_cost_callback(chat_id, message_id, callback_id, data):
+    if data == "cost_cancel":
+        clear_pending_bot_cost(chat_id)
+        telegram_answer_callback(callback_id, "\u5df2\u53d6\u6d88")
+        telegram_send_message(chat_id, "\u5df2\u53d6\u6d88\u9019\u6b21\u83dc\u91d1\u8f38\u5165\u3002", message_id)
+        return {"ok": True, "action": "cost_cancelled"}
+    if data == "cost_confirm":
+        pending = load_pending_bot_cost(chat_id)
+        if not pending or "amount" not in pending:
+            telegram_answer_callback(callback_id, "\u6c92\u6709\u5f85\u78ba\u8a8d\u7684\u83dc\u91d1")
+            telegram_send_message(chat_id, "\u6c92\u6709\u5f85\u78ba\u8a8d\u7684\u83dc\u91d1\uff0c\u8acb\u5148\u7528 /\u83dc\u91d1 \u9078\u5ee0\u5546\u518d\u8f38\u5165\u91d1\u984d\u3002", message_id)
+            return {"ok": True, "action": "no_pending_cost"}
+        result = save_cost({"date": pending["date"], pending["field"]: pending["amount"]})
+        clear_pending_bot_cost(chat_id)
+        telegram_answer_callback(callback_id, "\u5df2\u5beb\u5165")
+        telegram_send_message(
+            chat_id,
+            f"\u5df2\u5beb\u5165\u83dc\u91d1\n"
+            f"{pending['date']}\n"
+            f"{COST_FIELD_LABELS.get(pending['field'], pending['field'])}\uff1a${pending['amount']:.2f}\n"
+            f"\u5f8c\u53f0\u5df2\u540c\u6b65\u3002",
+            message_id,
+        )
+        return {"ok": True, "action": "cost_saved", "result": result}
+    parts = data.split("|")
+    if len(parts) == 3 and parts[0] == "cost" and parts[2] in COST_FIELD_LABELS:
+        payload = {"date": parts[1], "field": parts[2]}
+        save_pending_bot_cost(chat_id, payload)
+        telegram_answer_callback(callback_id, COST_FIELD_LABELS[parts[2]])
+        telegram_send_message(
+            chat_id,
+            f"{payload['date']} {COST_FIELD_LABELS[payload['field']]}\n\u8acb\u8f38\u5165\u91d1\u984d\uff0c\u4f8b\u5982\uff1a235.5",
+            message_id,
+        )
+        return {"ok": True, "action": "cost_vendor_selected", "payload": payload}
+    telegram_answer_callback(callback_id, "\u7121\u6cd5\u8655\u7406\u9019\u500b\u9078\u9805")
+    return {"ok": True, "ignored": "unknown callback"}
+
+
+def handle_pending_cost_amount(chat_id, text, message_id):
+    pending = load_pending_bot_cost(chat_id)
+    if not pending or "amount" in pending:
+        return None
+    amount = parse_money_amount(text)
+    if amount is None:
+        return None
+    pending["amount"] = amount
+    save_pending_bot_cost(chat_id, pending)
+    telegram_send_message(
+        chat_id,
+        f"\u8acb\u78ba\u8a8d\u83dc\u91d1\n"
+        f"{pending['date']}\n"
+        f"{COST_FIELD_LABELS.get(pending['field'], pending['field'])}\uff1a${amount:.2f}",
+        message_id,
+        cost_confirm_keyboard(),
+    )
+    return {"ok": True, "action": "cost_amount_pending", "payload": pending}
+
+
 def handle_telegram_update(update):
+    callback = update.get("callback_query") or {}
+    if callback:
+        data = str(callback.get("data") or "")
+        message = callback.get("message") or {}
+        chat = message.get("chat") or {}
+        chat_id = str(chat.get("id") or "")
+        message_id = message.get("message_id")
+        callback_id = callback.get("id")
+        if not chat_id:
+            return {"ok": True, "ignored": "callback without chat"}
+        if TELEGRAM_ALLOWED_CHAT_ID and chat_id != TELEGRAM_ALLOWED_CHAT_ID:
+            return {"ok": True, "ignored": "chat not allowed"}
+        if data.startswith("cost"):
+            return handle_cost_callback(chat_id, message_id, callback_id, data)
+        telegram_answer_callback(callback_id, "\u672a\u77e5\u9078\u9805")
+        return {"ok": True, "ignored": "unknown callback"}
+
     message = update.get("message") or update.get("edited_message") or {}
     text = str(message.get("text") or message.get("caption") or "").strip()
     reply = message.get("reply_to_message") or {}
@@ -1453,7 +1655,27 @@ def handle_telegram_update(update):
         return {"ok": True, "ignored": "chat not allowed"}
 
     normalized = re.sub(r"\s+", "", text)
+    if text.startswith("/\u83dc\u91d1") or text.startswith("/cost"):
+        return send_cost_menu(chat_id, normalize_report_date(text), message_id)
+
+    cost_amount_result = handle_pending_cost_amount(chat_id, text, message_id)
+    if cost_amount_result:
+        return cost_amount_result
+
     if normalized in {"\u78ba\u8a8d", "\u786e\u8ba4", "ok", "OK"}:
+        pending_cost = load_pending_bot_cost(chat_id)
+        if pending_cost and "amount" in pending_cost:
+            result = save_cost({"date": pending_cost["date"], pending_cost["field"]: pending_cost["amount"]})
+            clear_pending_bot_cost(chat_id)
+            telegram_send_message(
+                chat_id,
+                f"\u5df2\u5beb\u5165\u83dc\u91d1\n"
+                f"{pending_cost['date']}\n"
+                f"{COST_FIELD_LABELS.get(pending_cost['field'], pending_cost['field'])}\uff1a${pending_cost['amount']:.2f}\n"
+                f"\u5f8c\u53f0\u5df2\u540c\u6b65\u3002",
+                message_id,
+            )
+            return {"ok": True, "action": "cost_saved", "result": result}
         payload = load_pending_bot_report(chat_id)
         if not payload:
             telegram_send_message(chat_id, "\u6c92\u6709\u5f85\u78ba\u8a8d\u7684\u4eba\u6578\u8cc7\u6599\uff0c\u8acb\u5148\u7528 /\u4eba\u6578 \u89e3\u6790\u5831\u9910\u6587\u5b57\u3002", message_id)
@@ -1469,8 +1691,9 @@ def handle_telegram_update(update):
         return {"ok": True, "action": "saved", "result": result}
 
     if normalized in {"\u53d6\u6d88", "cancel", "Cancel"}:
+        clear_pending_bot_cost(chat_id)
         clear_pending_bot_report(chat_id)
-        telegram_send_message(chat_id, "\u5df2\u53d6\u6d88\u9019\u6b21\u4eba\u6578\u5beb\u5165\u3002", message_id)
+        telegram_send_message(chat_id, "\u5df2\u53d6\u6d88\u9019\u6b21\u5f85\u78ba\u8a8d\u8cc7\u6599\u3002", message_id)
         return {"ok": True, "action": "cancelled"}
 
     if text.startswith("/test") or text.startswith("/\u6e2c\u8a66") or text.startswith("/\u6d4b\u8bd5"):
