@@ -180,8 +180,6 @@
               <th>柬餐平均</th>
               <th>總人數</th>
               <th>總菜金</th>
-              <th>其他成本</th>
-              <th>總成本</th>
             </tr>
           </thead>
           <tbody id="rows"></tbody>
@@ -489,11 +487,9 @@
             <td class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</td>
             <td>${row.total_count}</td>
             <td>${money(row.total_cost)}</td>
-            <td>${money(row.other_cost)}</td>
-            <td>${money(row.total_expense_cost)}</td>
           </tr>
           <tr class="details-row" data-detail-date="${row.date}">
-            <td colspan="11">
+            <td colspan="9">
               <div class="detail-grid">
                 <div class="detail-box">
                   <strong>餐別成本</strong>
