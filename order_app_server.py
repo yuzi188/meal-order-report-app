@@ -954,7 +954,7 @@ def package_box_count_for_meal(data, meal):
     return count_from_row(data["locations"]["3F\u5305\u9910\u76d2"][meal], cuisines)
 
 
-def delivery_table_text(report_date):
+def delivery_table_text(report_date, meal_key=None):
     meal_names = {
         "breakfast": "\u65e9\u9910 07:00",
         "lunch": "\u5348\u9910 11:00",
@@ -1002,8 +1002,12 @@ def delivery_table_text(report_date):
             add_count_row(total_row, row_def[1](meal))
         return total_row
 
-    lines = [f"\u9001\u9910\u7e3d\u8868 {report_date}"]
-    for meal in MEAL_KEYS:
+    selected_meals = [meal_key] if meal_key in MEAL_KEYS else MEAL_KEYS
+    title = f"\u9001\u9910\u7e3d\u8868 {report_date}"
+    if meal_key in MEAL_KEYS:
+        title = f"{meal_names[meal_key]} \u9001\u9910\u7e3d\u8868 {report_date}"
+    lines = [title]
+    for meal in selected_meals:
         visible_total = visible_total_for_meal(meal)
         total = visible_total["total"]
         if not total:
@@ -1661,7 +1665,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/delivery-table":
             date = params.get("date", [today_key()])[0]
-            self.send_json({"date": date, "text": delivery_table_text(date)})
+            meal = params.get("meal", [""])[0]
+            self.send_json({"date": date, "meal": meal, "text": delivery_table_text(date, meal or None)})
             return
         if parsed.path == "/api/menu-images":
             date = params.get("date", [today_key()])[0]

@@ -617,7 +617,7 @@
     }
 
     async function loadDeliveryTable() {
-      const res = await fetch(`/api/delivery-table?date=${encodeURIComponent(currentDate)}&_=${Date.now()}`, { cache: "no-store" });
+      const res = await fetch(`/api/delivery-table?date=${encodeURIComponent(currentDate)}&meal=${encodeURIComponent(activeMeal)}&_=${Date.now()}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "送餐總表載入失敗");
       renderDeliveryTable(data.text || "");
@@ -644,6 +644,7 @@
         activeMeal = mealTab;
         renderMeals(currentMenu);
         renderSummary(currentSummary);
+        loadDeliveryTable().catch(err => setStatus(err.message, "err"));
       }
       const addMeal = event.target.dataset.addLine;
       if (addMeal) addLine(addMeal);
