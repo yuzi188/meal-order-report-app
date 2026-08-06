@@ -51,6 +51,28 @@ OPENAI_IMAGE_VERSION = os.environ.get("OPENAI_IMAGE_VERSION", "gpt-photo-low-1")
 DISH_IMAGE_DIR = DATA_DIR / "dish_images"
 APP_URL = "https://web-production-664d8.up.railway.app"
 ADMIN_URL = f"{APP_URL}/admin"
+KHMER_USAGE_ANNOUNCEMENT = """សេចក្តីជូនដំណឹងពីផ្ទះបាយ OFA
+
+របៀបប្រើ Kitchen Bot៖
+
+1. បើក Chat ជាមួយ Kitchen Bot ហើយចុច /start
+
+2. មើលមុខម្ហូបថ្ងៃនេះ
+ចុច「今日菜單」ឬវាយ៖ 今日菜單
+
+3. មើលតារាងដឹកអាហារ
+ចុច「送餐總表」ឬវាយ៖ 總表
+
+4. មើលចំនួនសរុប
+ចុច「送餐總數」ឬវាយ៖ 總數
+
+5. រាយការណ៍ចំនួនអាហារ
+ចុច「人數回報」បន្ទាប់មកបិទភ្ជាប់អត្ថបទរាយការណ៍។
+បើទិន្នន័យត្រឹមត្រូវ សូមឆ្លើយ៖ 確認
+
+សម្គាល់៖
+បុគ្គលិកទូទៅប្រើ「今日菜單」「送餐總表」「送餐總數」។
+「人數回報」និង「每日菜金」ត្រូវការសិទ្ធិអ្នកគ្រប់គ្រង។"""
 
 
 def storage_status():
@@ -586,6 +608,17 @@ def init_db():
                 report_date TEXT NOT NULL,
                 payload TEXT NOT NULL,
                 created_at INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS bot_known_chats (
+                chat_id TEXT PRIMARY KEY,
+                chat_type TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',
+                username TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL
             )
             """
         )
@@ -1654,6 +1687,7 @@ def main_inline_keyboard():
             ],
             [
                 {"text": "\u9001\u9910\u7e3d\u6578", "callback_data": "main|total"},
+                {"text": "\u516c\u544a", "callback_data": "main|announce"},
             ],
             [
                 {"text": "\u5f8c\u53f0\u7db2\u5740", "url": ADMIN_URL},
@@ -1698,6 +1732,61 @@ def telegram_answer_callback(callback_query_id, text=""):
     if text:
         payload["text"] = text
     return telegram_api("answerCallbackQuery", payload)
+
+
+def remember_bot_chat(chat):
+    chat_id = str(chat.get("id") or "")
+    if not chat_id:
+        return
+    now = datetime.now().isoformat(timespec="seconds")
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO bot_known_chats (chat_id, chat_type, title, username, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(chat_id) DO UPDATE SET
+                chat_type = excluded.chat_type,
+                title = excluded.title,
+                username = excluded.username,
+                updated_at = excluded.updated_at
+            """,
+            (
+                chat_id,
+                str(chat.get("type") or ""),
+                str(chat.get("title") or chat.get("first_name") or ""),
+                str(chat.get("username") or ""),
+                now,
+            ),
+        )
+        conn.commit()
+
+
+def known_bot_chats():
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT chat_id, chat_type, title, username, updated_at
+            FROM bot_known_chats
+            ORDER BY updated_at DESC
+            """
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def broadcast_bot_announcement(text):
+    chats = known_bot_chats()
+    sent = 0
+    failed = 0
+    for chat in chats:
+        result = telegram_send_message(chat["chat_id"], text, reply_markup=False)
+        if result.get("ok"):
+            sent += 1
+        else:
+            failed += 1
+    return {"sent": sent, "failed": failed, "total": len(chats)}
 
 
 def send_cost_menu(chat_id, report_date=None, reply_to_message_id=None):
@@ -1821,6 +1910,7 @@ def handle_telegram_update(update):
         username = telegram_username_from_callback(callback)
         if not chat_id:
             return {"ok": True, "ignored": "callback without chat"}
+        remember_bot_chat(chat)
         if TELEGRAM_ALLOWED_CHAT_ID and chat_id != TELEGRAM_ALLOWED_CHAT_ID:
             return {"ok": True, "ignored": "chat not allowed"}
         if data.startswith("main|"):
@@ -1843,6 +1933,20 @@ def handle_telegram_update(update):
             if action == "total":
                 telegram_send_message(chat_id, delivery_table_text(today_key()), message_id)
                 return {"ok": True, "action": "employee_totals_report"}
+            if action == "announce":
+                if not can_manage_bot_data(user_id, username):
+                    telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+                    return {"ok": True, "action": "permission_denied"}
+                result = broadcast_bot_announcement(KHMER_USAGE_ANNOUNCEMENT)
+                telegram_send_message(
+                    chat_id,
+                    f"\u516c\u544a\u5df2\u767c\u9001\n"
+                    f"\u6210\u529f\uff1a{result['sent']}\n"
+                    f"\u5931\u6557\uff1a{result['failed']}\n"
+                    f"\u5df2\u8a18\u9304\u5c0d\u8c61\uff1a{result['total']}",
+                    message_id,
+                )
+                return {"ok": True, "action": "announcement", "result": result}
             return {"ok": True, "ignored": "unknown main callback"}
         if data.startswith("cost"):
             telegram_answer_callback(callback_id, "\u5df2\u6536\u5230")
@@ -1868,6 +1972,7 @@ def handle_telegram_update(update):
     message_id = message.get("message_id")
     if not chat_id or not text:
         return {"ok": True, "ignored": True}
+    remember_bot_chat(chat)
     if TELEGRAM_ALLOWED_CHAT_ID and chat_id != TELEGRAM_ALLOWED_CHAT_ID:
         return {"ok": True, "ignored": "chat not allowed"}
 
@@ -1889,6 +1994,27 @@ def handle_telegram_update(update):
     if text.startswith("/admin") or normalized in {"\u5f8c\u53f0", "\u5f8c\u53f0\u7db2\u5740", "\u540e\u53f0", "\u540e\u53f0\u7f51\u5740", "admin"}:
         telegram_send_message(chat_id, f"\u5f8c\u53f0\u7db2\u5740\uff1a\n{ADMIN_URL}", message_id)
         return {"ok": True, "action": "admin_url"}
+
+    if text.startswith("/announce") or text.startswith("/\u516c\u544a") or normalized in {"\u516c\u544a", "\u7528\u6236\u516c\u544a", "\u7528\u6237\u516c\u544a"}:
+        if not can_manage_bot_data(user_id, username):
+            telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+            return {"ok": True, "action": "permission_denied"}
+        custom_text = ""
+        if text.startswith("/announce"):
+            custom_text = text[len("/announce"):].strip()
+        elif text.startswith("/\u516c\u544a"):
+            custom_text = text[len("/\u516c\u544a"):].strip()
+        announcement = custom_text or KHMER_USAGE_ANNOUNCEMENT
+        result = broadcast_bot_announcement(announcement)
+        telegram_send_message(
+            chat_id,
+            f"\u516c\u544a\u5df2\u767c\u9001\n"
+            f"\u6210\u529f\uff1a{result['sent']}\n"
+            f"\u5931\u6557\uff1a{result['failed']}\n"
+            f"\u5df2\u8a18\u9304\u5c0d\u8c61\uff1a{result['total']}",
+            message_id,
+        )
+        return {"ok": True, "action": "announcement", "result": result}
 
     if text.startswith("/\u83dc\u91d1") or text.startswith("/cost") or normalized in {"\u6bcf\u65e5\u83dc\u91d1", "\u83dc\u91d1"}:
         if not can_manage_bot_data(user_id, username):
