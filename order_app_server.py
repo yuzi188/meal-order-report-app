@@ -49,6 +49,8 @@ OPENAI_IMAGE_FORMAT = os.environ.get("OPENAI_IMAGE_FORMAT", "webp")
 OPENAI_IMAGE_QUALITY = os.environ.get("OPENAI_IMAGE_QUALITY", "low")
 OPENAI_IMAGE_VERSION = os.environ.get("OPENAI_IMAGE_VERSION", "gpt-photo-low-1")
 DISH_IMAGE_DIR = DATA_DIR / "dish_images"
+APP_URL = "https://web-production-664d8.up.railway.app"
+ADMIN_URL = f"{APP_URL}/admin"
 
 
 def storage_status():
@@ -1622,7 +1624,11 @@ def main_reply_keyboard():
             [
                 {
                     "text": "OFA \u5c0f\u7a0b\u5f0f",
-                    "web_app": {"url": "https://web-production-664d8.up.railway.app/"},
+                    "web_app": {"url": f"{APP_URL}/"},
+                },
+                {
+                    "text": "\u5f8c\u53f0\u7db2\u5740",
+                    "web_app": {"url": ADMIN_URL},
                 }
             ],
             [{"text": "\u4eba\u6578\u56de\u5831"}, {"text": "\u6bcf\u65e5\u83dc\u91d1"}],
@@ -1648,6 +1654,9 @@ def main_inline_keyboard():
             ],
             [
                 {"text": "\u9001\u9910\u7e3d\u6578", "callback_data": "main|total"},
+            ],
+            [
+                {"text": "\u5f8c\u53f0\u7db2\u5740", "url": ADMIN_URL},
             ],
         ]
     }
@@ -1714,7 +1723,7 @@ def send_main_menu(chat_id, reply_to_message_id=None):
         chat_id,
         "\u5eda\u623f\u6a5f\u5668\u4eba\u9078\u55ae\n\n"
         "\u8acb\u9ede\u4e0b\u9762\u6309\u9215\uff1a\n"
-        "\u4eba\u6578\u56de\u5831 / \u6bcf\u65e5\u83dc\u91d1 / \u4eca\u65e5\u83dc\u55ae / \u9001\u9910\u7e3d\u8868 / \u9001\u9910\u7e3d\u6578",
+        "\u4eba\u6578\u56de\u5831 / \u6bcf\u65e5\u83dc\u91d1 / \u4eca\u65e5\u83dc\u55ae / \u9001\u9910\u7e3d\u8868 / \u9001\u9910\u7e3d\u6578 / \u5f8c\u53f0\u7db2\u5740",
         reply_to_message_id,
         main_inline_keyboard(),
     )
@@ -1876,6 +1885,10 @@ def handle_telegram_update(update):
 
     if text.startswith("/start") or text.startswith("/help") or text.startswith("/keyboard") or normalized in {"\u9078\u55ae", "\u4e3b\u9078\u55ae", "menu"}:
         return send_main_menu(chat_id, message_id)
+
+    if text.startswith("/admin") or normalized in {"\u5f8c\u53f0", "\u5f8c\u53f0\u7db2\u5740", "\u540e\u53f0", "\u540e\u53f0\u7f51\u5740", "admin"}:
+        telegram_send_message(chat_id, f"\u5f8c\u53f0\u7db2\u5740\uff1a\n{ADMIN_URL}", message_id)
+        return {"ok": True, "action": "admin_url"}
 
     if text.startswith("/\u83dc\u91d1") or text.startswith("/cost") or normalized in {"\u6bcf\u65e5\u83dc\u91d1", "\u83dc\u91d1"}:
         if not can_manage_bot_data(user_id, username):
