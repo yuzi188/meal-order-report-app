@@ -1580,6 +1580,24 @@ def main_reply_keyboard():
     }
 
 
+def main_inline_keyboard():
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "\u4eba\u6578\u56de\u5831", "callback_data": "main|people"},
+                {"text": "\u6bcf\u65e5\u83dc\u91d1", "callback_data": "main|cost"},
+            ],
+            [
+                {"text": "\u4eca\u65e5\u83dc\u55ae", "callback_data": "main|menu"},
+                {"text": "\u9001\u9910\u7e3d\u8868", "callback_data": "main|table"},
+            ],
+            [
+                {"text": "\u9001\u9910\u7e3d\u6578", "callback_data": "main|total"},
+            ],
+        ]
+    }
+
+
 def telegram_api(method, payload):
     if not TELEGRAM_BOT_TOKEN:
         return {"ok": False, "error": "TELEGRAM_BOT_TOKEN not set"}
@@ -1631,10 +1649,10 @@ def send_main_menu(chat_id, reply_to_message_id=None):
     telegram_send_message(
         chat_id,
         "\u5eda\u623f\u6a5f\u5668\u4eba\u9078\u55ae\n\n"
-        "\u8acb\u9ede\u4e0b\u65b9\u5feb\u6377\u6309\u9215\uff1a\n"
+        "\u8acb\u9ede\u4e0b\u9762\u6309\u9215\uff1a\n"
         "\u4eba\u6578\u56de\u5831 / \u6bcf\u65e5\u83dc\u91d1 / \u4eca\u65e5\u83dc\u55ae / \u9001\u9910\u7e3d\u8868 / \u9001\u9910\u7e3d\u6578",
         reply_to_message_id,
-        main_reply_keyboard(),
+        main_inline_keyboard(),
     )
     return {"ok": True, "action": "main_menu"}
 
@@ -1732,6 +1750,27 @@ def handle_telegram_update(update):
             return {"ok": True, "ignored": "callback without chat"}
         if TELEGRAM_ALLOWED_CHAT_ID and chat_id != TELEGRAM_ALLOWED_CHAT_ID:
             return {"ok": True, "ignored": "chat not allowed"}
+        if data.startswith("main|"):
+            telegram_answer_callback(callback_id, "\u5df2\u6536\u5230")
+            action = data.split("|", 1)[1]
+            if action == "people":
+                telegram_send_message(chat_id, people_report_help(), message_id)
+                return {"ok": True, "action": "parse_help"}
+            if action == "cost":
+                if not can_manage_bot_data(user_id, username):
+                    telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+                    return {"ok": True, "action": "permission_denied"}
+                return send_cost_menu(chat_id, today_key(), message_id)
+            if action == "menu":
+                telegram_send_message(chat_id, today_menu_text(today_key()), message_id)
+                return {"ok": True, "action": "today_menu"}
+            if action == "table":
+                telegram_send_message(chat_id, delivery_table_text(today_key()), message_id)
+                return {"ok": True, "action": "delivery_table"}
+            if action == "total":
+                telegram_send_message(chat_id, delivery_table_text(today_key()), message_id)
+                return {"ok": True, "action": "employee_totals_report"}
+            return {"ok": True, "ignored": "unknown main callback"}
         if data.startswith("cost"):
             telegram_answer_callback(callback_id, "\u5df2\u6536\u5230")
             if not can_manage_bot_data(user_id, username):
