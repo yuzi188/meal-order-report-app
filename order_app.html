@@ -165,6 +165,37 @@
     td:first-child, th:first-child { text-align: left; padding-left: 12px; }
     .detail-list { padding: 10px 12px 12px; display: grid; gap: 6px; font-size: 14px; }
     .detail-item { padding: 8px 10px; border-radius: 8px; background: var(--soft); border: 1px solid var(--line); line-height: 1.45; }
+    .delivery-report { margin-top: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .delivery-toggle {
+      width: 100%;
+      min-height: 52px;
+      border: 0;
+      background: var(--soft);
+      color: var(--brand);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .delivery-toggle span:last-child { color: var(--muted); font-size: 13px; font-weight: 850; }
+    .delivery-body { display: none; border-top: 1px solid var(--line); padding: 12px; }
+    .delivery-report.open .delivery-body { display: block; }
+    .delivery-text {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.55;
+      color: #f6f3e7;
+      background: #0b1119;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+    }
     @media (max-width: 760px) {
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .meal-current { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -224,6 +255,16 @@
       </div>
       <div class="detail-list" id="detailRows"></div>
     </section>
+
+    <section class="delivery-report" id="deliveryReport">
+      <button type="button" class="delivery-toggle" id="deliveryToggle">
+        <span>&#36865;&#39184;&#32317;&#34920;</span>
+        <span id="deliveryHint">&#40670;&#25802;&#25171;&#38283;</span>
+      </button>
+      <div class="delivery-body">
+        <pre class="delivery-text" id="deliveryText">&#36865;&#39184;&#32317;&#34920;&#36617;&#20837;&#20013;...</pre>
+      </div>
+    </section>
   </main>
   <div class="lightbox" id="photoLightbox" role="button" tabindex="0" aria-label="關閉照片">
     <img id="lightboxImage" alt="">
@@ -259,6 +300,7 @@
     let activeDepartment = "";
     let activeMeal = "breakfast";
     let imageRequestId = 0;
+    let deliveryTableText = "";
 
     if (window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.ready();
@@ -304,6 +346,7 @@
       renderDepartmentTabs();
       renderMeals(data.menu);
       renderSummary(data.summary);
+      loadDeliveryTable().catch(() => renderDeliveryTable(""));
       setStatus("");
     }
 
@@ -565,6 +608,19 @@
       currentSummary = data.summary;
       renderSummary(data.summary);
       renderMeals(currentMenu);
+      await loadDeliveryTable();
+    }
+
+    function renderDeliveryTable(text) {
+      deliveryTableText = text || "";
+      document.getElementById("deliveryText").textContent = deliveryTableText || "目前沒有送餐資料";
+    }
+
+    async function loadDeliveryTable() {
+      const res = await fetch(`/api/delivery-table?date=${encodeURIComponent(currentDate)}&_=${Date.now()}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "送餐總表載入失敗");
+      renderDeliveryTable(data.text || "");
     }
 
     async function autoRefresh() {
@@ -615,6 +671,11 @@
         document.getElementById("lightboxImage").alt = photoButton.dataset.photoTitle || "";
         document.getElementById("lightboxCaption").textContent = photoButton.dataset.photoTitle || "";
         document.getElementById("photoLightbox").classList.add("open");
+      }
+      if (event.target.closest("#deliveryToggle")) {
+        const report = document.getElementById("deliveryReport");
+        report.classList.toggle("open");
+        document.getElementById("deliveryHint").textContent = report.classList.contains("open") ? "點擊收合" : "點擊打開";
       }
     });
 

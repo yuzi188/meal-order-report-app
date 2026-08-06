@@ -1659,6 +1659,10 @@ class Handler(BaseHTTPRequestHandler):
             date = params.get("date", [today_key()])[0]
             self.send_json({"date": date, "summary": summary(date)})
             return
+        if parsed.path == "/api/delivery-table":
+            date = params.get("date", [today_key()])[0]
+            self.send_json({"date": date, "text": delivery_table_text(date)})
+            return
         if parsed.path == "/api/menu-images":
             date = params.get("date", [today_key()])[0]
             meal = params.get("meal", [""])[0]
