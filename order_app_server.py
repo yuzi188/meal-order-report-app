@@ -36,6 +36,7 @@ BOT_CONFIRM_TTL_SECONDS = 60 * 30
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_IMAGE_MODEL = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1")
 OPENAI_IMAGE_FORMAT = os.environ.get("OPENAI_IMAGE_FORMAT", "webp")
+OPENAI_IMAGE_VERSION = os.environ.get("OPENAI_IMAGE_VERSION", "gpt-photo-1")
 DISH_IMAGE_DIR = DATA_DIR / "dish_images"
 
 
@@ -163,7 +164,7 @@ def dish_image_url(item):
     if not dish:
         return ""
     return "/api/dish-image?" + urllib.parse.urlencode(
-        {"dish": dish, "category": category}
+        {"dish": dish, "category": category, "v": OPENAI_IMAGE_VERSION}
     )
 
 
@@ -1615,7 +1616,8 @@ class Handler(BaseHTTPRequestHandler):
     def send_bytes(self, body, content_type):
         self.send_response(200)
         self.send_header("Content-Type", content_type)
-        self.send_header("Cache-Control", "public, max-age=86400")
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.send_header("Pragma", "no-cache")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
