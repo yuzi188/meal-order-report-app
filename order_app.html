@@ -673,8 +673,7 @@
 
     async function autoRefresh() {
       const today = todayTaipei();
-      if (currentDate !== today && document.getElementById("dateInput").value === currentDate) {
-        await load(today);
+      if (currentDate !== today) {
         return;
       }
       await refreshSummary();
