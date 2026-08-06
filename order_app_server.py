@@ -31,6 +31,16 @@ ADMIN_COOKIE = "ofa_admin_session"
 ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 12
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_ALLOWED_CHAT_ID = os.environ.get("TELEGRAM_ALLOWED_CHAT_ID", "")
+TELEGRAM_MANAGER_USER_IDS = {
+    value.strip()
+    for value in os.environ.get("TELEGRAM_MANAGER_USER_IDS", "").split(",")
+    if value.strip()
+}
+TELEGRAM_MANAGER_USERNAMES = {
+    value.strip().lstrip("@").lower()
+    for value in os.environ.get("TELEGRAM_MANAGER_USERNAMES", "").split(",")
+    if value.strip()
+}
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
 BOT_CONFIRM_TTL_SECONDS = 60 * 30
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
@@ -859,6 +869,46 @@ def parse_letai_short_report(text):
     }
 
 
+def telegram_user_id_from_message(message):
+    sender = (message or {}).get("from") or {}
+    value = sender.get("id")
+    return str(value) if value is not None else ""
+
+
+def telegram_username_from_message(message):
+    sender = (message or {}).get("from") or {}
+    return str(sender.get("username") or "").lstrip("@").lower()
+
+
+def telegram_user_id_from_callback(callback):
+    sender = (callback or {}).get("from") or {}
+    value = sender.get("id")
+    return str(value) if value is not None else ""
+
+
+def telegram_username_from_callback(callback):
+    sender = (callback or {}).get("from") or {}
+    return str(sender.get("username") or "").lstrip("@").lower()
+
+
+def can_manage_bot_data(user_id, username=""):
+    if not TELEGRAM_MANAGER_USER_IDS and not TELEGRAM_MANAGER_USERNAMES:
+        return True
+    normalized_username = str(username or "").lstrip("@").lower()
+    return str(user_id or "") in TELEGRAM_MANAGER_USER_IDS or normalized_username in TELEGRAM_MANAGER_USERNAMES
+
+
+def permission_denied_text(user_id, username=""):
+    display_user_id = user_id or "\u8b80\u53d6\u4e0d\u5230"
+    display_username = f"@{username}" if username else "\u8b80\u53d6\u4e0d\u5230"
+    return (
+        "\u6c92\u6709\u6b0a\u9650\u64cd\u4f5c\u9019\u500b\u529f\u80fd\u3002\n"
+        "\u53ea\u6709\u6388\u6b0a\u4eba\u54e1\u53ef\u4ee5\u5beb\u5165\u4eba\u6578\u6216\u83dc\u91d1\u3002\n"
+        f"\u4f60\u7684 Telegram ID\uff1a{display_user_id}\n"
+        f"\u4f60\u7684 Telegram 帳號\uff1a{display_username}"
+    )
+
+
 def parse_menu_change_command(text):
     raw = str(text or "").strip()
     if not any(mark in raw for mark in ["\u63db", "\u6362", "\u6539\u6210"]):
@@ -1676,12 +1726,17 @@ def handle_telegram_update(update):
         chat_id = str(chat.get("id") or "")
         message_id = message.get("message_id")
         callback_id = callback.get("id")
+        user_id = telegram_user_id_from_callback(callback)
+        username = telegram_username_from_callback(callback)
         if not chat_id:
             return {"ok": True, "ignored": "callback without chat"}
         if TELEGRAM_ALLOWED_CHAT_ID and chat_id != TELEGRAM_ALLOWED_CHAT_ID:
             return {"ok": True, "ignored": "chat not allowed"}
         if data.startswith("cost"):
             telegram_answer_callback(callback_id, "\u5df2\u6536\u5230")
+            if not can_manage_bot_data(user_id, username):
+                telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+                return {"ok": True, "action": "permission_denied"}
             try:
                 return handle_cost_callback(chat_id, message_id, callback_id, data)
             except Exception as exc:
@@ -1696,6 +1751,8 @@ def handle_telegram_update(update):
     reply_text = str(reply.get("text") or reply.get("caption") or "").strip()
     chat = message.get("chat") or {}
     chat_id = str(chat.get("id") or "")
+    user_id = telegram_user_id_from_message(message)
+    username = telegram_username_from_message(message)
     message_id = message.get("message_id")
     if not chat_id or not text:
         return {"ok": True, "ignored": True}
@@ -1703,11 +1760,29 @@ def handle_telegram_update(update):
         return {"ok": True, "ignored": "chat not allowed"}
 
     normalized = re.sub(r"\s+", "", text)
+    if text.startswith("/id") or text.startswith("/\u6211\u7684ID") or normalized in {"\u6211\u7684id", "\u6211\u7684ID"}:
+        display_user_id = user_id or "\u8b80\u53d6\u4e0d\u5230"
+        display_username = username or "\u8b80\u53d6\u4e0d\u5230"
+        telegram_send_message(
+            chat_id,
+            f"\u4f60\u7684 Telegram ID\uff1a{display_user_id}\n"
+            f"\u4f60\u7684 Telegram 帳號\uff1a@{display_username}",
+            message_id,
+        )
+        return {"ok": True, "action": "my_id", "user_id": user_id, "username": username}
+
     if text.startswith("/start") or text.startswith("/help") or normalized in {"\u9078\u55ae", "\u4e3b\u9078\u55ae", "menu"}:
         return send_main_menu(chat_id, message_id)
 
     if text.startswith("/\u83dc\u91d1") or text.startswith("/cost") or normalized in {"\u6bcf\u65e5\u83dc\u91d1", "\u83dc\u91d1"}:
+        if not can_manage_bot_data(user_id, username):
+            telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+            return {"ok": True, "action": "permission_denied"}
         return send_cost_menu(chat_id, normalize_report_date(text), message_id)
+
+    if load_pending_bot_cost(chat_id) and not can_manage_bot_data(user_id, username):
+        telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+        return {"ok": True, "action": "permission_denied"}
 
     cost_amount_result = handle_pending_cost_amount(chat_id, text, message_id)
     if cost_amount_result:
@@ -1716,6 +1791,9 @@ def handle_telegram_update(update):
     if normalized in {"\u78ba\u8a8d", "\u786e\u8ba4", "ok", "OK"}:
         pending_cost = load_pending_bot_cost(chat_id)
         if pending_cost and "amount" in pending_cost:
+            if not can_manage_bot_data(user_id, username):
+                telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+                return {"ok": True, "action": "permission_denied"}
             result = save_cost({"date": pending_cost["date"], pending_cost["field"]: pending_cost["amount"]})
             clear_pending_bot_cost(chat_id)
             telegram_send_message(
@@ -1731,6 +1809,9 @@ def handle_telegram_update(update):
         if not payload:
             telegram_send_message(chat_id, "\u6c92\u6709\u5f85\u78ba\u8a8d\u7684\u4eba\u6578\u8cc7\u6599\uff0c\u8acb\u5148\u7528 /\u4eba\u6578 \u89e3\u6790\u5831\u9910\u6587\u5b57\u3002", message_id)
             return {"ok": True, "action": "no_pending"}
+        if not can_manage_bot_data(user_id, username):
+            telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+            return {"ok": True, "action": "permission_denied"}
         result = save_report(payload)
         clear_pending_bot_report(chat_id)
         telegram_send_message(
@@ -1765,6 +1846,9 @@ def handle_telegram_update(update):
 
     menu_change = parse_menu_change_command(text)
     if menu_change:
+        if not can_manage_bot_data(user_id, username):
+            telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+            return {"ok": True, "action": "permission_denied"}
         try:
             result = save_menu_change(menu_change)
             telegram_send_message(
@@ -1787,8 +1871,13 @@ def handle_telegram_update(update):
         if not parse_text or normalized in {"\u4eba\u6578\u56de\u5831", "\u4eba\u6570\u56de\u62a5", "\u4eba\u6578", "\u4eba\u6570"}:
             telegram_send_message(chat_id, people_report_help(), message_id)
             return {"ok": True, "action": "parse_help"}
+        if not can_manage_bot_data(user_id, username):
+            telegram_send_message(chat_id, permission_denied_text(user_id, username), message_id)
+            return {"ok": True, "action": "permission_denied"}
 
     try:
+        if not can_manage_bot_data(user_id, username):
+            return {"ok": True, "ignored": "permission denied for auto parse"}
         payload = parse_bot_3f_report(parse_text)
         summary_text = summarize_bot_report(payload)
         result = save_report(payload)
