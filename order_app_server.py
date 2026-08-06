@@ -156,7 +156,40 @@ def unit_delivery_locations():
 
 
 def load_menu():
-    return json.loads(MENU_PATH.read_text(encoding="utf-8"))
+    menu = json.loads(MENU_PATH.read_text(encoding="utf-8"))
+    return apply_menu_overrides(menu)
+
+
+def menu_override_rows():
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT report_date, meal_key, old_dish, new_dish, updated_at
+            FROM menu_overrides
+            ORDER BY updated_at, id
+            """
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def apply_menu_overrides(menu):
+    try:
+        rows = menu_override_rows()
+    except Exception:
+        rows = []
+    for row in rows:
+        day = menu.get(row["report_date"])
+        if not day:
+            continue
+        for meal in day.get("meals", []):
+            if meal.get("key") != row["meal_key"]:
+                continue
+            for item in meal.get("items", []):
+                if str(item.get("dish") or "").strip() == row["old_dish"]:
+                    item["dish"] = row["new_dish"]
+    return menu
 
 
 def dish_image_url(item):
@@ -462,6 +495,24 @@ def init_db():
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS menu_overrides (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                report_date TEXT NOT NULL,
+                meal_key TEXT NOT NULL,
+                old_dish TEXT NOT NULL,
+                new_dish TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_menu_overrides_date_meal
+            ON menu_overrides (report_date, meal_key)
+            """
+        )
 
 
 def get_setting(key):
@@ -746,6 +797,95 @@ def parse_letai_short_report(text):
             }
         ],
         "merge": False,
+    }
+
+
+def parse_menu_change_command(text):
+    raw = str(text or "").strip()
+    if not any(mark in raw for mark in ["\u63db", "\u6362", "\u6539\u6210"]):
+        return None
+    date_match = re.search(r"(\d{1,2}\s*/\s*\d{1,2})(?:\s*\u865f|\s*\u53f7)?", raw)
+    if not date_match:
+        return None
+    tail = raw[date_match.end():].strip()
+    meal_match = re.match(
+        r"^(\u65e9(?:\u9910)?|\u4e2d(?:\u9910)?|\u5348(?:\u9910)?|\u665a(?:\u9910)?|\u5bb5(?:\u591c)?|Breakfast|Lunch|Dinner|Supper)\s*",
+        tail,
+        flags=re.IGNORECASE,
+    )
+    if not meal_match:
+        return None
+    meal_label = meal_match.group(1).lower()
+    meal_key = {
+        "\u65e9": "breakfast",
+        "\u65e9\u9910": "breakfast",
+        "breakfast": "breakfast",
+        "\u4e2d": "lunch",
+        "\u5348": "lunch",
+        "\u4e2d\u9910": "lunch",
+        "\u5348\u9910": "lunch",
+        "lunch": "lunch",
+        "\u665a": "dinner",
+        "\u665a\u9910": "dinner",
+        "dinner": "dinner",
+        "\u5bb5": "late_night",
+        "\u5bb5\u591c": "late_night",
+        "supper": "late_night",
+    }.get(meal_label)
+    if not meal_key:
+        return None
+    tail = tail[meal_match.end():].strip()
+    match = re.match(r"(.+?)\s*(?:\u63db|\u6362|\u6539\u6210)\s*(.+)$", tail)
+    if not match:
+        return None
+    old_dish = match.group(1).strip(" ，,。")
+    new_dish = match.group(2).strip(" ，,。")
+    if not old_dish or not new_dish:
+        return None
+    return {
+        "date": normalize_report_date(raw),
+        "meal_key": meal_key,
+        "old_dish": old_dish,
+        "new_dish": new_dish,
+    }
+
+
+def save_menu_change(change):
+    report_date = change["date"]
+    meal_key = change["meal_key"]
+    old_dish = change["old_dish"]
+    new_dish = change["new_dish"]
+    menu = load_menu()
+    day = menu.get(report_date)
+    if not day:
+        raise ValueError(f"\u627e\u4e0d\u5230 {report_date} \u83dc\u55ae")
+    meal_names = {"breakfast": "\u65e9\u9910", "lunch": "\u5348\u9910", "dinner": "\u665a\u9910", "late_night": "\u5bb5\u591c"}
+    target_meal = None
+    for meal in day.get("meals", []):
+        if meal.get("key") == meal_key:
+            target_meal = meal
+            break
+    if not target_meal:
+        raise ValueError(f"\u627e\u4e0d\u5230 {meal_names.get(meal_key, meal_key)}")
+    dishes = [str(item.get("dish") or "").strip() for item in target_meal.get("items", [])]
+    if old_dish not in dishes:
+        raise ValueError(f"{report_date} {meal_names.get(meal_key, meal_key)} \u627e\u4e0d\u5230\u300c{old_dish}\u300d")
+    now = datetime.now().isoformat(timespec="seconds")
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO menu_overrides (report_date, meal_key, old_dish, new_dish, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (report_date, meal_key, old_dish, new_dish, now),
+        )
+    return {
+        "date": report_date,
+        "meal_key": meal_key,
+        "meal_label": meal_names.get(meal_key, meal_key),
+        "old_dish": old_dish,
+        "new_dish": new_dish,
     }
 
 
@@ -1237,6 +1377,23 @@ def handle_telegram_update(update):
     if text.startswith("/\u7e3d\u6578") or text.startswith("/\u603b\u6570"):
         telegram_send_message(chat_id, delivery_table_text(normalize_report_date(text)), message_id)
         return {"ok": True, "action": "employee_totals_report"}
+
+    menu_change = parse_menu_change_command(text)
+    if menu_change:
+        try:
+            result = save_menu_change(menu_change)
+            telegram_send_message(
+                chat_id,
+                f"\u5df2\u4fee\u6539\u83dc\u55ae\n"
+                f"{result['date']} {result['meal_label']}\n"
+                f"\u300c{result['old_dish']}\u300d \u2192 \u300c{result['new_dish']}\u300d\n"
+                f"\u5c0f\u7a0b\u5f0f\u5df2\u540c\u6b65\uff0c\u83dc\u8272\u5716\u7247\u6703\u6539\u7528\u65b0\u83dc\u540d\u751f\u6210\u3002",
+                message_id,
+            )
+            return {"ok": True, "action": "menu_changed", "result": result}
+        except Exception as exc:
+            telegram_send_message(chat_id, f"\u83dc\u55ae\u6c92\u6709\u4fee\u6539\uff1a{exc}", message_id)
+            return {"ok": True, "action": "menu_change_failed", "error": str(exc)}
 
     parse_text = text
     if text.startswith("/\u4eba\u6578") or text.startswith("/\u4eba\u6570") or text.startswith("/parse"):
