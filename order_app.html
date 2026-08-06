@@ -185,17 +185,28 @@
     .delivery-report.open .delivery-body { display: block; }
     .delivery-text {
       margin: 0;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
       font-family: inherit;
       font-size: 15px;
-      line-height: 1.55;
+      line-height: 1.45;
       color: #f6f3e7;
       background: #0b1119;
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 12px;
     }
+    .delivery-line { padding: 6px 0; border-bottom: 1px solid rgba(41,49,61,.58); overflow-wrap: anywhere; }
+    .delivery-line:last-child { border-bottom: 0; }
+    .delivery-title { color: var(--brand); font-size: 18px; font-weight: 950; padding-bottom: 10px; }
+    .delivery-meal { color: #ffffff; font-size: 17px; font-weight: 950; background: rgba(245,200,75,.1); border: 1px solid rgba(245,200,75,.32); border-radius: 8px; padding: 9px 10px; margin: 8px 0; }
+    .delivery-total { color: #f6f3e7; font-weight: 950; background: rgba(104,183,255,.1); border: 1px solid rgba(104,183,255,.28); border-radius: 8px; padding: 9px 10px; margin-bottom: 6px; }
+    .delivery-item { color: #d8dee7; }
+    .delivery-place { color: var(--brand); font-weight: 950; }
+    .delivery-tw { color: var(--tw); font-weight: 950; }
+    .delivery-kh { color: var(--kh); font-weight: 950; }
+    .delivery-healthy { color: var(--ok); font-weight: 950; }
+    .delivery-box { color: #f6f3e7; font-weight: 950; }
+    .delivery-bucket { color: #c9a7ff; font-weight: 950; }
+    .delivery-note { color: #ffb257; font-weight: 950; }
     @media (max-width: 760px) {
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .meal-current { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -622,6 +633,32 @@
       if (!res.ok) throw new Error(data.error || "送餐總表載入失敗");
       renderDeliveryTable(data.text || "");
     }
+
+    function colorizeDeliveryTable(text) {
+      return String(text || "").split("\n").map(line => {
+        if (!line.trim()) return `<div class="delivery-line"></div>`;
+        let cls = "delivery-line delivery-item";
+        if (line.includes("送餐總表")) cls = "delivery-line delivery-title";
+        else if (/^(早餐|午餐|晚餐|宵夜)/.test(line)) cls = "delivery-line delivery-meal";
+        else if (line.includes("共")) cls = "delivery-line delivery-total";
+        const escaped = escapeHtml(line)
+          .replaceAll("🇹🇼", `<span class="delivery-tw">🇹🇼</span>`)
+          .replaceAll("🇰🇭", `<span class="delivery-kh">🇰🇭</span>`)
+          .replaceAll("健康餐🥦", `<span class="delivery-healthy">健康餐🥦</span>`)
+          .replaceAll("🍱", `<span class="delivery-box">🍱</span>`)
+          .replaceAll("🪣", `<span class="delivery-bucket">🪣</span>`)
+          .replaceAll("🐷不吃豬", `<span class="delivery-note">🐷不吃豬</span>`)
+          .replaceAll("🐮不吃牛", `<span class="delivery-note">🐮不吃牛</span>`)
+          .replaceAll("🦞不吃海鮮", `<span class="delivery-note">🦞不吃海鮮</span>`)
+          .replace(/^(1001 3A|1002-2代理|1002-3金流|1002-2客服|MT-3F|包飯盒|68公寓|88公寓|保姆 68|保姆 88|海南雞飯|健康餐🥦-3F|🐷不吃豬|🐮不吃牛|🦞不吃海鮮)/, `<span class="delivery-place">$1</span>`);
+        return `<div class="${cls}">${escaped}</div>`;
+      }).join("");
+    }
+
+    renderDeliveryTable = function(text) {
+      deliveryTableText = text || "";
+      document.getElementById("deliveryText").innerHTML = colorizeDeliveryTable(deliveryTableText || "目前沒有送餐資料");
+    };
 
     async function autoRefresh() {
       const today = todayTaipei();
