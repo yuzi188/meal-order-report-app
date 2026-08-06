@@ -87,6 +87,17 @@
     .dish { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; font-size: 14px; line-height: 1.45; }
     .cat { color: var(--muted); font-weight: 900; }
     .dish-name { font-weight: 760; overflow-wrap: anywhere; }
+    .photo-panel { margin: 0 12px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); overflow: hidden; }
+    .photo-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 10px; color: var(--brand); font-weight: 950; border-bottom: 1px solid var(--line); }
+    .photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px; }
+    .photo-card { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); color: var(--text); text-align: left; padding: 0; }
+    .photo-card img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #05070a; }
+    .photo-caption { padding: 7px 8px; font-size: 12px; font-weight: 850; color: #d8dee7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .photo-empty { padding: 12px; color: var(--muted); font-size: 13px; }
+    .lightbox { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(0,0,0,.82); }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 100%; max-height: 80vh; border-radius: 8px; background: #000; }
+    .lightbox-caption { position: absolute; left: 18px; right: 18px; bottom: 18px; color: #fff; text-align: center; font-weight: 900; text-shadow: 0 2px 8px rgba(0,0,0,.8); }
     .meal-current { margin: 0 12px 10px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
     .meal-current div { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); padding: 8px 7px; text-align: center; }
     .meal-current strong { display: block; font-size: 18px; line-height: 1; margin-bottom: 4px; }
@@ -157,6 +168,7 @@
     @media (max-width: 760px) {
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .meal-current { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .meal-grid, .actions { grid-template-columns: 1fr; }
       .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
@@ -213,6 +225,10 @@
       <div class="detail-list" id="detailRows"></div>
     </section>
   </main>
+  <div class="lightbox" id="photoLightbox" role="button" tabindex="0" aria-label="關閉照片">
+    <img id="lightboxImage" alt="">
+    <div class="lightbox-caption" id="lightboxCaption"></div>
+  </div>
 
   <script>
     const t = {
@@ -242,6 +258,7 @@
     let departments = [];
     let activeDepartment = "";
     let activeMeal = "breakfast";
+    let imageRequestId = 0;
 
     if (window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.ready();
@@ -345,6 +362,42 @@
       return currentSummary.totals[mealKey] || { taiwan: 0, healthy: 0, cambodia: 0, total: 0 };
     }
 
+    function photoCard(item) {
+      if (!item.image_url) return "";
+      return `
+        <button type="button" class="photo-card" data-photo-src="${escapeHtml(item.image_url)}" data-photo-title="${escapeHtml(item.dish)}">
+          <img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.dish)}" loading="lazy" referrerpolicy="no-referrer">
+          <div class="photo-caption">${escapeHtml(item.dish)}</div>
+        </button>
+      `;
+    }
+
+    function renderMealPhotos(items, loading = false) {
+      const box = document.getElementById("mealPhotos");
+      if (!box) return;
+      if (loading) {
+        box.innerHTML = `<div class="photo-empty">菜色照片載入中...</div>`;
+        return;
+      }
+      const cards = (items || []).map(photoCard).join("");
+      box.innerHTML = cards ? `<div class="photo-grid">${cards}</div>` : `<div class="photo-empty">目前沒有照片</div>`;
+    }
+
+    async function loadMealImages(mealKey) {
+      const requestId = ++imageRequestId;
+      renderMealPhotos([], true);
+      try {
+        const res = await fetch(`/api/menu-images?date=${encodeURIComponent(currentDate)}&meal=${encodeURIComponent(mealKey)}&_=${Date.now()}`, { cache: "no-store" });
+        const data = await res.json();
+        if (requestId !== imageRequestId) return;
+        if (!res.ok) throw new Error(data.error || "照片載入失敗");
+        const meal = (data.meals || [])[0];
+        renderMealPhotos(meal ? meal.items : []);
+      } catch (_err) {
+        if (requestId === imageRequestId) renderMealPhotos([]);
+      }
+    }
+
     function renderMeals(menu) {
       document.getElementById("menuDate").textContent = `${menu.display_date} ${t.todayMenu}`;
       const meal = menu.meals.find(item => item.key === activeMeal) || menu.meals[0];
@@ -367,6 +420,10 @@
             <div class="meal-time">${escapeHtml(meal.time)}</div>
           </div>
           <div class="dishes">${dishes}</div>
+          <div class="photo-panel">
+            <div class="photo-head"><span>菜色照片</span><span>${escapeHtml(meal.time)}</span></div>
+            <div id="mealPhotos"><div class="photo-empty">菜色照片載入中...</div></div>
+          </div>
           <div class="meal-current">
             <div><strong>${activeTotal.total}</strong><span>合計</span></div>
             <div><strong>${activeTotal.taiwan}</strong><span>台餐</span></div>
@@ -399,6 +456,7 @@
           </div>
         </article>
       `;
+      loadMealImages(meal.key);
     }
 
     function renderSummary(summary) {
@@ -550,6 +608,24 @@
       if (event.target.dataset.removeLine !== undefined) {
         const box = event.target.closest("[data-lines]");
         if (box.querySelectorAll(".line").length > 1) event.target.closest(".line").remove();
+      }
+      const photoButton = event.target.closest("[data-photo-src]");
+      if (photoButton) {
+        document.getElementById("lightboxImage").src = photoButton.dataset.photoSrc;
+        document.getElementById("lightboxImage").alt = photoButton.dataset.photoTitle || "";
+        document.getElementById("lightboxCaption").textContent = photoButton.dataset.photoTitle || "";
+        document.getElementById("photoLightbox").classList.add("open");
+      }
+    });
+
+    document.getElementById("photoLightbox").addEventListener("click", () => {
+      document.getElementById("photoLightbox").classList.remove("open");
+      document.getElementById("lightboxImage").src = "";
+    });
+    document.getElementById("photoLightbox").addEventListener("keydown", event => {
+      if (event.key === "Escape" || event.key === "Enter" || event.key === " ") {
+        document.getElementById("photoLightbox").classList.remove("open");
+        document.getElementById("lightboxImage").src = "";
       }
     });
 

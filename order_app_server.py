@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import html
 import hmac
 import json
 import os
@@ -151,6 +152,126 @@ def unit_delivery_locations():
 
 def load_menu():
     return json.loads(MENU_PATH.read_text(encoding="utf-8"))
+
+
+def image_query_for_item(item):
+    dish = str((item or {}).get("dish") or "").strip()
+    category = str((item or {}).get("category") or "").strip()
+    if not dish:
+        return ""
+    if category == "\u6e6f\u54c1" and not any(word in dish for word in ("\u6e6f", "\u7fb9", "\u7172", "\u6fc3\u6e6f")):
+        return f"{dish} \u6e6f\u54c1 \u7e41\u9ad4\u4e2d\u6587 \u53f0\u7063\u6599\u7406 \u98df\u8b5c \u6210\u54c1\u7167"
+    return f"{dish} \u7e41\u9ad4\u4e2d\u6587 \u53f0\u7063\u6599\u7406 \u98df\u8b5c \u6210\u54c1\u7167"
+
+
+def icook_image_urls(item, limit=2):
+    dish = str((item or {}).get("dish") or "").strip()
+    if not dish:
+        return []
+    search_url = "https://icook.tw/search/" + urllib.parse.quote(dish)
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept-Language": "zh-TW,zh;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    with urllib.request.urlopen(urllib.request.Request(search_url, headers=headers), timeout=8) as response:
+        body = response.read().decode("utf-8", errors="ignore")
+    urls = []
+    for match in re.findall(r'https?://imgproxy\.icook\.network/[^"\']+', body):
+        image_url = html.unescape(match)
+        if image_url not in urls:
+            urls.append(image_url)
+            if len(urls) >= limit:
+                break
+    return urls
+
+
+def bing_image_urls(item, limit=2):
+    query = image_query_for_item(item)
+    if not query:
+        return []
+    search_url = "https://www.bing.com/images/search?" + urllib.parse.urlencode(
+        {"q": query, "cc": "tw", "setlang": "zh-hant", "safeSearch": "strict"}
+    )
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept-Language": "zh-TW,zh;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    with urllib.request.urlopen(urllib.request.Request(search_url, headers=headers), timeout=8) as response:
+        body = response.read().decode("utf-8", errors="ignore")
+    urls = []
+    patterns = [
+        r'"murl"\s*:\s*"([^"]+)"',
+        r'murl&quot;:&quot;([^&]+)&quot;',
+    ]
+    for pattern in patterns:
+        for match in re.findall(pattern, body):
+            image_url = html.unescape(match)
+            if "%" in image_url:
+                image_url = urllib.parse.unquote(image_url)
+            if image_url.startswith(("http://", "https://")) and image_url not in urls:
+                urls.append(image_url)
+                if len(urls) >= limit:
+                    return urls
+    return urls
+
+
+def menu_image_cache():
+    stored = get_setting("menu_image_cache_v1")
+    if not stored:
+        return {}
+    try:
+        data = json.loads(stored)
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def save_menu_image_cache(cache):
+    set_setting("menu_image_cache_v1", json.dumps(cache, ensure_ascii=False))
+
+
+def image_url_for_item(item):
+    dish = str((item or {}).get("dish") or "").strip()
+    category = str((item or {}).get("category") or "").strip()
+    if not dish:
+        return ""
+    cache = menu_image_cache()
+    key = hashlib.sha1(f"{category}|{dish}".encode("utf-8")).hexdigest()
+    cached = cache.get(key)
+    if cached:
+        return cached
+    urls = []
+    for provider in (icook_image_urls, bing_image_urls):
+        try:
+            urls = provider(item, limit=2)
+        except Exception:
+            urls = []
+        if urls:
+            break
+    image_url = urls[0] if urls else ""
+    cache[key] = image_url
+    save_menu_image_cache(cache)
+    return image_url
+
+
+def menu_images(report_date, meal_key=None):
+    day = load_menu().get(report_date)
+    if not day:
+        raise ValueError(f"\u627e\u4e0d\u5230 {report_date} \u83dc\u55ae")
+    meals = []
+    for meal in day.get("meals", []):
+        if meal_key and meal.get("key") != meal_key:
+            continue
+        items = []
+        for item in meal.get("items", []):
+            if not item.get("dish"):
+                continue
+            image_url = image_url_for_item(item)
+            items.append({**item, "image_url": image_url})
+        meals.append({"key": meal.get("key"), "label": meal.get("label"), "time": meal.get("time"), "items": items})
+    return {"date": report_date, "display_date": day.get("display_date"), "meals": meals}
 
 
 def today_key():
@@ -1495,6 +1616,14 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/summary":
             date = params.get("date", [today_key()])[0]
             self.send_json({"date": date, "summary": summary(date)})
+            return
+        if parsed.path == "/api/menu-images":
+            date = params.get("date", [today_key()])[0]
+            meal = params.get("meal", [""])[0]
+            try:
+                self.send_json(menu_images(date, meal or None))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 404)
             return
         if parsed.path == "/api/costs":
             if not self.require_admin():
