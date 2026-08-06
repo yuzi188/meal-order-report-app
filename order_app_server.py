@@ -1627,6 +1627,8 @@ def telegram_send_message(chat_id, text, reply_to_message_id=None, reply_markup=
     payload = {"chat_id": chat_id, "text": text}
     if reply_to_message_id:
         payload["reply_to_message_id"] = reply_to_message_id
+    if reply_markup is None:
+        reply_markup = main_reply_keyboard()
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
     return telegram_api("sendMessage", payload)
