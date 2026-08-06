@@ -1,6 +1,5 @@
 import base64
 import hashlib
-import html
 import hmac
 import json
 import os
@@ -154,106 +153,70 @@ def load_menu():
     return json.loads(MENU_PATH.read_text(encoding="utf-8"))
 
 
-def image_query_for_item(item):
+def dish_image_url(item):
     dish = str((item or {}).get("dish") or "").strip()
     category = str((item or {}).get("category") or "").strip()
     if not dish:
         return ""
-    if category == "\u6e6f\u54c1" and not any(word in dish for word in ("\u6e6f", "\u7fb9", "\u7172", "\u6fc3\u6e6f")):
-        return f"{dish} \u6e6f\u54c1 \u7e41\u9ad4\u4e2d\u6587 \u53f0\u7063\u6599\u7406 \u98df\u8b5c \u6210\u54c1\u7167"
-    return f"{dish} \u7e41\u9ad4\u4e2d\u6587 \u53f0\u7063\u6599\u7406 \u98df\u8b5c \u6210\u54c1\u7167"
-
-
-def icook_image_urls(item, limit=2):
-    dish = str((item or {}).get("dish") or "").strip()
-    if not dish:
-        return []
-    search_url = "https://icook.tw/search/" + urllib.parse.quote(dish)
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept-Language": "zh-TW,zh;q=0.9",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    }
-    with urllib.request.urlopen(urllib.request.Request(search_url, headers=headers), timeout=8) as response:
-        body = response.read().decode("utf-8", errors="ignore")
-    urls = []
-    for match in re.findall(r'https?://imgproxy\.icook\.network/[^"\']+', body):
-        image_url = html.unescape(match)
-        if image_url not in urls:
-            urls.append(image_url)
-            if len(urls) >= limit:
-                break
-    return urls
-
-
-def bing_image_urls(item, limit=2):
-    query = image_query_for_item(item)
-    if not query:
-        return []
-    search_url = "https://www.bing.com/images/search?" + urllib.parse.urlencode(
-        {"q": query, "cc": "tw", "setlang": "zh-hant", "safeSearch": "strict"}
+    return "/api/dish-image?" + urllib.parse.urlencode(
+        {"dish": dish, "category": category}
     )
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept-Language": "zh-TW,zh;q=0.9",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    }
-    with urllib.request.urlopen(urllib.request.Request(search_url, headers=headers), timeout=8) as response:
-        body = response.read().decode("utf-8", errors="ignore")
-    urls = []
-    patterns = [
-        r'"murl"\s*:\s*"([^"]+)"',
-        r'murl&quot;:&quot;([^&]+)&quot;',
-    ]
-    for pattern in patterns:
-        for match in re.findall(pattern, body):
-            image_url = html.unescape(match)
-            if "%" in image_url:
-                image_url = urllib.parse.unquote(image_url)
-            if image_url.startswith(("http://", "https://")) and image_url not in urls:
-                urls.append(image_url)
-                if len(urls) >= limit:
-                    return urls
-    return urls
-
-
-def menu_image_cache():
-    stored = get_setting("menu_image_cache_v1")
-    if not stored:
-        return {}
-    try:
-        data = json.loads(stored)
-    except Exception:
-        return {}
-    return data if isinstance(data, dict) else {}
-
-
-def save_menu_image_cache(cache):
-    set_setting("menu_image_cache_v1", json.dumps(cache, ensure_ascii=False))
 
 
 def image_url_for_item(item):
-    dish = str((item or {}).get("dish") or "").strip()
-    category = str((item or {}).get("category") or "").strip()
-    if not dish:
-        return ""
-    cache = menu_image_cache()
-    key = hashlib.sha1(f"{category}|{dish}".encode("utf-8")).hexdigest()
-    cached = cache.get(key)
-    if cached:
-        return cached
-    urls = []
-    for provider in (icook_image_urls, bing_image_urls):
-        try:
-            urls = provider(item, limit=2)
-        except Exception:
-            urls = []
-        if urls:
-            break
-    image_url = urls[0] if urls else ""
-    cache[key] = image_url
-    save_menu_image_cache(cache)
-    return image_url
+    return dish_image_url(item)
+
+
+def dish_image_svg(dish, category):
+    dish = str(dish or "").strip()[:24]
+    category = str(category or "").strip()[:8]
+    seed = int(hashlib.sha1(f"{category}|{dish}".encode("utf-8")).hexdigest()[:8], 16)
+    palettes = [
+        ("#13251f", "#f5c84b", "#7bd88f", "#ff9f7a"),
+        ("#201725", "#ffd84d", "#68b7ff", "#ff8a65"),
+        ("#181f2d", "#f5c84b", "#9ad7ff", "#7bd88f"),
+        ("#241b15", "#ffd84d", "#e7b06f", "#7bd88f"),
+    ]
+    bg, accent, garnish, food = palettes[seed % len(palettes)]
+    is_soup = category == "\u6e6f\u54c1" or any(word in dish for word in ("\u6e6f", "\u7fb9", "\u7ca5", "\u6fc3\u6e6f"))
+    title = xml_escape(dish)
+    cat = xml_escape(category)
+    vessel = "M165 282 C180 352 420 352 435 282 Z" if is_soup else "M130 300 C168 372 432 372 470 300 Z"
+    liquid = "#b86b35" if is_soup else food
+    steam = """
+      <path d="M250 104 C220 140 278 156 246 194" />
+      <path d="M312 96 C278 138 338 158 305 198" />
+      <path d="M366 112 C338 146 392 164 360 200" />
+    """ if is_soup else ""
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="900" height="675" viewBox="0 0 900 675">
+  <rect width="900" height="675" fill="{bg}"/>
+  <rect x="34" y="34" width="832" height="607" rx="34" fill="#0d121a" stroke="{accent}" stroke-width="6"/>
+  <circle cx="735" cy="150" r="76" fill="{garnish}" opacity=".18"/>
+  <circle cx="160" cy="525" r="92" fill="{accent}" opacity=".12"/>
+  <g transform="translate(150 115)">
+    <ellipse cx="300" cy="285" rx="245" ry="86" fill="#05070a" opacity=".36"/>
+    <path d="{vessel}" fill="#f3f0df"/>
+    <ellipse cx="300" cy="280" rx="235" ry="72" fill="#f9f6ea"/>
+    <ellipse cx="300" cy="270" rx="198" ry="52" fill="{liquid}"/>
+    <circle cx="230" cy="254" r="28" fill="{garnish}"/>
+    <circle cx="350" cy="276" r="23" fill="#f3d269"/>
+    <path d="M275 246 C330 210 390 230 410 258 C356 254 322 272 275 246Z" fill="{food}"/>
+    <path d="M196 282 C250 305 320 308 392 284" fill="none" stroke="#fff7d6" stroke-width="12" stroke-linecap="round" opacity=".78"/>
+    <g fill="none" stroke="{accent}" stroke-width="10" stroke-linecap="round" opacity=".72">{steam}</g>
+  </g>
+  <text x="72" y="82" fill="{accent}" font-size="30" font-family="system-ui, 'Noto Sans TC', sans-serif" font-weight="800">{cat}</text>
+  <text x="450" y="575" text-anchor="middle" fill="#f6f3e7" font-size="58" font-family="system-ui, 'Noto Sans TC', sans-serif" font-weight="900">{title}</text>
+</svg>"""
+
+
+def xml_escape(value):
+    return (
+        str(value)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
 
 
 def menu_images(report_date, meal_key=None):
@@ -1580,6 +1543,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def send_bytes(self, body, content_type):
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Cache-Control", "public, max-age=86400")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
@@ -1624,6 +1595,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(menu_images(date, meal or None))
             except Exception as exc:
                 self.send_json({"error": str(exc)}, 404)
+            return
+        if parsed.path == "/api/dish-image":
+            dish = params.get("dish", [""])[0]
+            category = params.get("category", [""])[0]
+            body = dish_image_svg(dish, category).encode("utf-8")
+            self.send_bytes(body, "image/svg+xml; charset=utf-8")
             return
         if parsed.path == "/api/costs":
             if not self.require_admin():
