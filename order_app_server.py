@@ -1648,6 +1648,13 @@ def send_cost_menu(chat_id, report_date=None, reply_to_message_id=None):
 def send_main_menu(chat_id, reply_to_message_id=None):
     telegram_send_message(
         chat_id,
+        "\u5df2\u958b\u555f\u5eda\u623f\u6a5f\u5668\u4eba\u5feb\u6377\u9375\u76e4\u3002\n"
+        "\u5982\u679c\u624b\u6a5f\u6c92\u6709\u986f\u793a\uff0c\u8acb\u5148\u9ede\u8f38\u5165\u6846\u65c1\u908a\u7684\u9375\u76e4\u5716\u793a\u3002",
+        reply_to_message_id,
+        main_reply_keyboard(),
+    )
+    telegram_send_message(
+        chat_id,
         "\u5eda\u623f\u6a5f\u5668\u4eba\u9078\u55ae\n\n"
         "\u8acb\u9ede\u4e0b\u9762\u6309\u9215\uff1a\n"
         "\u4eba\u6578\u56de\u5831 / \u6bcf\u65e5\u83dc\u91d1 / \u4eca\u65e5\u83dc\u55ae / \u9001\u9910\u7e3d\u8868 / \u9001\u9910\u7e3d\u6578",
@@ -1810,7 +1817,7 @@ def handle_telegram_update(update):
         )
         return {"ok": True, "action": "my_id", "user_id": user_id, "username": username}
 
-    if text.startswith("/start") or text.startswith("/help") or normalized in {"\u9078\u55ae", "\u4e3b\u9078\u55ae", "menu"}:
+    if text.startswith("/start") or text.startswith("/help") or text.startswith("/keyboard") or normalized in {"\u9078\u55ae", "\u4e3b\u9078\u55ae", "menu"}:
         return send_main_menu(chat_id, message_id)
 
     if text.startswith("/\u83dc\u91d1") or text.startswith("/cost") or normalized in {"\u6bcf\u65e5\u83dc\u91d1", "\u83dc\u91d1"}:
