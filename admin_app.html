@@ -77,6 +77,15 @@
     .money { max-width: 105px; text-align: center; }
     .fixed-count { max-width: 72px; text-align: center; }
     .preview-box { width: 100%; min-height: 420px; border: 1px solid var(--line); border-radius: 8px; background: #0d131c; color: var(--text); padding: 12px; white-space: pre-wrap; font: 16px/1.55 "Noto Sans TC", system-ui, sans-serif; }
+    .menu-toolbar { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 12px; flex-wrap: wrap; }
+    .menu-toolbar .hint { max-width: 680px; }
+    .menu-day { margin: 12px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #0d131c; }
+    .menu-day-title { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 10px 12px; background: var(--soft); color: var(--yellow); font-weight: 950; }
+    .menu-table { min-width: 980px; }
+    .menu-table th:first-child, .menu-table td:first-child { width: 86px; text-align: center; color: var(--yellow); font-weight: 950; }
+    .menu-table input { min-width: 190px; min-height: 36px; text-align: center; }
+    .menu-table input.changed { border-color: var(--yellow); box-shadow: 0 0 0 1px rgba(245, 200, 75, .35); }
+    .menu-empty { padding: 20px; color: var(--muted); text-align: center; }
     .status { min-height: 22px; margin: 10px 0 0; color: var(--muted); }
     @media (max-width: 760px) {
       .hero { display: block; }
@@ -119,6 +128,7 @@
       <button class="tab" data-tab="daily">每日紀錄</button>
       <button class="tab" data-tab="period">每5天</button>
       <button class="tab" data-tab="delivery">送餐總表</button>
+      <button class="tab" data-tab="monthMenu">當月總菜單</button>
       <button class="tab" data-tab="fixed">固定人數</button>
       <button class="tab" data-tab="storage">資料庫</button>
     </section>
@@ -227,6 +237,18 @@
       </div>
     </section>
 
+    <section class="panel tab-panel" data-panel="monthMenu">
+      <h2>當月總菜單</h2>
+      <div class="menu-toolbar">
+        <div class="hint">直接修改菜名後按「保存菜單」。保存後，小程序、菜色圖片、機器人查詢都會同步使用新版菜名。</div>
+        <div>
+          <button id="reloadMonthMenu" class="ghost" type="button">重新讀取</button>
+          <button id="saveMonthMenu" type="button">保存菜單</button>
+        </div>
+      </div>
+      <div id="monthMenuWrap"></div>
+    </section>
+
     <section class="panel tab-panel" data-panel="fixed">
       <h2>固定人數設定</h2>
       <div class="table-wrap">
@@ -261,6 +283,7 @@
     let currentRows = [];
     let currentData = null;
     let fixedReports = [];
+    let monthMenuData = null;
     const expenseFields = [
       "pork_cost",
       "vegetable_cost",
@@ -436,6 +459,7 @@
       populateExpenseForm();
       await loadDeliveryPreview();
       await loadFixedReports();
+      await loadMonthMenu();
       setStatus("");
     }
 
@@ -568,6 +592,108 @@
       `).join("");
     }
 
+    function itemLabel(index) {
+      return ["主食", "副食", "青菜", "湯品"][index] || `菜色${index + 1}`;
+    }
+
+    function escapeAttr(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function renderMonthMenu(data) {
+      monthMenuData = data;
+      const wrap = document.getElementById("monthMenuWrap");
+      const days = data.days || [];
+      if (!days.length) {
+        wrap.innerHTML = `<div class="menu-empty">這個月份沒有菜單資料。</div>`;
+        return;
+      }
+      wrap.innerHTML = days.map(day => `
+        <section class="menu-day">
+          <div class="menu-day-title">
+            <span>${day.display_date || day.date}</span>
+            <span>${day.date}</span>
+          </div>
+          <div class="table-wrap">
+            <table class="menu-table">
+              <thead>
+                <tr>
+                  <th>餐別</th>
+                  <th>主食</th>
+                  <th>副食</th>
+                  <th>青菜</th>
+                  <th>湯品</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(day.meals || []).map(meal => `
+                  <tr>
+                    <td>${data.meal_labels?.[meal.key] || meal.label || meal.key}<br><span class="hint">${meal.time || ""}</span></td>
+                    ${(meal.items || []).map((item, index) => `
+                      <td>
+                        <input
+                          data-menu-cell
+                          data-date="${day.date}"
+                          data-meal="${meal.key}"
+                          data-index="${index}"
+                          data-original="${escapeAttr(item.dish || "")}"
+                          aria-label="${day.date} ${data.meal_labels?.[meal.key] || meal.key} ${itemLabel(index)}"
+                          value="${escapeAttr(item.dish || "")}">
+                      </td>
+                    `).join("")}
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      `).join("");
+      document.querySelectorAll("[data-menu-cell]").forEach(input => {
+        input.addEventListener("input", () => {
+          input.classList.toggle("changed", input.value.trim() !== input.dataset.original.trim());
+        });
+      });
+    }
+
+    async function loadMonthMenu() {
+      const month = document.getElementById("monthInput").value || todayTaipei().slice(0, 7);
+      const res = await fetch(`/api/admin/month-menu?month=${encodeURIComponent(month)}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "菜單讀取失敗");
+      renderMonthMenu(data);
+    }
+
+    async function saveMonthMenu() {
+      const button = document.getElementById("saveMonthMenu");
+      const updates = Array.from(document.querySelectorAll("[data-menu-cell]")).map(input => ({
+        date: input.dataset.date,
+        meal_key: input.dataset.meal,
+        item_index: Number(input.dataset.index),
+        dish: input.value.trim()
+      }));
+      button.disabled = true;
+      setStatus("菜單保存中...", "");
+      try {
+        const res = await fetch("/api/admin/month-menu", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ month: document.getElementById("monthInput").value, updates })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "菜單保存失敗");
+        renderMonthMenu(data.menu);
+        await load();
+        setStatus("菜單已保存，小程序已同步。", "good");
+      } finally {
+        button.disabled = false;
+      }
+    }
+
     async function saveFixedReports() {
       document.querySelectorAll("[data-fixed-index]").forEach(row => {
         const index = Number(row.dataset.fixedIndex);
@@ -618,7 +744,7 @@
     }
 
     function isEditingCostTable() {
-      return Boolean(document.activeElement && (document.activeElement.closest("#expenseForm") || document.activeElement.closest("#fixedRows")));
+      return Boolean(document.activeElement && (document.activeElement.closest("#expenseForm") || document.activeElement.closest("#fixedRows") || document.activeElement.closest("#monthMenuWrap")));
     }
 
     async function autoRefresh() {
@@ -644,6 +770,8 @@
     document.getElementById("reload").addEventListener("click", () => load().catch(err => setStatus(err.message, "bad")));
     document.getElementById("saveExpense").addEventListener("click", () => saveExpense().catch(err => setStatus(err.message, "bad")));
     document.getElementById("loadDelivery").addEventListener("click", () => loadDeliveryPreview().catch(err => setStatus(err.message, "bad")));
+    document.getElementById("reloadMonthMenu").addEventListener("click", () => loadMonthMenu().catch(err => setStatus(err.message, "bad")));
+    document.getElementById("saveMonthMenu").addEventListener("click", () => saveMonthMenu().catch(err => setStatus(err.message, "bad")));
     document.getElementById("copyDelivery").addEventListener("click", async () => {
       await navigator.clipboard.writeText(document.getElementById("deliveryPreview").textContent || "");
       setStatus("送餐總表已複製", "good");

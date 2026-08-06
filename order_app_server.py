@@ -160,13 +160,17 @@ def load_menu():
     return apply_menu_overrides(menu)
 
 
+def load_base_menu():
+    return json.loads(MENU_PATH.read_text(encoding="utf-8"))
+
+
 def menu_override_rows():
     init_db()
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             """
-            SELECT report_date, meal_key, old_dish, new_dish, updated_at
+            SELECT report_date, meal_key, old_dish, new_dish, item_index, category, updated_at
             FROM menu_overrides
             ORDER BY updated_at, id
             """
@@ -186,7 +190,17 @@ def apply_menu_overrides(menu):
         for meal in day.get("meals", []):
             if meal.get("key") != row["meal_key"]:
                 continue
-            for item in meal.get("items", []):
+            items = meal.get("items", [])
+            item_index = row.get("item_index")
+            if item_index is not None:
+                try:
+                    index = int(item_index)
+                except (TypeError, ValueError):
+                    continue
+                if 0 <= index < len(items):
+                    items[index]["dish"] = row["new_dish"]
+                continue
+            for item in items:
                 if str(item.get("dish") or "").strip() == row["old_dish"]:
                     item["dish"] = row["new_dish"]
     return menu
@@ -501,16 +515,32 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 report_date TEXT NOT NULL,
                 meal_key TEXT NOT NULL,
+                item_index INTEGER,
+                category TEXT,
                 old_dish TEXT NOT NULL,
                 new_dish TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
             """
         )
+        menu_override_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(menu_overrides)").fetchall()
+        }
+        if "item_index" not in menu_override_columns:
+            conn.execute("ALTER TABLE menu_overrides ADD COLUMN item_index INTEGER")
+        if "category" not in menu_override_columns:
+            conn.execute("ALTER TABLE menu_overrides ADD COLUMN category TEXT")
         conn.execute(
             """
             CREATE INDEX IF NOT EXISTS idx_menu_overrides_date_meal
             ON menu_overrides (report_date, meal_key)
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_menu_overrides_cell
+            ON menu_overrides (report_date, meal_key, item_index)
+            WHERE item_index IS NOT NULL
             """
         )
 
@@ -887,6 +917,83 @@ def save_menu_change(change):
         "old_dish": old_dish,
         "new_dish": new_dish,
     }
+
+
+def month_menu(month):
+    menu = load_menu()
+    prefix = str(month or "")[:7]
+    days = []
+    for date in sorted(menu):
+        if prefix and not date.startswith(prefix):
+            continue
+        days.append({"date": date, **menu[date]})
+    return {
+        "month": prefix,
+        "meal_labels": {
+            "breakfast": "\u65e9\u9910",
+            "lunch": "\u5348\u9910",
+            "dinner": "\u665a\u9910",
+            "late_night": "\u5bb5\u591c",
+        },
+        "days": days,
+    }
+
+
+def save_menu_updates(payload):
+    updates = payload.get("updates")
+    if not isinstance(updates, list):
+        raise ValueError("\u6c92\u6709\u6536\u5230\u83dc\u55ae\u4fee\u6539\u8cc7\u6599")
+    base_menu = load_base_menu()
+    now = datetime.now().isoformat(timespec="seconds")
+    cleaned = []
+    for update in updates:
+        report_date = str(update.get("date") or "").strip()
+        meal_key = str(update.get("meal_key") or "").strip()
+        try:
+            item_index = int(update.get("item_index"))
+        except (TypeError, ValueError):
+            raise ValueError("\u83dc\u55ae\u683c\u5b50\u4f4d\u7f6e\u932f\u8aa4")
+        new_dish = str(update.get("dish") or "").strip()
+        day = base_menu.get(report_date)
+        if not day:
+            raise ValueError(f"\u627e\u4e0d\u5230 {report_date} \u83dc\u55ae")
+        target_meal = next((meal for meal in day.get("meals", []) if meal.get("key") == meal_key), None)
+        if not target_meal:
+            raise ValueError(f"{report_date} \u9910\u5225\u932f\u8aa4")
+        items = target_meal.get("items", [])
+        if item_index < 0 or item_index >= len(items):
+            raise ValueError(f"{report_date} \u83dc\u8272\u4f4d\u7f6e\u932f\u8aa4")
+        item = items[item_index]
+        old_dish = str(item.get("dish") or "").strip()
+        category = str(item.get("category") or "").strip()
+        cleaned.append((report_date, meal_key, item_index, category, old_dish, new_dish, now))
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        for report_date, meal_key, item_index, category, old_dish, new_dish, updated_at in cleaned:
+            conn.execute(
+                """
+                DELETE FROM menu_overrides
+                WHERE report_date = ?
+                  AND meal_key = ?
+                  AND (
+                    item_index = ?
+                    OR (item_index IS NULL AND old_dish = ?)
+                  )
+                """,
+                (report_date, meal_key, item_index, old_dish),
+            )
+            if new_dish != old_dish:
+                conn.execute(
+                    """
+                    INSERT INTO menu_overrides (
+                        report_date, meal_key, item_index, category, old_dish, new_dish, updated_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (report_date, meal_key, item_index, category, old_dish, new_dish, updated_at),
+                )
+    month = str(payload.get("month") or (cleaned[0][0][:7] if cleaned else ""))[:7]
+    return {"ok": True, "saved": len(cleaned), "menu": month_menu(month)}
 
 
 def parse_bot_3f_report(text):
@@ -1931,6 +2038,12 @@ class Handler(BaseHTTPRequestHandler):
             date = params.get("date", [today_key()])[0]
             self.send_json({"date": date, "text": delivery_table_text(date)})
             return
+        if parsed.path == "/api/admin/month-menu":
+            if not self.require_admin():
+                return
+            month = params.get("month", [today_key()[:7]])[0]
+            self.send_json(month_menu(month))
+            return
         self.send_json({"error": "not found"}, 404)
 
     def do_POST(self):
@@ -1983,6 +2096,16 @@ class Handler(BaseHTTPRequestHandler):
                 length = int(self.headers.get("Content-Length", "0"))
                 payload = json.loads(self.rfile.read(length).decode("utf-8"))
                 self.send_json(save_fixed_reports_config(payload.get("reports")))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 400)
+            return
+        if parsed.path == "/api/admin/month-menu":
+            if not self.require_admin():
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                self.send_json(save_menu_updates(payload))
             except Exception as exc:
                 self.send_json({"error": str(exc)}, 400)
             return
