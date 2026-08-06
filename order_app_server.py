@@ -36,7 +36,8 @@ BOT_CONFIRM_TTL_SECONDS = 60 * 30
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_IMAGE_MODEL = os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-1")
 OPENAI_IMAGE_FORMAT = os.environ.get("OPENAI_IMAGE_FORMAT", "webp")
-OPENAI_IMAGE_VERSION = os.environ.get("OPENAI_IMAGE_VERSION", "gpt-photo-1")
+OPENAI_IMAGE_QUALITY = os.environ.get("OPENAI_IMAGE_QUALITY", "low")
+OPENAI_IMAGE_VERSION = os.environ.get("OPENAI_IMAGE_VERSION", "gpt-photo-low-1")
 DISH_IMAGE_DIR = DATA_DIR / "dish_images"
 
 
@@ -213,6 +214,7 @@ def generate_ai_dish_image(dish, category):
         "model": OPENAI_IMAGE_MODEL,
         "prompt": ai_dish_prompt(dish, category),
         "size": "1024x1024",
+        "quality": OPENAI_IMAGE_QUALITY,
         "output_format": OPENAI_IMAGE_FORMAT,
     }
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
