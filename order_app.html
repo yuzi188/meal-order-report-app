@@ -427,6 +427,12 @@
       return currentSummary.totals[mealKey] || { taiwan: 0, healthy: 0, cambodia: 0, total: 0 };
     }
 
+    function weekdayName(dateText) {
+      const names = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+      const date = new Date(`${dateText}T00:00:00+08:00`);
+      return Number.isNaN(date.getTime()) ? "" : names[date.getDay()];
+    }
+
     function photoCard(item) {
       if (!item.image_url) return "";
       return `
@@ -464,7 +470,7 @@
     }
 
     function renderMeals(menu) {
-      document.getElementById("menuDate").textContent = `${menu.display_date} ${t.todayMenu}`;
+      document.getElementById("menuDate").textContent = `${menu.display_date} ${weekdayName(currentDate)} ${t.todayMenu}`;
       const meal = menu.meals.find(item => item.key === activeMeal) || menu.meals[0];
       if (!meal) return;
       activeMeal = meal.key;

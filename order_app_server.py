@@ -313,6 +313,14 @@ def today_key():
     return datetime.now().strftime("%Y-%m-%d")
 
 
+def weekday_label(report_date):
+    names = ["\u661f\u671f\u4e00", "\u661f\u671f\u4e8c", "\u661f\u671f\u4e09", "\u661f\u671f\u56db", "\u661f\u671f\u4e94", "\u661f\u671f\u516d", "\u661f\u671f\u65e5"]
+    try:
+        return names[datetime.strptime(report_date, "%Y-%m-%d").weekday()]
+    except Exception:
+        return ""
+
+
 def session_cookie_value(username):
     expires = int(time.time()) + ADMIN_SESSION_TTL_SECONDS
     payload = f"{username}:{expires}"
@@ -1005,9 +1013,11 @@ def delivery_table_text(report_date, meal_key=None):
         return total_row
 
     selected_meals = [meal_key] if meal_key in MEAL_KEYS else MEAL_KEYS
-    title = f"\u9001\u9910\u7e3d\u8868 {report_date}"
+    weekday = weekday_label(report_date)
+    date_title = f"{report_date} {weekday}".strip()
+    title = f"\u9001\u9910\u7e3d\u8868 {date_title}"
     if meal_key in MEAL_KEYS:
-        title = f"{meal_names[meal_key]} \u9001\u9910\u7e3d\u8868 {report_date}"
+        title = f"{meal_names[meal_key]} \u9001\u9910\u7e3d\u8868 {date_title}"
     lines = [title]
     for meal in selected_meals:
         visible_total = visible_total_for_meal(meal)
