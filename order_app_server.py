@@ -59,7 +59,7 @@ def storage_status():
         "warning": "" if is_persistent else "尚未掛載 Railway Volume，部署後資料可能會消失。",
     }
 
-DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3\u91d1\u6d41", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "1002-2\u5ba2\u670d"]
+DEPARTMENTS = ["1001", "1002-2\u4ee3\u7406", "1002-3\u91d1\u6d41", "3F", "\u4fdd\u59c6\u90e8\u9580", "\u6d77\u5357\u96de\u98ef", "1002-2\u5ba2\u670d", "\u6a02\u53f0\u98f2\u6599\u5e97"]
 HIDDEN_FIXED_UNITS = ["\u5eda\u623f\u54e1\u5de5"]
 FIXED_REPORT_UNITS = DEPARTMENTS + HIDDEN_FIXED_UNITS
 DELIVERY_LOCATIONS = [
@@ -989,6 +989,7 @@ def delivery_table_text(report_date, meal_key=None):
             "",
         ),
         ("1002-2\u5ba2\u670d\U0001f371", lambda meal: count_for_units(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]), ""),
+        ("\u6a02\u53f0\u98f2\u6599\u5e97\U0001f371", lambda meal: count_for_units(data, meal, [("\u6a02\u53f0\u98f2\u6599\u5e97", "\u90e8\u9580\u73fe\u5834")]), ""),
         (
             "MT-3F\U0001faa3",
             lambda meal: mt_3f_count_for_meal(data, meal),
