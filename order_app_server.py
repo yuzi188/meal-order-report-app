@@ -1571,12 +1571,19 @@ def cost_confirm_keyboard():
 def main_reply_keyboard():
     return {
         "keyboard": [
+            [
+                {
+                    "text": "OFA \u5c0f\u7a0b\u5f0f",
+                    "web_app": {"url": "https://web-production-664d8.up.railway.app/"},
+                }
+            ],
             [{"text": "\u4eba\u6578\u56de\u5831"}, {"text": "\u6bcf\u65e5\u83dc\u91d1"}],
             [{"text": "\u4eca\u65e5\u83dc\u55ae"}, {"text": "\u9001\u9910\u7e3d\u8868"}],
             [{"text": "\u9001\u9910\u7e3d\u6578"}, {"text": "\u53d6\u6d88"}],
         ],
         "resize_keyboard": True,
         "is_persistent": True,
+        "input_field_placeholder": "\u9078\u64c7\u529f\u80fd\u6216\u76f4\u63a5\u8f38\u5165...",
     }
 
 
