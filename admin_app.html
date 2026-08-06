@@ -35,6 +35,7 @@
     input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); padding: 7px 9px; }
     input[type="date"], input[type="month"] { color-scheme: dark; }
     button { min-height: 40px; border-radius: 8px; border: 1px solid var(--yellow); background: var(--yellow); color: #1b1403; font-weight: 950; }
+    button:disabled { opacity: .62; cursor: progress; }
     .logout, .ghost { background: transparent; color: var(--yellow); }
     .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
     .card, .chart-card, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
@@ -121,6 +122,7 @@
       <button class="tab" data-tab="fixed">固定人數</button>
       <button class="tab" data-tab="storage">資料庫</button>
     </section>
+    <p class="status" id="status"></p>
 
     <section class="tab-panel active" data-panel="overview">
       <section class="cards" id="cards"></section>
@@ -140,7 +142,6 @@
           <div id="periodCostChart" class="chart-svg"></div>
         </div>
       </section>
-      <p class="status" id="status"></p>
     </section>
 
     <section class="panel tab-panel" data-panel="input">
@@ -159,7 +160,7 @@
         <div><label for="ice_cost">冰塊</label><input id="ice_cost" data-expense="ice_cost" type="number" step="0.01" min="0"></div>
       </div>
       <div class="expense-actions">
-        <button id="saveExpense">儲存今日菜金</button>
+        <button id="saveExpense" type="button">儲存今日菜金</button>
         <div class="hint">豬肉商、青菜商、冷凍商納入台餐菜金；柬餐菜金跟柬餐人數計算。雜貨、瓦斯、水、餐盒、柑仔店、大米、冰塊不算每日菜金平均，但會進入每5天總成本。</div>
       </div>
     </section>
@@ -586,20 +587,28 @@
 
     async function saveExpense() {
       const date = selectedDate();
+      const button = document.getElementById("saveExpense");
       const payload = { date };
       expenseFields.forEach(field => {
-        payload[field] = document.querySelector(`[data-expense="${field}"]`).value;
+        const input = document.querySelector(`[data-expense="${field}"]`);
+        payload[field] = input ? input.value : "";
       });
-      const res = await fetch("/api/cost", {
-        method: "POST",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "儲存失敗");
-      setStatus(`${date} 菜金已儲存`, "good");
-      await load();
+      button.disabled = true;
+      setStatus(`${date} 菜金儲存中...`, "");
+      try {
+        const res = await fetch("/api/cost", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "儲存失敗");
+        await load();
+        setStatus(`${date} 菜金已儲存`, "good");
+      } finally {
+        button.disabled = false;
+      }
     }
 
     function isEditingCostTable() {
