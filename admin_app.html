@@ -168,6 +168,7 @@
         <div><label for="corner_store_cost">柑仔店</label><input id="corner_store_cost" data-expense="corner_store_cost" type="number" step="0.01" min="0"></div>
         <div><label for="rice_cost">大米</label><input id="rice_cost" data-expense="rice_cost" type="number" step="0.01" min="0"></div>
         <div><label for="ice_cost">冰塊</label><input id="ice_cost" data-expense="ice_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="cost_68">68</label><input id="cost_68" data-expense="cost_68" type="number" step="0.01" min="0"></div>
       </div>
       <div class="expense-actions">
         <button id="saveExpense" type="button">儲存今日菜金</button>
@@ -215,6 +216,7 @@
               <th>柑仔店</th>
               <th>大米</th>
               <th>冰塊</th>
+              <th>68</th>
               <th>菜金</th>
               <th>其他成本</th>
               <th>總成本</th>
@@ -295,7 +297,8 @@
       "meal_box_cost",
       "corner_store_cost",
       "rice_cost",
-      "ice_cost"
+      "ice_cost",
+      "cost_68"
     ];
 
     function todayTaipei() {
@@ -525,7 +528,7 @@
                   <strong>供應商細項</strong>
                   豬肉商 ${money(row.pork_cost)} / 青菜商 ${money(row.vegetable_cost)} / 冷凍商 ${money(row.frozen_cost)}<br>
                   雜貨 ${money(row.grocery_cost)} / 瓦斯 ${money(row.gas_cost)} / 水 ${money(row.water_cost)}<br>
-                  餐盒 ${money(row.meal_box_cost)} / 柑仔店 ${money(row.corner_store_cost)} / 大米 ${money(row.rice_cost)} / 冰塊 ${money(row.ice_cost)}
+                  餐盒 ${money(row.meal_box_cost)} / 柑仔店 ${money(row.corner_store_cost)} / 大米 ${money(row.rice_cost)} / 冰塊 ${money(row.ice_cost)} / 68 ${money(row.cost_68)}
                 </div>
               </div>
             </td>
@@ -547,6 +550,7 @@
           <td>${money(row.corner_store_cost)}</td>
           <td>${money(row.rice_cost)}</td>
           <td>${money(row.ice_cost)}</td>
+          <td>${money(row.cost_68)}</td>
           <td>${money(row.cost)}</td>
           <td>${money(row.other_cost)}</td>
           <td>${money(row.total_expense_cost)}</td>
