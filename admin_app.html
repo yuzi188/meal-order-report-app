@@ -20,7 +20,7 @@
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--text); }
-    button, input { font: inherit; }
+    button, input, textarea { font: inherit; }
     .app { max-width: 1180px; margin: 0 auto; padding: 14px; }
     .hero { padding: 16px 0 12px; display: flex; justify-content: space-between; gap: 12px; align-items: end; }
     h1 { margin: 0; font-size: 24px; color: var(--yellow); }
@@ -32,7 +32,8 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
     label { display: block; color: var(--muted); font-weight: 900; font-size: 13px; margin-bottom: 5px; }
-    input { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); padding: 7px 9px; }
+    input, textarea { width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); padding: 7px 9px; }
+    textarea { min-height: 82px; resize: vertical; }
     input[type="date"], input[type="month"] { color-scheme: dark; }
     button { min-height: 40px; border-radius: 8px; border: 1px solid var(--yellow); background: var(--yellow); color: #1b1403; font-weight: 950; }
     button:disabled { opacity: .62; cursor: progress; }
@@ -68,6 +69,8 @@
     .detail-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
     .detail-box strong { color: var(--yellow); display: block; margin-bottom: 6px; }
     .expense-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+    .month-overhead-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+    .month-note { padding: 0 12px 12px; }
     .expense-actions { display: flex; gap: 8px; align-items: center; padding: 0 12px 12px; flex-wrap: wrap; }
     .expense-actions button { min-width: 120px; }
     .hint { color: var(--muted); font-size: 13px; line-height: 1.45; }
@@ -89,7 +92,7 @@
     .status { min-height: 22px; margin: 10px 0 0; color: var(--muted); }
     @media (max-width: 760px) {
       .hero { display: block; }
-      .controls, .cards, .expense-grid, .detail-grid, .dashboard-grid { grid-template-columns: 1fr; }
+      .controls, .cards, .expense-grid, .month-overhead-grid, .detail-grid, .dashboard-grid { grid-template-columns: 1fr; }
       .tabs { grid-template-columns: 1fr 1fr; }
       .app { padding: 10px; }
       .card-value { font-size: 24px; }
@@ -124,6 +127,7 @@
 
     <section class="tabs" aria-label="成本後台分頁">
       <button class="tab active" data-tab="overview">總覽</button>
+      <button class="tab" data-tab="monthCost">當月總成本</button>
       <button class="tab" data-tab="input">每日輸入</button>
       <button class="tab" data-tab="daily">每日紀錄</button>
       <button class="tab" data-tab="period">每5天</button>
@@ -154,6 +158,73 @@
       </section>
     </section>
 
+    <section class="panel tab-panel" data-panel="monthCost">
+      <h2>當月總成本紀錄</h2>
+      <div class="month-overhead-grid" id="monthOverheadForm">
+        <div><label for="rent_cost">租金</label><input id="rent_cost" data-month-overhead="rent_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="utility_cost">水電</label><input id="utility_cost" data-month-overhead="utility_cost" type="number" step="0.01" min="0"></div>
+        <div><label for="labor_cost">人事合計</label><input id="labor_cost" data-month-overhead="labor_cost" type="number" step="0.01" min="0" readonly></div>
+        <div><label for="other_monthly_cost">其他固定成本</label><input id="other_monthly_cost" data-month-overhead="other_monthly_cost" type="number" step="0.01" min="0"></div>
+      </div>
+      <div class="month-note">
+        <label for="month_overhead_note">備註</label>
+        <textarea id="month_overhead_note" data-month-overhead="note" placeholder="例：房租、水電、人事或月底補充說明"></textarea>
+      </div>
+      <div class="expense-actions">
+        <button id="saveMonthOverhead" type="button">保存每月固定成本</button>
+        <div class="hint">這裡會算進當月總成本，不會算進每日菜金平均 $1.32。</div>
+      </div>
+      <h2>人事明細</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>職位</th>
+              <th>姓名</th>
+              <th>金額</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="monthStaffRows"></tbody>
+        </table>
+      </div>
+      <div class="expense-actions">
+        <button id="addMonthStaff" type="button" class="ghost">新增人員</button>
+        <button id="saveMonthStaff" type="button">保存人事明細</button>
+        <div class="hint" id="monthStaffSummary">人事合計：$0.00</div>
+      </div>
+      <section class="cards" id="monthCostCards" style="padding: 12px; margin: 0;"></section>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>項目</th>
+              <th>類型</th>
+              <th>當月金額</th>
+            </tr>
+          </thead>
+          <tbody id="monthSupplierRows"></tbody>
+        </table>
+      </div>
+      <h2>當月每日成本明細</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>收入</th>
+              <th>菜金</th>
+              <th>其他成本</th>
+              <th>每日總成本</th>
+              <th>人數</th>
+              <th>菜金平均</th>
+              <th>每日利潤</th>
+            </tr>
+          </thead>
+          <tbody id="monthDailyRows"></tbody>
+        </table>
+      </div>
+    </section>
     <section class="panel tab-panel" data-panel="input">
       <h2>每日菜金輸入</h2>
       <div class="expense-grid" id="expenseForm">
@@ -300,6 +371,28 @@
       "ice_cost",
       "cost_68"
     ];
+    const monthOverheadFields = ["rent_cost", "utility_cost", "labor_cost", "other_monthly_cost", "note"];
+    const costFieldLabels = {
+      pork_cost: "豬肉商",
+      vegetable_cost: "青菜商",
+      frozen_cost: "冷凍商",
+      cambodia_cost: "柬餐菜金",
+      grocery_cost: "雜貨",
+      gas_cost: "瓦斯",
+      water_cost: "水",
+      meal_box_cost: "餐盒",
+      corner_store_cost: "柑仔店",
+      rice_cost: "大米",
+      ice_cost: "冰塊",
+      cost_68: "68",
+      rent_cost: "租金",
+      utility_cost: "水電",
+      labor_cost: "人事",
+      other_monthly_cost: "其他固定成本"
+    };
+    const foodCostFields = ["pork_cost", "vegetable_cost", "frozen_cost", "cambodia_cost"];
+    const otherCostFields = ["grocery_cost", "gas_cost", "water_cost", "meal_box_cost", "corner_store_cost", "rice_cost", "ice_cost", "cost_68"];
+    let monthStaff = [];
 
     function todayTaipei() {
       const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
@@ -474,6 +567,127 @@
       });
     }
 
+    function populateMonthOverheadForm(data) {
+      const overhead = data.monthly_overhead || {};
+      monthOverheadFields.forEach(field => {
+        const input = document.querySelector(`[data-month-overhead="${field}"]`);
+        if (!input) return;
+        input.value = overhead[field] ? overhead[field] : "";
+        if (field === "labor_cost") input.readOnly = true;
+      });
+    }
+
+    function renderMonthStaff(staff) {
+      monthStaff = (staff || []).map(item => ({ ...item }));
+      const tbody = document.getElementById("monthStaffRows");
+      if (!tbody) return;
+      tbody.innerHTML = monthStaff.map((item, index) => `
+        <tr data-staff-index="${index}">
+          <td><input data-staff-field="role" value="${escapeAttr(item.role || "")}" aria-label="職位"></td>
+          <td><input data-staff-field="name" value="${escapeAttr(item.name || "")}" aria-label="姓名"></td>
+          <td><input data-staff-field="amount" type="number" step="0.01" min="0" value="${item.amount || ""}" aria-label="金額"></td>
+          <td><button type="button" class="ghost" data-remove-staff="${index}">刪除</button></td>
+        </tr>
+      `).join("");
+      updateMonthStaffSummary();
+    }
+
+    function collectMonthStaff() {
+      monthStaff = Array.from(document.querySelectorAll("[data-staff-index]")).map(row => {
+        const item = {};
+        row.querySelectorAll("[data-staff-field]").forEach(input => {
+          item[input.dataset.staffField] = input.value;
+        });
+        return item;
+      }).filter(item => String(item.name || item.role || "").trim());
+      return monthStaff;
+    }
+
+    function updateMonthStaffSummary() {
+      const staff = collectMonthStaff();
+      const total = staff.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const summary = document.getElementById("monthStaffSummary");
+      if (summary) summary.textContent = `人事共 ${staff.length} 位，開銷 ${money(total)}`;
+      const laborInput = document.querySelector(`[data-month-overhead="labor_cost"]`);
+      if (laborInput) laborInput.value = total ? total.toFixed(2) : "";
+    }
+
+    function renderMonthCost(data) {
+      const month = data.month || {};
+      const overhead = data.monthly_overhead || {};
+      const activeRows = (data.rows || []).filter(row => row.date <= data.summary_end_date);
+      const savedRows = activeRows.filter(row => row.saved || Number(row.total_expense_cost || 0) > 0);
+      const profit = Number(month.grand_profit || 0);
+      document.getElementById("monthCostCards").innerHTML = `
+        <div class="card">
+          <div class="card-name">本月營業額</div>
+          <div class="card-value">${money(month.revenue)}</div>
+          <div class="card-note">依餐價自動計算</div>
+        </div>
+        <div class="card">
+          <div class="card-name">菜金成本</div>
+          <div class="card-value">${money(month.cost)}</div>
+          <div class="card-note">台餐 + 柬餐菜金</div>
+        </div>
+        <div class="card">
+          <div class="card-name">其他成本</div>
+          <div class="card-value">${money(Number(month.other_cost || 0) + Number(overhead.total || 0))}</div>
+          <div class="card-note">每日其他 + 租金水電人事</div>
+        </div>
+        <div class="card">
+          <div class="card-name">本月總成本</div>
+          <div class="card-value">${money(month.grand_total_cost)}</div>
+          <div class="card-note">所有成本加總</div>
+        </div>
+        <div class="card">
+          <div class="card-name">本月利潤</div>
+          <div class="card-value ${profit < 0 ? "bad" : "good"}">${money(profit)}</div>
+          <div class="card-note">收入 - 總成本</div>
+        </div>
+        <div class="card">
+          <div class="card-name">本月份數</div>
+          <div class="card-value">${month.count || 0}</div>
+          <div class="card-note">統計到 ${data.summary_end_date}</div>
+        </div>
+        <div class="card">
+          <div class="card-name">菜金平均</div>
+          <div class="card-value ${avgClass(month.average)}">${money(month.average)}</div>
+          <div class="card-note">標準 $1.32</div>
+        </div>
+        <div class="card">
+          <div class="card-name">已填天數</div>
+          <div class="card-value">${savedRows.length}</div>
+          <div class="card-note">只算目前日期以前</div>
+        </div>
+      `;
+      const supplierRows = [
+        ...foodCostFields.map(field => ({ field, type: "菜金" })),
+        ...otherCostFields.map(field => ({ field, type: "每日其他成本" })),
+        ...["rent_cost", "utility_cost", "labor_cost", "other_monthly_cost"].map(field => ({ field, type: "月固定成本", source: overhead }))
+      ];
+      document.getElementById("monthSupplierRows").innerHTML = supplierRows.map(({ field, type, source }) => {
+        const value = source ? source[field] : month[field];
+        return `<tr><td>${costFieldLabels[field]}</td><td>${type}</td><td>${money(value)}</td></tr>`;
+      }).join("");
+      document.getElementById("monthDailyRows").innerHTML = activeRows.map(row => {
+        const profit = Number(row.revenue || 0) - Number(row.total_expense_cost || 0);
+        return `
+          <tr>
+            <td>${row.date}</td>
+            <td>${money(row.revenue)}</td>
+            <td>${money(row.total_cost)}</td>
+            <td>${money(row.other_cost)}</td>
+            <td>${money(row.total_expense_cost)}</td>
+            <td>${row.total_count}</td>
+            <td class="${avgClass(row.average)}">${money(row.average)}</td>
+            <td class="${profit < 0 ? "bad" : "good"}">${money(profit)}</td>
+          </tr>
+        `;
+      }).join("");
+      renderMonthStaff(overhead.staff || []);
+      populateMonthOverheadForm(data);
+    }
+
     function render(data) {
       const month = data.month;
       const today = selectedRow();
@@ -499,6 +713,7 @@
           <div class="card-note">${selectedDate()}</div>
         </div>
       `;
+      renderMonthCost(data);
 
       document.getElementById("rows").innerHTML = data.rows.map(row => {
         const taiwanAvg = row.taiwan_average || 0;
@@ -747,8 +962,57 @@
       }
     }
 
+    async function saveMonthOverhead() {
+      const button = document.getElementById("saveMonthOverhead");
+      const payload = { month: document.getElementById("monthInput").value };
+      monthOverheadFields.forEach(field => {
+        const input = document.querySelector(`[data-month-overhead="${field}"]`);
+        payload[field] = input ? input.value : "";
+      });
+      button.disabled = true;
+      setStatus("每月固定成本保存中...", "");
+      try {
+        const res = await fetch("/api/admin/month-overhead", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "固定成本保存失敗");
+        await load();
+        setStatus("每月固定成本已保存，月總成本已更新。", "good");
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function saveMonthStaff() {
+      const button = document.getElementById("saveMonthStaff");
+      const payload = {
+        month: document.getElementById("monthInput").value,
+        staff: collectMonthStaff()
+      };
+      button.disabled = true;
+      setStatus("人事明細保存中...", "");
+      try {
+        const res = await fetch("/api/admin/month-staff", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "人事明細保存失敗");
+        await load();
+        setStatus("人事明細已保存，月總成本已更新。", "good");
+      } finally {
+        button.disabled = false;
+      }
+    }
+
     function isEditingCostTable() {
-      return Boolean(document.activeElement && (document.activeElement.closest("#expenseForm") || document.activeElement.closest("#fixedRows") || document.activeElement.closest("#monthMenuWrap")));
+      return Boolean(document.activeElement && (document.activeElement.closest("#expenseForm") || document.activeElement.closest("#monthOverheadForm") || document.activeElement.closest("#monthStaffRows") || document.activeElement.closest(".month-note") || document.activeElement.closest("#fixedRows") || document.activeElement.closest("#monthMenuWrap")));
     }
 
     async function autoRefresh() {
@@ -765,14 +1029,37 @@
     document.addEventListener("click", event => {
       const tab = event.target.dataset.tab;
       if (tab) activateTab(tab);
+      const removeStaff = event.target.dataset.removeStaff;
+      if (removeStaff !== undefined) {
+        event.target.closest("tr")?.remove();
+        updateMonthStaffSummary();
+      }
       const toggleDate = event.target.closest("[data-toggle-date]")?.dataset.toggleDate;
       if (toggleDate) {
         document.querySelector(`[data-toggle-date="${toggleDate}"]`)?.classList.toggle("open");
         document.querySelector(`[data-detail-date="${toggleDate}"]`)?.classList.toggle("open");
       }
     });
+    document.addEventListener("input", event => {
+      if (event.target.closest("#monthStaffRows")) updateMonthStaffSummary();
+    });
     document.getElementById("reload").addEventListener("click", () => load().catch(err => setStatus(err.message, "bad")));
     document.getElementById("saveExpense").addEventListener("click", () => saveExpense().catch(err => setStatus(err.message, "bad")));
+    document.getElementById("saveMonthOverhead").addEventListener("click", () => saveMonthOverhead().catch(err => setStatus(err.message, "bad")));
+    document.getElementById("saveMonthStaff").addEventListener("click", () => saveMonthStaff().catch(err => setStatus(err.message, "bad")));
+    document.getElementById("addMonthStaff").addEventListener("click", () => {
+      const tbody = document.getElementById("monthStaffRows");
+      const index = tbody.querySelectorAll("tr").length;
+      tbody.insertAdjacentHTML("beforeend", `
+        <tr data-staff-index="${index}">
+          <td><input data-staff-field="role" value="" aria-label="職位"></td>
+          <td><input data-staff-field="name" value="" aria-label="姓名"></td>
+          <td><input data-staff-field="amount" type="number" step="0.01" min="0" value="" aria-label="金額"></td>
+          <td><button type="button" class="ghost" data-remove-staff="${index}">刪除</button></td>
+        </tr>
+      `);
+      updateMonthStaffSummary();
+    });
     document.getElementById("loadDelivery").addEventListener("click", () => loadDeliveryPreview().catch(err => setStatus(err.message, "bad")));
     document.getElementById("reloadMonthMenu").addEventListener("click", () => loadMonthMenu().catch(err => setStatus(err.message, "bad")));
     document.getElementById("saveMonthMenu").addEventListener("click", () => saveMonthMenu().catch(err => setStatus(err.message, "bad")));
@@ -799,3 +1086,4 @@
   </script>
 </body>
 </html>
+

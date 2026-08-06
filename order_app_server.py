@@ -84,6 +84,24 @@ DELIVERY_LOCATIONS = [
     "\u4e0d\u5403\u6d77\u9bae",
 ]
 MEAL_KEYS = ["breakfast", "lunch", "dinner", "late_night"]
+MEAL_PRICES = {
+    "breakfast": 1.5,
+    "lunch": 2.0,
+    "dinner": 3.5,
+    "late_night": 3.0,
+}
+DEFAULT_MONTHLY_STAFF = [
+    {"name": "\u609f", "role": "\u53f0\u7c4d\u5eda\u5e2b", "amount": 3750},
+    {"name": "\u5764", "role": "\u53f0\u7c4d\u5eda\u5e2b", "amount": 3750},
+    {"name": "PICH", "role": "\u67ec\u7c4d\u5eda\u5e2b", "amount": 550},
+    {"name": "\u963fP", "role": "\u67ec\u7c4d\u5eda\u5e2b", "amount": 500},
+    {"name": "\u82ad\u6a02", "role": "\u5eda\u5de5", "amount": 300},
+    {"name": "LIN", "role": "\u5eda\u5de5", "amount": 300},
+    {"name": "\u963f\u5927", "role": "\u5eda\u5de5", "amount": 300},
+    {"name": "ALIN", "role": "\u5eda\u5de5", "amount": 300},
+    {"name": "\u9e97\u5361", "role": "\u5eda\u5de5", "amount": 300},
+    {"name": "\u963f\u6885", "role": "\u5eda\u5de5", "amount": 300},
+]
 CUISINES = ["taiwan", "healthy", "cambodia"]
 COST_FIELD_LABELS = {
     "pork_cost": "\u8c6c\u8089\u5546",
@@ -529,6 +547,33 @@ def init_db():
                 payload TEXT NOT NULL,
                 summary_text TEXT NOT NULL,
                 created_at INTEGER NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS monthly_overhead_costs (
+                month_key TEXT PRIMARY KEY,
+                rent_cost REAL NOT NULL DEFAULT 0,
+                utility_cost REAL NOT NULL DEFAULT 0,
+                labor_cost REAL NOT NULL DEFAULT 0,
+                other_monthly_cost REAL NOT NULL DEFAULT 0,
+                note TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS monthly_staff_costs (
+                month_key TEXT NOT NULL,
+                staff_key TEXT NOT NULL,
+                name TEXT NOT NULL,
+                role TEXT NOT NULL,
+                amount REAL NOT NULL DEFAULT 0,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (month_key, staff_key)
             )
             """
         )
@@ -2060,7 +2105,180 @@ def db_cost_rows(start_date, end_date):
     return {row["report_date"]: dict(row) for row in rows}
 
 
+def db_month_overhead(month_key):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            """
+            SELECT month_key, rent_cost, utility_cost, labor_cost,
+                   other_monthly_cost, note, updated_at
+            FROM monthly_overhead_costs
+            WHERE month_key = ?
+            """,
+            (month_key,),
+        ).fetchone()
+    staff = db_month_staff(month_key)
+    staff_total = round(sum(float(item.get("amount") or 0) for item in staff), 2)
+    if not row:
+        data = {
+            "month": month_key,
+            "rent_cost": 0.0,
+            "utility_cost": 0.0,
+            "labor_cost": staff_total,
+            "other_monthly_cost": 0.0,
+            "note": "",
+            "updated_at": "",
+        }
+        data["staff_count"] = len(staff)
+        data["staff"] = staff
+        data["total"] = staff_total
+        return data
+    data = dict(row)
+    data["month"] = data.pop("month_key")
+    data["labor_cost"] = staff_total
+    data["staff_count"] = len(staff)
+    data["staff"] = staff
+    data["total"] = round(
+        float(data.get("rent_cost") or 0)
+        + float(data.get("utility_cost") or 0)
+        + staff_total
+        + float(data.get("other_monthly_cost") or 0),
+        2,
+    )
+    return data
+
+
+def staff_key(name, index):
+    normalized = re.sub(r"\s+", "-", str(name or "").strip().lower())
+    return normalized or f"staff-{index + 1}"
+
+
+def db_month_staff(month_key):
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT staff_key, name, role, amount, sort_order
+            FROM monthly_staff_costs
+            WHERE month_key = ?
+            ORDER BY sort_order, staff_key
+            """,
+            (month_key,),
+        ).fetchall()
+    if rows:
+        return [
+            {
+                "staff_key": row["staff_key"],
+                "name": row["name"],
+                "role": row["role"],
+                "amount": float(row["amount"] or 0),
+                "sort_order": int(row["sort_order"] or 0),
+            }
+            for row in rows
+        ]
+    return [
+        {
+            "staff_key": staff_key(item["name"], index),
+            "name": item["name"],
+            "role": item["role"],
+            "amount": float(item["amount"]),
+            "sort_order": index,
+        }
+        for index, item in enumerate(DEFAULT_MONTHLY_STAFF)
+    ]
+
+
+def save_month_staff(payload):
+    month_key = str(payload.get("month") or today_key()[:7])[:7]
+    raw_staff = payload.get("staff") or []
+    now = datetime.now().isoformat(timespec="seconds")
+    cleaned = []
+    for index, item in enumerate(raw_staff):
+        name = str(item.get("name") or "").strip()
+        role = str(item.get("role") or "").strip()
+        if not name and not role:
+            continue
+        cleaned.append(
+            {
+                "staff_key": staff_key(name or role, index),
+                "name": name or role,
+                "role": role or "\u4eba\u4e8b",
+                "amount": float(item.get("amount") or 0),
+                "sort_order": index,
+            }
+        )
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM monthly_staff_costs WHERE month_key = ?", (month_key,))
+        conn.executemany(
+            """
+            INSERT INTO monthly_staff_costs (
+                month_key, staff_key, name, role, amount, sort_order, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    month_key,
+                    item["staff_key"],
+                    item["name"],
+                    item["role"],
+                    item["amount"],
+                    item["sort_order"],
+                    now,
+                )
+                for item in cleaned
+            ],
+        )
+        conn.commit()
+    return {"ok": True, "overhead": db_month_overhead(month_key)}
+
+
+def save_month_overhead(payload):
+    month_key = str(payload.get("month") or today_key()[:7])[:7]
+    now = datetime.now().isoformat(timespec="seconds")
+
+    def cost_value(field):
+        return float(payload.get(field) or 0)
+
+    values = (
+        month_key,
+        cost_value("rent_cost"),
+        cost_value("utility_cost"),
+        cost_value("labor_cost"),
+        cost_value("other_monthly_cost"),
+        str(payload.get("note") or ""),
+        now,
+    )
+    init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO monthly_overhead_costs (
+                month_key, rent_cost, utility_cost, labor_cost,
+                other_monthly_cost, note, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(month_key) DO UPDATE SET
+                rent_cost = excluded.rent_cost,
+                utility_cost = excluded.utility_cost,
+                labor_cost = excluded.labor_cost,
+                other_monthly_cost = excluded.other_monthly_cost,
+                note = excluded.note,
+                updated_at = excluded.updated_at
+            """,
+            values,
+        )
+        conn.commit()
+    return {"ok": True, "overhead": db_month_overhead(month_key)}
+
+
 def build_cost_row(report_date, stored):
+    day_totals = summary(report_date)["totals"]
+    meal_counts = {meal: int(day_totals[meal]["total"]) for meal in MEAL_KEYS}
+    revenue = sum(meal_counts[meal] * MEAL_PRICES[meal] for meal in MEAL_KEYS)
     defaults = default_cost_counts(report_date)
     use_stored_counts = bool(stored and int(stored.get("counts_locked") or 0))
     taiwan_count = int(stored["taiwan_count"]) if use_stored_counts else defaults["taiwan"]
@@ -2100,6 +2318,8 @@ def build_cost_row(report_date, stored):
     cambodia_avg = round(cambodia_cost / cambodia_count, 4) if cambodia_count else 0
     return {
         "date": report_date,
+        "meal_counts": meal_counts,
+        "revenue": round(revenue, 2),
         "taiwan_cost": taiwan_cost,
         "cambodia_cost": cambodia_cost,
         **supplier_costs,
@@ -2126,6 +2346,7 @@ def cost_report(start_date, end_date, summary_end_date=None):
     start = date.fromisoformat(start_date)
     end = date.fromisoformat(end_date)
     stored = db_cost_rows(start_date, end_date)
+    overhead = db_month_overhead(start_date[:7])
     rows = []
     current = start
     while current <= end:
@@ -2141,6 +2362,8 @@ def cost_report(start_date, end_date, summary_end_date=None):
             "cost": 0.0,
             "other_cost": 0.0,
             "total_expense_cost": 0.0,
+            "revenue": 0.0,
+            "profit": 0.0,
             "count": 0,
             "average": 0.0,
             "expense_average": 0.0,
@@ -2165,6 +2388,7 @@ def cost_report(start_date, end_date, summary_end_date=None):
         month["cost"] += row["total_cost"]
         month["other_cost"] += row["other_cost"]
         month["total_expense_cost"] += row["total_expense_cost"]
+        month["revenue"] += row["revenue"]
         month["count"] += row["total_count"]
         for field in [
             "pork_cost",
@@ -2189,6 +2413,7 @@ def cost_report(start_date, end_date, summary_end_date=None):
         weeks[period_label]["cost"] += row["total_cost"]
         weeks[period_label]["other_cost"] += row["other_cost"]
         weeks[period_label]["total_expense_cost"] += row["total_expense_cost"]
+        weeks[period_label]["revenue"] += row["revenue"]
         weeks[period_label]["count"] += row["total_count"]
         for field in [
             "pork_cost",
@@ -2210,6 +2435,8 @@ def cost_report(start_date, end_date, summary_end_date=None):
         group["cost"] = round(group["cost"], 2)
         group["other_cost"] = round(group["other_cost"], 2)
         group["total_expense_cost"] = round(group["total_expense_cost"], 2)
+        group["revenue"] = round(group["revenue"], 2)
+        group["profit"] = round(group["revenue"] - group["total_expense_cost"], 2)
         for field in [
             "pork_cost",
             "vegetable_cost",
@@ -2229,7 +2456,19 @@ def cost_report(start_date, end_date, summary_end_date=None):
         group["expense_average"] = round(group["total_expense_cost"] / group["count"], 4) if group["count"] else 0.0
         group["over_limit"] = group["average"] > 1.32 if group["count"] else False
 
-    return {"rows": rows, "month": month, "weeks": list(weeks.values()), "limit": 1.32, "summary_end_date": summary_cutoff.isoformat()}
+    month["monthly_overhead_cost"] = overhead["total"]
+    month["grand_total_cost"] = round(month["total_expense_cost"] + overhead["total"], 2)
+    month["grand_profit"] = round(month["revenue"] - month["grand_total_cost"], 2)
+    month["grand_average"] = round(month["grand_total_cost"] / month["count"], 4) if month["count"] else 0.0
+
+    return {
+        "rows": rows,
+        "month": month,
+        "weeks": list(weeks.values()),
+        "monthly_overhead": overhead,
+        "limit": 1.32,
+        "summary_end_date": summary_cutoff.isoformat(),
+    }
 
 
 def save_cost(payload):
@@ -2477,6 +2716,18 @@ class Handler(BaseHTTPRequestHandler):
             month = params.get("month", [today_key()[:7]])[0]
             self.send_json(month_menu(month))
             return
+        if parsed.path == "/api/admin/month-overhead":
+            if not self.require_admin():
+                return
+            month = params.get("month", [today_key()[:7]])[0]
+            self.send_json(db_month_overhead(month))
+            return
+        if parsed.path == "/api/admin/month-staff":
+            if not self.require_admin():
+                return
+            month = params.get("month", [today_key()[:7]])[0]
+            self.send_json({"month": month, "staff": db_month_staff(month)})
+            return
         self.send_json({"error": "not found"}, 404)
 
     def do_POST(self):
@@ -2539,6 +2790,26 @@ class Handler(BaseHTTPRequestHandler):
                 length = int(self.headers.get("Content-Length", "0"))
                 payload = json.loads(self.rfile.read(length).decode("utf-8"))
                 self.send_json(save_menu_updates(payload))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 400)
+            return
+        if parsed.path == "/api/admin/month-overhead":
+            if not self.require_admin():
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                self.send_json(save_month_overhead(payload))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 400)
+            return
+        if parsed.path == "/api/admin/month-staff":
+            if not self.require_admin():
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                self.send_json(save_month_staff(payload))
             except Exception as exc:
                 self.send_json({"error": str(exc)}, 400)
             return
