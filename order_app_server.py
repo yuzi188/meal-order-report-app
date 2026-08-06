@@ -1568,18 +1568,15 @@ def send_cost_menu(chat_id, report_date=None, reply_to_message_id=None):
 def handle_cost_callback(chat_id, message_id, callback_id, data):
     if data == "cost_cancel":
         clear_pending_bot_cost(chat_id)
-        telegram_answer_callback(callback_id, "\u5df2\u53d6\u6d88")
         telegram_send_message(chat_id, "\u5df2\u53d6\u6d88\u9019\u6b21\u83dc\u91d1\u8f38\u5165\u3002", message_id)
         return {"ok": True, "action": "cost_cancelled"}
     if data == "cost_confirm":
         pending = load_pending_bot_cost(chat_id)
         if not pending or "amount" not in pending:
-            telegram_answer_callback(callback_id, "\u6c92\u6709\u5f85\u78ba\u8a8d\u7684\u83dc\u91d1")
             telegram_send_message(chat_id, "\u6c92\u6709\u5f85\u78ba\u8a8d\u7684\u83dc\u91d1\uff0c\u8acb\u5148\u7528 /\u83dc\u91d1 \u9078\u5ee0\u5546\u518d\u8f38\u5165\u91d1\u984d\u3002", message_id)
             return {"ok": True, "action": "no_pending_cost"}
         result = save_cost({"date": pending["date"], pending["field"]: pending["amount"]})
         clear_pending_bot_cost(chat_id)
-        telegram_answer_callback(callback_id, "\u5df2\u5beb\u5165")
         telegram_send_message(
             chat_id,
             f"\u5df2\u5beb\u5165\u83dc\u91d1\n"
@@ -1593,14 +1590,12 @@ def handle_cost_callback(chat_id, message_id, callback_id, data):
     if len(parts) == 3 and parts[0] == "cost" and parts[2] in COST_FIELD_LABELS:
         payload = {"date": parts[1], "field": parts[2]}
         save_pending_bot_cost(chat_id, payload)
-        telegram_answer_callback(callback_id, COST_FIELD_LABELS[parts[2]])
         telegram_send_message(
             chat_id,
             f"{payload['date']} {COST_FIELD_LABELS[payload['field']]}\n\u8acb\u8f38\u5165\u91d1\u984d\uff0c\u4f8b\u5982\uff1a235.5",
             message_id,
         )
         return {"ok": True, "action": "cost_vendor_selected", "payload": payload}
-    telegram_answer_callback(callback_id, "\u7121\u6cd5\u8655\u7406\u9019\u500b\u9078\u9805")
     return {"ok": True, "ignored": "unknown callback"}
 
 
@@ -1638,7 +1633,12 @@ def handle_telegram_update(update):
         if TELEGRAM_ALLOWED_CHAT_ID and chat_id != TELEGRAM_ALLOWED_CHAT_ID:
             return {"ok": True, "ignored": "chat not allowed"}
         if data.startswith("cost"):
-            return handle_cost_callback(chat_id, message_id, callback_id, data)
+            telegram_answer_callback(callback_id, "\u5df2\u6536\u5230")
+            try:
+                return handle_cost_callback(chat_id, message_id, callback_id, data)
+            except Exception as exc:
+                telegram_send_message(chat_id, f"\u83dc\u91d1\u9078\u55ae\u6c92\u6709\u5beb\u5165\uff1a{exc}", message_id)
+                return {"ok": True, "action": "cost_callback_failed", "error": str(exc)}
         telegram_answer_callback(callback_id, "\u672a\u77e5\u9078\u9805")
         return {"ok": True, "ignored": "unknown callback"}
 
