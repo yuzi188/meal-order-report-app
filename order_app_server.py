@@ -231,6 +231,12 @@ def unit_delivery_locations():
     return {unit: allowed_delivery_locations(unit) for unit in DEPARTMENTS}
 
 
+def allowed_cuisines(unit):
+    if unit == "1002-2\u5ba2\u670d":
+        return ["taiwan", "cambodia"]
+    return CUISINES
+
+
 def load_menu():
     menu = json.loads(MENU_PATH.read_text(encoding="utf-8"))
     return apply_menu_overrides(menu)
@@ -787,7 +793,7 @@ def save_report(payload):
 
         if meal_key not in MEAL_KEYS:
             raise ValueError("\u9910\u5225\u4e0d\u6b63\u78ba")
-        if cuisine not in CUISINES:
+        if cuisine not in allowed_cuisines(unit):
             raise ValueError("\u9910\u7a2e\u4e0d\u6b63\u78ba")
         if delivery_location not in allowed_delivery_locations(unit):
             raise ValueError("\u9001\u9910\u5730\u9ede\u4e0d\u6b63\u78ba")
