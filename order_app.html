@@ -116,7 +116,6 @@
     .meal-current div { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); padding: 8px 7px; text-align: center; }
     .meal-current strong { display: block; font-size: 18px; line-height: 1; margin-bottom: 4px; }
     .meal-current span { color: var(--muted); font-size: 12px; font-weight: 850; }
-    .meal-restrictions { margin: 0 12px 10px; display: flex; gap: 6px; flex-wrap: wrap; }
     .lines { padding: 0 12px 10px; }
     .input-table { width: 100%; min-width: 460px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
     .input-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -381,32 +380,56 @@
       `).join("");
     }
 
-    function locationButtons(selected) {
-      return visibleLocations().map(x => `
+    function locationButtons(selected, mealKey = activeMeal) {
+      return visibleLocations(mealKey).map(x => `
         <button type="button" class="location-option ${x === selected ? "active" : ""}" data-location-choice="${escapeHtml(x)}">${escapeHtml(x)}</button>
       `).join("");
     }
 
-    function visibleLocations() {
-      if (unitDeliveryLocations[activeDepartment]) return unitDeliveryLocations[activeDepartment];
-      return deliveryLocations.length ? [deliveryLocations[0]] : [];
+    function restrictionLocationsForMeal(mealKey) {
+      const labels = { no_beef: "不吃牛", no_pork: "不吃豬", no_seafood: "不吃海鮮" };
+      const mealRestrictions = (currentSummary && currentSummary.restrictions && currentSummary.restrictions[mealKey]) || {};
+      return Object.entries(labels).filter(([key]) => {
+        const details = (mealRestrictions[key] && mealRestrictions[key].details) || [];
+        return details.some(detail => detail.unit === activeDepartment);
+      }).map(([, label]) => label);
+    }
+
+    function visibleLocations(mealKey = activeMeal) {
+      const base = unitDeliveryLocations[activeDepartment] || (deliveryLocations.length ? [deliveryLocations[0]] : []);
+      const extra = restrictionLocationsForMeal(mealKey).filter(location => !base.includes(location));
+      return base.concat(extra);
     }
 
     function lineTemplate(mealKey, lineIndex, taiwanCount = 0, healthyCount = 0, cambodiaCount = 0, location = "") {
-      const locations = visibleLocations();
+      const locations = visibleLocations(mealKey);
       const selectedLocation = locations.includes(location) ? location : (locations[0] || "");
+      const isRestrictionNote = restrictionLocationsForMeal(mealKey).includes(selectedLocation);
       return `
-        <tr class="line" data-line="${lineIndex}" data-location="${escapeHtml(selectedLocation)}">
+        <tr class="line" data-line="${lineIndex}" data-location="${escapeHtml(selectedLocation)}" data-restriction-note="${isRestrictionNote ? "1" : "0"}">
           <td class="location-cell">
             <button type="button" class="location-button" data-toggle-location>${escapeHtml(selectedLocation)}</button>
-            <div class="location-panel">${locationButtons(selectedLocation)}</div>
+            <div class="location-panel">${locationButtons(selectedLocation, mealKey)}</div>
           </td>
-          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="taiwan_count" value="${taiwanCount}"></td>
-          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="healthy_count" value="${healthyCount}"></td>
-          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="cambodia_count" value="${cambodiaCount}"></td>
-          <td><button class="remove" type="button" data-remove-line>${t.del}</button></td>
+          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="taiwan_count" value="${taiwanCount}" ${isRestrictionNote ? "readonly" : ""}></td>
+          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="healthy_count" value="${healthyCount}" ${isRestrictionNote ? "readonly" : ""}></td>
+          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="cambodia_count" value="${cambodiaCount}" ${isRestrictionNote ? "readonly" : ""}></td>
+          <td>${isRestrictionNote ? "" : `<button class="remove" type="button" data-remove-line>${t.del}</button>`}</td>
         </tr>
       `;
+    }
+
+    function countsForRestriction(mealKey, location) {
+      const keys = { "不吃牛": "no_beef", "不吃豬": "no_pork", "不吃海鮮": "no_seafood" };
+      const restrictionKey = keys[location];
+      const mealRestrictions = (currentSummary && currentSummary.restrictions && currentSummary.restrictions[mealKey]) || {};
+      const details = restrictionKey && mealRestrictions[restrictionKey] ? mealRestrictions[restrictionKey].details || [] : [];
+      return details.reduce((counts, detail) => {
+        if (detail.unit === activeDepartment && counts[detail.cuisine] !== undefined) {
+          counts[detail.cuisine] += Number(detail.count || 0);
+        }
+        return counts;
+      }, { taiwan: 0, healthy: 0, cambodia: 0 });
     }
 
     function addLine(mealKey) {
@@ -415,6 +438,9 @@
     }
 
     function countsForLocation(mealKey, location) {
+      if (restrictionLocationsForMeal(mealKey).includes(location)) {
+        return countsForRestriction(mealKey, location);
+      }
       const counts = { taiwan: 0, healthy: 0, cambodia: 0 };
       const rows = (currentSummary && currentSummary.rows) || [];
       rows.forEach(row => {
@@ -444,11 +470,6 @@
         })
         .filter(Boolean)
         .join("");
-    }
-
-    function restrictionNotice(mealKey) {
-      const pills = restrictionPills(mealKey);
-      return pills ? `<div class="meal-restrictions">${pills}</div>` : "";
     }
 
     function weekdayName(dateText) {
@@ -525,7 +546,6 @@
             <div><strong>${activeTotal.healthy}</strong><span>健康餐</span></div>
             <div><strong>${activeTotal.cambodia}</strong><span>柬餐</span></div>
           </div>
-          ${restrictionNotice(meal.key)}
           <div class="lines table-wrap">
             <div class="input-table">
               <table>
@@ -598,6 +618,7 @@
       document.querySelectorAll("[data-lines]").forEach(box => {
         const mealKey = box.dataset.lines;
         box.querySelectorAll(".line").forEach((line, index) => {
+          if (line.dataset.restrictionNote === "1") return;
           const taiwanCount = Number(line.querySelector('[data-field="taiwan_count"]').value || 0);
           const healthyCount = Number(line.querySelector('[data-field="healthy_count"]').value || 0);
           const cambodiaCount = Number(line.querySelector('[data-field="cambodia_count"]').value || 0);
