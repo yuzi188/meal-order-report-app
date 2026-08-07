@@ -51,6 +51,7 @@ OPENAI_IMAGE_VERSION = os.environ.get("OPENAI_IMAGE_VERSION", "gpt-photo-low-1")
 DISH_IMAGE_DIR = DATA_DIR / "dish_images"
 APP_URL = "https://web-production-664d8.up.railway.app"
 ADMIN_URL = f"{APP_URL}/admin"
+MINI_APP_URL = f"{APP_URL}/?v=20260807-typo2"
 KHMER_USAGE_ANNOUNCEMENT = """សេចក្តីជូនដំណឹងពីផ្ទះបាយ OFA
 
 របៀបប្រើ Kitchen Bot៖
@@ -1657,7 +1658,7 @@ def main_reply_keyboard():
             [
                 {
                     "text": "OFA \u5c0f\u7a0b\u5f0f",
-                    "web_app": {"url": f"{APP_URL}/"},
+                    "web_app": {"url": MINI_APP_URL},
                 },
                 {
                     "text": "\u5f8c\u53f0\u7db2\u5740",
