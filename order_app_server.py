@@ -1217,7 +1217,7 @@ def parse_bot_3f_report(text):
     entries = list(entries_by_key.values())
     if not entries:
         raise ValueError("\u6c92\u6709\u8b80\u5230\u53ef\u5beb\u5165\u7684\u4eba\u6578\uff0c\u8acb\u78ba\u8a8d\u6709\u9910\u5225\u3001\u53f0\u9910/\u80d6\u80d6\u9910/\u675f\u9910\u6216\u67ec\u9910\u548c\u4efd\u6578")
-    return {"date": report_date, "unit": unit, "entries": entries, "merge": True}
+    return {"date": report_date, "unit": unit, "entries": entries, "merge": False}
 
 
 def summarize_bot_report(payload):
