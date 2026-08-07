@@ -6,6 +6,7 @@ import os
 import re
 import sqlite3
 import time
+import unicodedata
 import urllib.parse
 import urllib.request
 from datetime import datetime
@@ -434,6 +435,10 @@ def today_key():
     return datetime.now().strftime("%Y-%m-%d")
 
 
+def normalize_digits_and_separators(text):
+    return unicodedata.normalize("NFKC", str(text or ""))
+
+
 def weekday_label(report_date):
     names = ["\u661f\u671f\u4e00", "\u661f\u671f\u4e8c", "\u661f\u671f\u4e09", "\u661f\u671f\u56db", "\u661f\u671f\u4e94", "\u661f\u671f\u516d", "\u661f\u671f\u65e5"]
     try:
@@ -833,13 +838,31 @@ def save_report(payload):
 
 
 def normalize_report_date(text):
-    match = re.search(r"(\d{1,2})\s*/\s*(\d{1,2})", text)
-    if not match:
-        return today_key()
-    month = int(match.group(1))
-    day = int(match.group(2))
+    normalized = normalize_digits_and_separators(text)
     year = datetime.now().year
-    return f"{year:04d}-{month:02d}-{day:02d}"
+    patterns = [
+        r"(?<!\d)(20\d{2})\s*[/.-]\s*(\d{1,2})\s*[/.-]\s*(\d{1,2})(?!\d)",
+        r"(?<!\d)(20\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*(?:日|號|号)?",
+        r"(?<!\d)(\d{1,2})\s*[/.-]\s*(\d{1,2})(?:\s*(?:日|號|号))?(?!\d)",
+        r"(?<!\d)(\d{1,2})\s*月\s*(\d{1,2})\s*(?:日|號|号)?",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, normalized)
+        if not match:
+            continue
+        if len(match.groups()) == 3:
+            parsed_year = int(match.group(1))
+            month = int(match.group(2))
+            day = int(match.group(3))
+        else:
+            parsed_year = year
+            month = int(match.group(1))
+            day = int(match.group(2))
+        try:
+            return datetime(parsed_year, month, day).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return today_key()
 
 
 def normalize_meal_key(line):
@@ -920,7 +943,7 @@ def report_unit_from_text(text):
 
 
 def parse_letai_short_report(text):
-    raw = str(text or "").strip()
+    raw = normalize_digits_and_separators(text).strip()
     if "\u6a02\u53f0" not in raw:
         return None
     meal_key = normalize_short_meal_key(raw)
@@ -1160,17 +1183,18 @@ def save_menu_updates(payload):
 
 
 def parse_bot_3f_report(text):
-    letai_payload = parse_letai_short_report(text)
+    raw_text = normalize_digits_and_separators(text)
+    letai_payload = parse_letai_short_report(raw_text)
     if letai_payload:
         return letai_payload
-    unit = report_unit_from_text(text or "")
+    unit = report_unit_from_text(raw_text)
     if not unit:
         raise ValueError("\u76ee\u524d\u53ea\u652f\u63f4 3F \u6216 1002-2\u5ba2\u670d \u7684\u5831\u9910\u6587\u5b57")
 
-    report_date = normalize_report_date(text)
+    report_date = normalize_report_date(raw_text)
     current_meal = None
     entries_by_key = {}
-    for raw_index, raw_line in enumerate(text.splitlines(), start=1):
+    for raw_index, raw_line in enumerate(raw_text.splitlines(), start=1):
         line = raw_line.strip()
         if not line or set(line) <= {"-", "_"}:
             continue
