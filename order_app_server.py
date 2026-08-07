@@ -111,6 +111,11 @@ DELIVERY_LOCATIONS = [
     "\u4e0d\u5403\u6d77\u9bae",
 ]
 MEAL_KEYS = ["breakfast", "lunch", "dinner", "late_night"]
+RESTRICTION_TYPES = {
+    "\u4e0d\u5403\u725b": {"key": "no_beef", "emoji": "\U0001f42e"},
+    "\u4e0d\u5403\u8c6c": {"key": "no_pork", "emoji": "\U0001f437"},
+    "\u4e0d\u5403\u6d77\u9bae": {"key": "no_seafood", "emoji": "\U0001f99e"},
+}
 MEAL_PRICES = {
     "breakfast": 1.5,
     "lunch": 2.0,
@@ -2343,10 +2348,49 @@ def fixed_rows(report_date, rows):
     return defaults
 
 
+def empty_restriction_totals():
+    return {
+        meta["key"]: {"total": 0, "details": []}
+        for meta in RESTRICTION_TYPES.values()
+    }
+
+
+def add_restriction(restrictions, meal_key, restriction_label, count, row):
+    if count <= 0 or restriction_label not in RESTRICTION_TYPES:
+        return
+    bucket = restrictions[meal_key][RESTRICTION_TYPES[restriction_label]["key"]]
+    bucket["total"] += count
+    bucket["details"].append(
+        {
+            "unit": row["unit"],
+            "location": row["delivery_location"],
+            "cuisine": row["cuisine"],
+            "count": count,
+            "label": restriction_label,
+            "emoji": RESTRICTION_TYPES[restriction_label]["emoji"],
+        }
+    )
+
+
+def collect_row_restrictions(restrictions, row):
+    meal_key = row["meal_key"]
+    count = int(row["count"])
+    location = row["delivery_location"]
+    if location in RESTRICTION_TYPES:
+        add_restriction(restrictions, meal_key, location, count, row)
+
+    note = str(row.get("note") or "")
+    for label in RESTRICTION_TYPES:
+        match = re.search(rf"(\d+)\s*(?:\u4f4d|\u4efd)?\s*{re.escape(label)}", note)
+        if match:
+            add_restriction(restrictions, meal_key, label, int(match.group(1)), row)
+
+
 def summary(report_date):
     rows = db_rows(report_date)
     rows = rows + fixed_rows(report_date, rows)
     totals = {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
+    restrictions = {meal: empty_restriction_totals() for meal in MEAL_KEYS}
     locations = {
         location: {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
         for location in DELIVERY_LOCATIONS
@@ -2373,6 +2417,7 @@ def summary(report_date):
         totals[meal]["total"] += count
         locations[location][meal][cuisine] += count
         locations[location][meal]["total"] += count
+        collect_row_restrictions(restrictions, row)
 
     reported_units = sorted({row["unit"] for row in rows})
     missing_units = [unit for unit in DEPARTMENTS if unit not in reported_units]
@@ -2381,6 +2426,7 @@ def summary(report_date):
         "units": units,
         "locations": locations,
         "totals": totals,
+        "restrictions": restrictions,
         "missing_units": missing_units,
     }
 

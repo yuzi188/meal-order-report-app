@@ -88,6 +88,8 @@
     .split-pill.tw { color: var(--tw); }
     .split-pill.healthy { color: var(--ok); }
     .split-pill.kh { color: var(--kh); }
+    .split-pill.restriction { color: #ffb257; border-color: rgba(255,178,87,.38); background: rgba(255,178,87,.08); }
+    .metric-restrictions { margin-top: 5px; display: flex; gap: 5px; flex-wrap: wrap; font-size: 12px; }
     .menu-list { margin-top: 8px; display: grid; gap: 3px; font-size: 12px; line-height: 1.35; color: #d8dee7; }
     .menu-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .meal-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
@@ -114,6 +116,7 @@
     .meal-current div { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); padding: 8px 7px; text-align: center; }
     .meal-current strong { display: block; font-size: 18px; line-height: 1; margin-bottom: 4px; }
     .meal-current span { color: var(--muted); font-size: 12px; font-weight: 850; }
+    .meal-restrictions { margin: 0 12px 10px; display: flex; gap: 6px; flex-wrap: wrap; }
     .lines { padding: 0 12px 10px; }
     .input-table { width: 100%; min-width: 460px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
     .input-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -427,6 +430,27 @@
       return currentSummary.totals[mealKey] || { taiwan: 0, healthy: 0, cambodia: 0, total: 0 };
     }
 
+    function restrictionPills(mealKey) {
+      const mealRestrictions = (currentSummary && currentSummary.restrictions && currentSummary.restrictions[mealKey]) || {};
+      const items = [
+        ["no_beef", "🐮不吃牛"],
+        ["no_pork", "🐷不吃豬"],
+        ["no_seafood", "🦞不吃海鮮"]
+      ];
+      return items
+        .map(([key, label]) => {
+          const count = Number((mealRestrictions[key] && mealRestrictions[key].total) || 0);
+          return count > 0 ? `<span class="split-pill restriction">${label} ${count}</span>` : "";
+        })
+        .filter(Boolean)
+        .join("");
+    }
+
+    function restrictionNotice(mealKey) {
+      const pills = restrictionPills(mealKey);
+      return pills ? `<div class="meal-restrictions">${pills}</div>` : "";
+    }
+
     function weekdayName(dateText) {
       const names = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
       const date = new Date(`${dateText}T00:00:00+08:00`);
@@ -501,6 +525,7 @@
             <div><strong>${activeTotal.healthy}</strong><span>健康餐</span></div>
             <div><strong>${activeTotal.cambodia}</strong><span>柬餐</span></div>
           </div>
+          ${restrictionNotice(meal.key)}
           <div class="lines table-wrap">
             <div class="input-table">
               <table>
@@ -547,6 +572,7 @@
               <span class="split-pill healthy">健 ${row.healthy}</span>
               <span class="split-pill kh">柬 ${row.cambodia}</span>
             </div>
+            ${restrictionPills(key) ? `<div class="metric-restrictions">${restrictionPills(key)}</div>` : ""}
             <div class="menu-list">${menuLines}</div>
           </button>
         `;
