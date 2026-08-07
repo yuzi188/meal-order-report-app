@@ -2318,10 +2318,12 @@ def meal_has_beef(report_date, meal_key):
     return False
 
 
-def fixed_rows(report_date, rows):
+def fixed_rows(report_date, rows, include_hidden=False):
     updated_pairs = {(row["unit"], row["meal_key"]) for row in rows}
     defaults = []
     for rule in fixed_reports_config():
+        if rule.get("unit") in HIDDEN_FIXED_UNITS and not include_hidden:
+            continue
         if rule.get("unit") == "1002-2\u4ee3\u7406" and is_sunday(report_date):
             continue
         for meal_key, count in rule["counts"].items():
@@ -2386,11 +2388,12 @@ def collect_row_restrictions(restrictions, row):
             add_restriction(restrictions, meal_key, label, int(match.group(1)), row)
 
 
-def summary(report_date):
+def summary(report_date, include_hidden=False):
     rows = db_rows(report_date)
-    rows = rows + fixed_rows(report_date, rows)
+    rows = rows + fixed_rows(report_date, rows, include_hidden)
     totals = {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
     restrictions = {meal: empty_restriction_totals() for meal in MEAL_KEYS}
+    summary_units = FIXED_REPORT_UNITS if include_hidden else DEPARTMENTS
     locations = {
         location: {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
         for location in DELIVERY_LOCATIONS
@@ -2400,7 +2403,7 @@ def summary(report_date):
             location: {meal: {"taiwan": 0, "healthy": 0, "cambodia": 0, "total": 0} for meal in MEAL_KEYS}
             for location in DELIVERY_LOCATIONS
         }
-        for unit in FIXED_REPORT_UNITS
+        for unit in summary_units
     }
 
     for row in rows:
@@ -2432,7 +2435,7 @@ def summary(report_date):
 
 
 def default_cost_counts(report_date):
-    totals = summary(report_date)["totals"]
+    totals = summary(report_date, include_hidden=True)["totals"]
     taiwan = sum(totals[meal]["taiwan"] + totals[meal]["healthy"] for meal in MEAL_KEYS)
     cambodia = sum(totals[meal]["cambodia"] for meal in MEAL_KEYS)
     return {"taiwan": taiwan, "cambodia": cambodia}
