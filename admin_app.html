@@ -256,12 +256,11 @@
               <th>日期</th>
               <th>台餐人數</th>
               <th>台餐菜金</th>
-              <th>台餐平均</th>
               <th>柬餐人數</th>
               <th>柬餐菜金</th>
-              <th>柬餐平均</th>
               <th>總人數</th>
               <th>總菜金</th>
+              <th>總平均</th>
             </tr>
           </thead>
           <tbody id="rows"></tbody>
@@ -723,21 +722,20 @@
             <td>${row.date}</td>
             <td>${row.taiwan_count}</td>
             <td>${money(row.taiwan_food_cost)}</td>
-            <td class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</td>
             <td>${row.cambodia_count}</td>
             <td>${money(row.cambodia_cost)}</td>
-            <td class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</td>
             <td>${row.total_count}</td>
             <td>${money(row.total_cost)}</td>
+            <td class="${avgClass(row.average)}">${money(row.average)}</td>
           </tr>
           <tr class="details-row" data-detail-date="${row.date}">
-            <td colspan="9">
+            <td colspan="8">
               <div class="detail-grid">
                 <div class="detail-box">
                   <strong>餐別成本</strong>
                   台餐菜金 ${money(row.taiwan_food_cost)} / 台餐+健康餐 ${row.taiwan_count} / 平均 <span class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</span><br>
                   柬餐菜金 ${money(row.cambodia_cost)} / 柬餐 ${row.cambodia_count} / 平均 <span class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</span><br>
-                  總菜金 ${money(row.total_cost)}
+                  總菜金 ${money(row.total_cost)} / 總人數 ${row.total_count} / 總平均 <span class="${avgClass(row.average)}">${money(row.average)}</span>
                 </div>
                 <div class="detail-box">
                   <strong>供應商細項</strong>
