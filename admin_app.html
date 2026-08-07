@@ -256,8 +256,10 @@
               <th>日期</th>
               <th>台餐人數</th>
               <th>台餐菜金</th>
+              <th>台餐平均</th>
               <th>柬餐人數</th>
               <th>柬餐菜金</th>
+              <th>柬餐平均</th>
               <th>總人數</th>
               <th>總菜金</th>
               <th>總平均</th>
@@ -722,14 +724,16 @@
             <td>${row.date}</td>
             <td>${row.taiwan_count}</td>
             <td>${money(row.taiwan_food_cost)}</td>
+            <td class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</td>
             <td>${row.cambodia_count}</td>
             <td>${money(row.cambodia_cost)}</td>
+            <td class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</td>
             <td>${row.total_count}</td>
             <td>${money(row.total_cost)}</td>
             <td class="${avgClass(row.average)}">${money(row.average)}</td>
           </tr>
           <tr class="details-row" data-detail-date="${row.date}">
-            <td colspan="8">
+            <td colspan="10">
               <div class="detail-grid">
                 <div class="detail-box">
                   <strong>餐別成本</strong>
