@@ -6,4 +6,4 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "order_bootstrap.py"]
+CMD ["python", "order_bootstrap_v2.py"]
