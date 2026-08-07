@@ -982,10 +982,16 @@ def count_from_text(text):
 def report_unit_from_text(text):
     if "\u6a02\u53f0" in text:
         return "\u6a02\u53f0\u98f2\u6599\u5e97"
+    explicit_3f = (
+        re.search(r"\u90e8\u9580\s*[:\uff1a]\s*MT\b", text, re.IGNORECASE)
+        or "\u81ea\u7531\u5973\u795e" in text
+        or re.search(r"3F\s*\u81ea\u7531", text, re.IGNORECASE)
+        or re.search(r"\u67ec\u9910\s*3F", text, re.IGNORECASE)
+    )
+    if explicit_3f or any(mark in text for mark in ["3F", "3\u6a13", "3\u697c", "MT"]):
+        return "3F"
     if "\u5ba2\u670d" in text:
         return "1002-2\u5ba2\u670d"
-    if any(mark in text for mark in ["3F", "3\u6a13", "3\u697c", "MT", "\u81ea\u7531\u5973\u795e"]):
-        return "3F"
     return None
 
 
