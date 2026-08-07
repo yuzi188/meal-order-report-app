@@ -776,6 +776,7 @@ def save_report(payload):
     now = datetime.now().isoformat(timespec="seconds")
     cleaned = []
     meal_keys_to_replace = set()
+    locations_to_replace_by_meal = {}
     for entry in entries:
         meal_key = str(entry.get("meal_key") or "")
         cuisine = str(entry.get("cuisine") or "")
@@ -795,6 +796,7 @@ def save_report(payload):
         if not line_key:
             line_key = f"{meal_key}-{cuisine}-{delivery_location}-{note}"
         meal_keys_to_replace.add(meal_key)
+        locations_to_replace_by_meal.setdefault(meal_key, set()).add(delivery_location)
 
         cleaned.append(
             (
@@ -817,14 +819,26 @@ def save_report(payload):
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("BEGIN")
         if not payload.get("merge"):
-            for meal_key in meal_keys_to_replace:
-                conn.execute(
-                    """
-                    DELETE FROM reports
-                    WHERE report_date = ? AND unit = ? AND meal_key = ?
-                    """,
-                    (report_date, unit, meal_key),
-                )
+            if payload.get("replace_locations"):
+                for meal_key, locations in locations_to_replace_by_meal.items():
+                    placeholders = ",".join("?" for _ in locations)
+                    conn.execute(
+                        f"""
+                        DELETE FROM reports
+                        WHERE report_date = ? AND unit = ? AND meal_key = ?
+                          AND delivery_location IN ({placeholders})
+                        """,
+                        (report_date, unit, meal_key, *sorted(locations)),
+                    )
+            else:
+                for meal_key in meal_keys_to_replace:
+                    conn.execute(
+                        """
+                        DELETE FROM reports
+                        WHERE report_date = ? AND unit = ? AND meal_key = ?
+                        """,
+                        (report_date, unit, meal_key),
+                    )
         conn.executemany(
             """
             INSERT INTO reports (
@@ -1274,7 +1288,7 @@ def parse_bot_3f_report(text):
     entries = list(entries_by_key.values())
     if not entries:
         raise ValueError("\u6c92\u6709\u8b80\u5230\u53ef\u5beb\u5165\u7684\u4eba\u6578\uff0c\u8acb\u78ba\u8a8d\u6709\u9910\u5225\u3001\u53f0\u9910/\u80d6\u80d6\u9910/\u675f\u9910\u6216\u67ec\u9910\u548c\u4efd\u6578")
-    return {"date": report_date, "unit": unit, "entries": entries, "merge": False}
+    return {"date": report_date, "unit": unit, "entries": entries, "merge": False, "replace_locations": True}
 
 
 def summarize_bot_report(payload):
