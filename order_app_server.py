@@ -458,6 +458,13 @@ def weekday_label(report_date):
         return ""
 
 
+def is_sunday(report_date):
+    try:
+        return datetime.strptime(report_date, "%Y-%m-%d").weekday() == 6
+    except Exception:
+        return False
+
+
 def session_cookie_value(username):
     expires = int(time.time()) + ADMIN_SESSION_TTL_SECONDS
     payload = f"{username}:{expires}"
@@ -2283,6 +2290,8 @@ def fixed_rows(report_date, rows):
     updated_pairs = {(row["unit"], row["meal_key"]) for row in rows}
     defaults = []
     for rule in fixed_reports_config():
+        if rule.get("unit") == "1002-2\u4ee3\u7406" and is_sunday(report_date):
+            continue
         for meal_key, count in rule["counts"].items():
             if count <= 0 or (rule["unit"], meal_key) in updated_pairs:
                 continue
