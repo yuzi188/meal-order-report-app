@@ -811,7 +811,11 @@ def save_report(payload):
             )
         )
 
+    if not cleaned:
+        raise ValueError("\u6c92\u6709\u8b80\u5230\u53ef\u5beb\u5165\u7684\u4eba\u6578\uff0c\u5df2\u4fdd\u7559\u539f\u672c\u8cc7\u6599")
+
     with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("BEGIN")
         if not payload.get("merge"):
             for meal_key in meal_keys_to_replace:
                 conn.execute(
@@ -875,6 +879,17 @@ def normalize_report_date(text):
     if parsed:
         return parsed
     return today_key()
+
+
+def compact_normalized_text(text):
+    return re.sub(r"\s+", "", normalize_digits_and_separators(text))
+
+
+def dated_text_has_any_keyword(text, keywords):
+    if not report_date_from_text(text):
+        return False
+    normalized = compact_normalized_text(text).lower()
+    return any(keyword.lower() in normalized for keyword in keywords)
 
 
 def normalize_meal_key(line):
@@ -2040,7 +2055,7 @@ def handle_telegram_update(update):
     if TELEGRAM_ALLOWED_CHAT_ID and chat_id != TELEGRAM_ALLOWED_CHAT_ID:
         return {"ok": True, "ignored": "chat not allowed"}
 
-    normalized = re.sub(r"\s+", "", text)
+    normalized = compact_normalized_text(text)
     if text.startswith("/id") or text.startswith("/\u6211\u7684ID") or normalized in {"\u6211\u7684id", "\u6211\u7684ID"}:
         display_user_id = user_id or "\u8b80\u53d6\u4e0d\u5230"
         display_username = username or "\u8b80\u53d6\u4e0d\u5230"
@@ -2138,15 +2153,35 @@ def handle_telegram_update(update):
         telegram_send_message(chat_id, f"bot \u6709\u6536\u5230\u8a0a\u606f\nchat_id: {chat_id}", message_id)
         return {"ok": True, "action": "test", "chat_id": chat_id}
 
-    if text.startswith("/menu") or text.startswith("/today") or text.startswith("/\u4eca\u65e5\u83dc\u55ae") or text.startswith("/\u83dc\u55ae") or normalized in {"\u4eca\u65e5\u83dc\u55ae", "\u83dc\u55ae"}:
+    if (
+        text.startswith("/menu")
+        or text.startswith("/today")
+        or text.startswith("/\u4eca\u65e5\u83dc\u55ae")
+        or text.startswith("/\u83dc\u55ae")
+        or normalized in {"\u4eca\u65e5\u83dc\u55ae", "\u83dc\u55ae"}
+        or dated_text_has_any_keyword(text, ["\u4eca\u65e5\u83dc\u55ae", "\u83dc\u55ae", "menu", "today"])
+    ):
         telegram_send_message(chat_id, today_menu_text(normalize_report_date(text)), message_id)
         return {"ok": True, "action": "today_menu"}
 
-    if text.startswith("/\u7e3d\u8868") or text.startswith("/\u603b\u8868") or text.startswith("/\u9001\u9910\u8868") or text.startswith("/table") or normalized in {"\u9001\u9910\u7e3d\u8868", "\u7e3d\u8868", "\u9001\u9910\u8868"}:
+    if (
+        text.startswith("/\u7e3d\u8868")
+        or text.startswith("/\u603b\u8868")
+        or text.startswith("/\u9001\u9910\u8868")
+        or text.startswith("/table")
+        or normalized in {"\u9001\u9910\u7e3d\u8868", "\u7e3d\u8868", "\u9001\u9910\u8868"}
+        or dated_text_has_any_keyword(text, ["\u9001\u9910\u7e3d\u8868", "\u9001\u9910\u8868", "\u7e3d\u8868", "\u603b\u8868", "table"])
+    ):
         telegram_send_message(chat_id, delivery_table_text(normalize_report_date(text)), message_id)
         return {"ok": True, "action": "delivery_table"}
 
-    if text.startswith("/\u7e3d\u6578") or text.startswith("/\u603b\u6570") or text.startswith("/total") or normalized in {"\u9001\u9910\u7e3d\u6578", "\u7e3d\u6578", "\u603b\u6570"}:
+    if (
+        text.startswith("/\u7e3d\u6578")
+        or text.startswith("/\u603b\u6570")
+        or text.startswith("/total")
+        or normalized in {"\u9001\u9910\u7e3d\u6578", "\u7e3d\u6578", "\u603b\u6570"}
+        or dated_text_has_any_keyword(text, ["\u9001\u9910\u7e3d\u6578", "\u7e3d\u6578", "\u603b\u6570", "total"])
+    ):
         telegram_send_message(chat_id, delivery_table_text(normalize_report_date(text)), message_id)
         return {"ok": True, "action": "employee_totals_report"}
 
