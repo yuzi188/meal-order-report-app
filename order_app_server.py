@@ -1790,6 +1790,28 @@ def broadcast_bot_announcement(text):
     return {"sent": sent, "failed": failed, "total": len(chats)}
 
 
+def broadcast_delivery_table(report_date):
+    chats = [chat for chat in known_bot_chats() if chat.get("chat_type") in {"group", "supergroup"}]
+    text = f"\u4eca\u65e5\u9001\u9910\u8868\u5df2\u66f4\u65b0\n\n{delivery_table_text(report_date)}"
+    sent = 0
+    failed = 0
+    results = []
+    for chat in chats:
+        result = telegram_send_message(chat["chat_id"], text, reply_markup=False)
+        ok = bool(result.get("ok"))
+        sent += 1 if ok else 0
+        failed += 0 if ok else 1
+        results.append(
+            {
+                "chat_id": chat["chat_id"],
+                "title": chat.get("title") or "",
+                "ok": ok,
+                "error": result.get("description") or result.get("error") or "",
+            }
+        )
+    return {"date": report_date, "sent": sent, "failed": failed, "total": len(chats), "results": results}
+
+
 def send_cost_menu(chat_id, report_date=None, reply_to_message_id=None):
     report_date = report_date or today_key()
     telegram_send_message(
@@ -2950,6 +2972,17 @@ class Handler(BaseHTTPRequestHandler):
                 length = int(self.headers.get("Content-Length", "0"))
                 payload = json.loads(self.rfile.read(length).decode("utf-8"))
                 self.send_json(save_month_staff(payload))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 400)
+            return
+        if parsed.path == "/api/admin/broadcast-delivery-table":
+            if not self.require_admin():
+                return
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
+                report_date = str(payload.get("date") or today_key())
+                self.send_json(broadcast_delivery_table(report_date))
             except Exception as exc:
                 self.send_json({"error": str(exc)}, 400)
             return
