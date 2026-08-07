@@ -175,8 +175,8 @@ FIXED_REPORTS = [
         "unit": "1002-3\u91d1\u6d41",
         "location": "\u90e8\u9580\u73fe\u5834",
         "cuisine": "taiwan",
-        "counts": {"breakfast": 3, "lunch": 5, "dinner": 5, "late_night": 5},
-        "beef_notes": {"lunch": 2, "dinner": 2, "late_night": 2},
+        "counts": {"breakfast": 2, "lunch": 5, "dinner": 5, "late_night": 5},
+        "beef_notes": {"breakfast": 1, "lunch": 2, "dinner": 2, "late_night": 1},
     },
     {
         "unit": "1002-2\u5ba2\u670d",
@@ -982,6 +982,8 @@ def count_from_text(text):
 def report_unit_from_text(text):
     if "\u6a02\u53f0" in text:
         return "\u6a02\u53f0\u98f2\u6599\u5e97"
+    if "\u91d1\u6d41" in text or re.search(r"1002\s*(?:-|之)?\s*3", text, re.IGNORECASE):
+        return "1002-3\u91d1\u6d41"
     explicit_3f = (
         re.search(r"\u90e8\u9580\s*[:\uff1a]\s*MT\b", text, re.IGNORECASE)
         or "\u81ea\u7531\u5973\u795e" in text
@@ -1278,7 +1280,12 @@ def parse_bot_3f_report(text):
         count = count_from_text(line)
         if count is None:
             continue
-        location = "1002-2" if unit == "1002-2\u5ba2\u670d" else normalize_delivery_location(line)
+        if unit == "3F":
+            location = normalize_delivery_location(line)
+        elif unit == "1002-2\u5ba2\u670d":
+            location = "1002-2"
+        else:
+            location = "\u90e8\u9580\u73fe\u5834"
         if unit == "3F" and current_meal == "late_night" and cuisine == "cambodia" and "\u9910\u6876" in line:
             location = "3F"
         is_late_night_cambodia_bucket = unit == "3F" and current_meal == "late_night" and cuisine == "cambodia" and location == "3F"
