@@ -9,7 +9,7 @@ import time
 import unicodedata
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -25,6 +25,7 @@ DATA_DIR = Path(
 DB_PATH = DATA_DIR / "meal_order_reports.sqlite3"
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "8787"))
+APP_TIMEZONE = timezone(timedelta(hours=8))
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "ofa5153")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "585858")
 ADMIN_SESSION_SECRET = os.environ.get("ADMIN_SESSION_SECRET", ADMIN_PASSWORD)
@@ -432,7 +433,11 @@ def menu_images(report_date, meal_key=None):
 
 
 def today_key():
-    return datetime.now().strftime("%Y-%m-%d")
+    return datetime.now(APP_TIMEZONE).strftime("%Y-%m-%d")
+
+
+def app_now():
+    return datetime.now(APP_TIMEZONE)
 
 
 def normalize_digits_and_separators(text):
@@ -837,9 +842,9 @@ def save_report(payload):
     return {"ok": True, "saved": len(cleaned), "updated_at": now}
 
 
-def normalize_report_date(text):
+def report_date_from_text(text):
     normalized = normalize_digits_and_separators(text)
-    year = datetime.now().year
+    year = app_now().year
     patterns = [
         r"(?<!\d)(20\d{2})\s*[/.-]\s*(\d{1,2})\s*[/.-]\s*(\d{1,2})(?!\d)",
         r"(?<!\d)(20\d{2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*(?:日|號|号)?",
@@ -862,6 +867,13 @@ def normalize_report_date(text):
             return datetime(parsed_year, month, day).strftime("%Y-%m-%d")
         except ValueError:
             continue
+    return None
+
+
+def normalize_report_date(text):
+    parsed = report_date_from_text(text)
+    if parsed:
+        return parsed
     return today_key()
 
 
@@ -946,6 +958,9 @@ def parse_letai_short_report(text):
     raw = normalize_digits_and_separators(text).strip()
     if "\u6a02\u53f0" not in raw:
         return None
+    report_date = report_date_from_text(raw)
+    if not report_date:
+        raise ValueError("\u6a02\u53f0\u4eba\u6578\u56de\u5831\u8acb\u52a0\u65e5\u671f\uff0c\u4f8b\u5982\uff1a\u6a02\u53f0 8/8 \u665a 1")
     meal_key = normalize_short_meal_key(raw)
     if not meal_key:
         return None
@@ -953,14 +968,14 @@ def parse_letai_short_report(text):
     count_match = re.search(r"(?:\u65e9\u9910|\u65e9|\u4e2d\u9910|\u5348\u9910|\u4e2d|\u5348|\u665a\u9910|\u665a|\u5bb5\u591c|\u5bb5|Breakfast|Lunch|Dinner|Supper)\s*([0-9]+)", compact, re.IGNORECASE)
     if not count_match:
         numbers = [int(value) for value in re.findall(r"\b([0-9]+)\b", compact)]
-        numbers = [value for value in numbers if value not in {datetime.now().year, 7, 8, 9, 10, 11, 12}]
+        numbers = [value for value in numbers if value not in {app_now().year, 7, 8, 9, 10, 11, 12}]
         count = numbers[-1] if numbers else None
     else:
         count = int(count_match.group(1))
     if count is None:
         return None
     return {
-        "date": normalize_report_date(raw),
+        "date": report_date,
         "unit": "\u6a02\u53f0\u98f2\u6599\u5e97",
         "entries": [
             {
@@ -1191,7 +1206,9 @@ def parse_bot_3f_report(text):
     if not unit:
         raise ValueError("\u76ee\u524d\u53ea\u652f\u63f4 3F \u6216 1002-2\u5ba2\u670d \u7684\u5831\u9910\u6587\u5b57")
 
-    report_date = normalize_report_date(raw_text)
+    report_date = report_date_from_text(raw_text)
+    if not report_date:
+        raise ValueError("\u4eba\u6578\u56de\u5831\u8acb\u52a0\u65e5\u671f\uff0c\u4f8b\u5982\uff1a8/8 \u9910\u76d2")
     current_meal = None
     entries_by_key = {}
     for raw_index, raw_line in enumerate(raw_text.splitlines(), start=1):
