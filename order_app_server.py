@@ -1432,12 +1432,13 @@ def display_location(location):
     return labels.get(location, location)
 
 
-def count_text(row, bucket_cuisines=None):
+def count_text(row, bucket_cuisines=None, taiwan_note=""):
     bucket_cuisines = set(bucket_cuisines or [])
     parts = []
     if row["taiwan"]:
         suffix = "\U0001faa3" if "taiwan" in bucket_cuisines else ""
-        parts.append(f"\U0001f1f9\U0001f1fc{row['taiwan']}{suffix}")
+        note = f"\uff08{taiwan_note}\uff09" if taiwan_note else ""
+        parts.append(f"\U0001f1f9\U0001f1fc{row['taiwan']}{suffix}{note}")
     if row["healthy"]:
         parts.append(f"\u5065\u5eb7\u9910\U0001f966{row['healthy']}")
     if row["cambodia"]:
@@ -1465,11 +1466,25 @@ def bucket_count_text(row, bucket_counts=None):
     return " / ".join(parts)
 
 
+def split_restriction_note(note):
+    parts = [part for part in str(note or "").split("\u3001") if part]
+    restriction_parts = [
+        part
+        for part in parts
+        if part.startswith("\U0001f42e\u4e0d\u5403\u725b")
+        or part.startswith("\U0001f437\u4e0d\u5403\u8c6c")
+        or part.startswith("\U0001f99e\u4e0d\u5403\u6d77\u9bae")
+    ]
+    other_parts = [part for part in parts if part not in restriction_parts]
+    return "\u3001".join(restriction_parts), "\u3001".join(other_parts)
+
+
 def table_line(label, row, note="", bucket_cuisines=None):
     if not row["total"]:
         return ""
-    suffix = f"\uff08{note}\uff09" if note else ""
-    return f"{label}\uff1a{count_text(row, bucket_cuisines)}{suffix}"
+    taiwan_note, other_note = split_restriction_note(note)
+    suffix = f"\uff08{other_note}\uff09" if other_note else ""
+    return f"{label}\uff1a{count_text(row, bucket_cuisines, taiwan_note)}{suffix}"
 
 
 def table_line_with_bucket_counts(label, row, note="", bucket_counts=None):
@@ -1519,6 +1534,26 @@ def restriction_note_for_units(data, meal, unit_locations):
 def note_with_restrictions(data, meal, unit_locations, base_note=""):
     note = restriction_note_for_units(data, meal, unit_locations)
     parts = [part for part in [note, base_note] if part]
+    return "\u3001".join(parts)
+
+
+def note_with_restrictions_for_unit(data, meal, unit, base_note=""):
+    specs = [
+        ("no_beef", "\U0001f42e\u4e0d\u5403\u725b"),
+        ("no_pork", "\U0001f437\u4e0d\u5403\u8c6c"),
+        ("no_seafood", "\U0001f99e\u4e0d\u5403\u6d77\u9bae"),
+    ]
+    meal_restrictions = data.get("restrictions", {}).get(meal, {})
+    parts = []
+    for key, label in specs:
+        count = 0
+        for detail in meal_restrictions.get(key, {}).get("details", []):
+            if detail.get("unit") == unit:
+                count += int(detail.get("count") or 0)
+        if count:
+            parts.append(f"{label}{count}")
+    if base_note:
+        parts.append(base_note)
     return "\u3001".join(parts)
 
 
@@ -1666,7 +1701,7 @@ def delivery_table_text(report_date, meal_key=None):
         (
             "MT-3F\U0001faa3",
             lambda meal: mt_3f_count_for_meal(data, meal),
-            lambda meal: "MT",
+            lambda meal: note_with_restrictions_for_unit(data, meal, "3F", "MT"),
             lambda meal: ["cambodia"] if meal == "late_night" and data["locations"]["3F"][meal]["cambodia"] else [],
         ),
         ("\u5065\u5eb7\u9910\U0001f966-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), "MT"),
@@ -1696,26 +1731,13 @@ def delivery_table_text(report_date, meal_key=None):
             lambda meal: count_for_units_net(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]),
             lambda meal: note_with_restrictions(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]),
         ),
-        (
-            lambda meal: restriction_totals_for_meal(data, meal)[0]["label"] + "\U0001f371",
-            lambda meal: restriction_totals_for_meal(data, meal)[0]["row"],
-            lambda meal: restriction_totals_for_meal(data, meal)[0]["note"],
-        ),
-        (
-            lambda meal: restriction_totals_for_meal(data, meal)[1]["label"] + "\U0001f371",
-            lambda meal: restriction_totals_for_meal(data, meal)[1]["row"],
-            lambda meal: restriction_totals_for_meal(data, meal)[1]["note"],
-        ),
-        (
-            lambda meal: restriction_totals_for_meal(data, meal)[2]["label"] + "\U0001f371",
-            lambda meal: restriction_totals_for_meal(data, meal)[2]["row"],
-            lambda meal: restriction_totals_for_meal(data, meal)[2]["note"],
-        ),
     ]
     def visible_total_for_meal(meal):
         total_row = empty_count_row()
         for row_def in rows:
             add_count_row(total_row, row_def[1](meal))
+        for item in restriction_totals_for_meal(data, meal):
+            add_count_row(total_row, item["row"])
         return total_row
 
     selected_meals = [meal_key] if meal_key in MEAL_KEYS else MEAL_KEYS
