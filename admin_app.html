@@ -68,6 +68,12 @@
     .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; text-align: left; white-space: normal; }
     .detail-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
     .detail-box strong { color: var(--yellow); display: block; margin-bottom: 6px; }
+    .daily-overview { padding: 12px; border-top: 1px solid var(--line); background: #0d131c; }
+    .daily-overview h3 { margin: 0 0 10px; color: var(--yellow); font-size: 17px; }
+    .daily-overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .daily-overview-item { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--panel); }
+    .daily-overview-label { color: var(--muted); font-size: 12px; font-weight: 900; }
+    .daily-overview-value { margin-top: 4px; font-size: 22px; font-weight: 950; }
     .expense-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px; }
     .month-overhead-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px; }
     .month-note { padding: 0 12px 12px; }
@@ -93,6 +99,7 @@
     @media (max-width: 760px) {
       .hero { display: block; }
       .controls, .cards, .expense-grid, .month-overhead-grid, .detail-grid, .dashboard-grid { grid-template-columns: 1fr; }
+      .daily-overview-grid { grid-template-columns: 1fr 1fr; }
       .tabs { grid-template-columns: 1fr 1fr; }
       .app { padding: 10px; }
       .card-value { font-size: 24px; }
@@ -268,6 +275,7 @@
           <tbody id="rows"></tbody>
         </table>
       </div>
+      <div id="dailyCostOverview" class="daily-overview"></div>
     </section>
 
     <section class="panel tab-panel" data-panel="period">
@@ -689,6 +697,44 @@
       populateMonthOverheadForm(data);
     }
 
+    function renderDailyCostOverview(data) {
+      const box = document.getElementById("dailyCostOverview");
+      if (!box) return;
+      const cutoff = data.summary_end_date || selectedDate();
+      const activeRows = (data.rows || []).filter(row => row.date <= cutoff);
+      const totals = activeRows.reduce((acc, row) => {
+        acc.taiwanCount += Number(row.taiwan_count || 0);
+        acc.cambodiaCount += Number(row.cambodia_count || 0);
+        acc.taiwanCost += Number(row.taiwan_food_cost || 0);
+        acc.cambodiaCost += Number(row.cambodia_cost || 0);
+        acc.totalCount += Number(row.total_count || 0);
+        acc.totalCost += Number(row.total_cost || 0);
+        return acc;
+      }, { taiwanCount: 0, cambodiaCount: 0, taiwanCost: 0, cambodiaCost: 0, totalCount: 0, totalCost: 0 });
+      const totalAverage = totals.totalCount ? totals.totalCost / totals.totalCount : 0;
+      box.innerHTML = `
+        <h3>目前菜金總覽</h3>
+        <div class="daily-overview-grid">
+          <div class="daily-overview-item">
+            <div class="daily-overview-label">統計到</div>
+            <div class="daily-overview-value">${cutoff}</div>
+          </div>
+          <div class="daily-overview-item">
+            <div class="daily-overview-label">台餐菜金 / 人數</div>
+            <div class="daily-overview-value">${money(totals.taiwanCost)} / ${totals.taiwanCount}</div>
+          </div>
+          <div class="daily-overview-item">
+            <div class="daily-overview-label">柬餐菜金 / 人數</div>
+            <div class="daily-overview-value">${money(totals.cambodiaCost)} / ${totals.cambodiaCount}</div>
+          </div>
+          <div class="daily-overview-item">
+            <div class="daily-overview-label">總菜金 / 總平均</div>
+            <div class="daily-overview-value ${avgClass(totalAverage)}">${money(totals.totalCost)} / ${money(totalAverage)}</div>
+          </div>
+        </div>
+      `;
+    }
+
     function render(data) {
       const month = data.month;
       const today = selectedRow();
@@ -715,6 +761,7 @@
         </div>
       `;
       renderMonthCost(data);
+      renderDailyCostOverview(data);
 
       document.getElementById("rows").innerHTML = data.rows.map(row => {
         const taiwanAvg = row.taiwan_average || 0;
