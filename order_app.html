@@ -411,9 +411,9 @@
             <button type="button" class="location-button" data-toggle-location>${escapeHtml(selectedLocation)}</button>
             <div class="location-panel">${locationButtons(selectedLocation, mealKey)}</div>
           </td>
-          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="taiwan_count" value="${taiwanCount}" ${isRestrictionNote ? "readonly" : ""}></td>
-          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="healthy_count" value="${healthyCount}" ${isRestrictionNote ? "readonly" : ""}></td>
-          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="cambodia_count" value="${cambodiaCount}" ${isRestrictionNote ? "readonly" : ""}></td>
+          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="taiwan_count" value="${taiwanCount}"></td>
+          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="healthy_count" value="${healthyCount}"></td>
+          <td><input class="count-input" type="number" min="0" step="1" inputmode="numeric" data-field="cambodia_count" value="${cambodiaCount}"></td>
           <td>${isRestrictionNote ? "" : `<button class="remove" type="button" data-remove-line>${t.del}</button>`}</td>
         </tr>
       `;
@@ -447,6 +447,14 @@
         if (row.unit === activeDepartment && row.meal_key === mealKey && row.delivery_location === location && counts[row.cuisine] !== undefined) {
           counts[row.cuisine] += Number(row.count || 0);
         }
+      });
+      const mealRestrictions = (currentSummary && currentSummary.restrictions && currentSummary.restrictions[mealKey]) || {};
+      Object.values(mealRestrictions).forEach(restriction => {
+        (restriction.details || []).forEach(detail => {
+          if (detail.unit === activeDepartment && detail.location === location && counts[detail.cuisine] !== undefined) {
+            counts[detail.cuisine] = Math.max(0, counts[detail.cuisine] - Number(detail.count || 0));
+          }
+        });
       });
       return counts;
     }
@@ -618,7 +626,6 @@
       document.querySelectorAll("[data-lines]").forEach(box => {
         const mealKey = box.dataset.lines;
         box.querySelectorAll(".line").forEach((line, index) => {
-          if (line.dataset.restrictionNote === "1") return;
           const taiwanCount = Number(line.querySelector('[data-field="taiwan_count"]').value || 0);
           const healthyCount = Number(line.querySelector('[data-field="healthy_count"]').value || 0);
           const cambodiaCount = Number(line.querySelector('[data-field="cambodia_count"]').value || 0);

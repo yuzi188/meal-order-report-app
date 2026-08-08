@@ -834,7 +834,7 @@ def save_report(payload):
             raise ValueError("\u9910\u5225\u4e0d\u6b63\u78ba")
         if cuisine not in allowed_cuisines(unit):
             raise ValueError("\u9910\u7a2e\u4e0d\u6b63\u78ba")
-        if delivery_location not in allowed_delivery_locations(unit):
+        if delivery_location not in allowed_delivery_locations(unit) and delivery_location not in RESTRICTION_TYPES:
             raise ValueError("\u9001\u9910\u5730\u9ede\u4e0d\u6b63\u78ba")
         if count < 0:
             raise ValueError("\u4eba\u6578\u4e0d\u80fd\u5c0f\u65bc 0")
