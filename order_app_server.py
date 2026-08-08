@@ -53,7 +53,7 @@ OPENAI_IMAGE_VERSION = os.environ.get("OPENAI_IMAGE_VERSION", "gpt-photo-low-1")
 DISH_IMAGE_DIR = DATA_DIR / "dish_images"
 APP_URL = "https://web-production-664d8.up.railway.app"
 ADMIN_URL = f"{APP_URL}/admin"
-MINI_APP_URL = f"{APP_URL}/?v=20260807-typo2"
+MINI_APP_URL = f"{APP_URL}/?v=20260809-restrictions"
 KHMER_USAGE_ANNOUNCEMENT = """សេចក្តីជូនដំណឹងពីផ្ទះបាយ OFA
 
 របៀបប្រើ Kitchen Bot៖
