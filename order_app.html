@@ -381,7 +381,8 @@
     }
 
     function locationButtons(selected, mealKey = activeMeal) {
-      return visibleLocations(mealKey).map(x => `
+      const choices = visibleLocations(mealKey).concat(["不吃牛", "不吃豬", "不吃海鮮"].filter(x => !visibleLocations(mealKey).includes(x)));
+      return choices.map(x => `
         <button type="button" class="location-option ${x === selected ? "active" : ""}" data-location-choice="${escapeHtml(x)}">${escapeHtml(x)}</button>
       `).join("");
     }
