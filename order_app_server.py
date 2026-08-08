@@ -1497,6 +1497,31 @@ def restriction_detail_note(details):
     return "\u3001".join(parts)
 
 
+def restriction_note_for_units(data, meal, unit_locations):
+    unit_locations = set(unit_locations)
+    specs = [
+        ("no_beef", "\U0001f42e\u4e0d\u5403\u725b"),
+        ("no_pork", "\U0001f437\u4e0d\u5403\u8c6c"),
+        ("no_seafood", "\U0001f99e\u4e0d\u5403\u6d77\u9bae"),
+    ]
+    meal_restrictions = data.get("restrictions", {}).get(meal, {})
+    parts = []
+    for key, label in specs:
+        count = 0
+        for detail in meal_restrictions.get(key, {}).get("details", []):
+            if (detail.get("unit"), detail.get("location")) in unit_locations:
+                count += int(detail.get("count") or 0)
+        if count:
+            parts.append(f"{label}{count}")
+    return "\u3001".join(parts)
+
+
+def note_with_restrictions(data, meal, unit_locations, base_note=""):
+    note = restriction_note_for_units(data, meal, unit_locations)
+    parts = [part for part in [note, base_note] if part]
+    return "\u3001".join(parts)
+
+
 def meal_total_line(row, bucket_row=None, restriction_rows=None, bucket_counts=None):
     bucket_row = bucket_row or empty_count_row()
     restriction_rows = restriction_rows or []
@@ -1611,20 +1636,33 @@ def delivery_table_text(report_date, meal_key=None):
         (
             lambda meal: "1001 3A\U0001f371" if meal == "breakfast" else "1001 3A\U0001faa3",
             lambda meal: count_for_units_net(data, meal, [("1001", "\u90e8\u9580\u73fe\u5834")], ["taiwan", "healthy"]),
-            "",
+            lambda meal: note_with_restrictions(data, meal, [("1001", "\u90e8\u9580\u73fe\u5834")]),
         ),
         (
             "1002-2\u4ee3\u7406\U0001f371",
             lambda meal: count_for_units_net(data, meal, [("1002-2\u4ee3\u7406", "\u90e8\u9580\u73fe\u5834")]),
-            lambda meal: "\U0001f9645" if meal == "dinner" else "",
+            lambda meal: note_with_restrictions(
+                data,
+                meal,
+                [("1002-2\u4ee3\u7406", "\u90e8\u9580\u73fe\u5834")],
+                "\U0001f9645" if meal == "dinner" else "",
+            ),
         ),
         (
             "1002-3\u91d1\u6d41\U0001f371",
             lambda meal: count_for_units_net(data, meal, [("1002-3\u91d1\u6d41", "\u90e8\u9580\u73fe\u5834")], ["taiwan", "healthy"]),
-            "",
+            lambda meal: note_with_restrictions(data, meal, [("1002-3\u91d1\u6d41", "\u90e8\u9580\u73fe\u5834")]),
         ),
-        ("1002-2\u5ba2\u670d\U0001f371", lambda meal: count_for_units_net(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]), ""),
-        ("\u6a02\u53f0\u98f2\u6599\u5e97\U0001f371", lambda meal: count_for_units_net(data, meal, [("\u6a02\u53f0\u98f2\u6599\u5e97", "\u90e8\u9580\u73fe\u5834")]), ""),
+        (
+            "1002-2\u5ba2\u670d\U0001f371",
+            lambda meal: count_for_units_net(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]),
+            lambda meal: note_with_restrictions(data, meal, [("1002-2\u5ba2\u670d", "1002-2")]),
+        ),
+        (
+            "\u6a02\u53f0\u98f2\u6599\u5e97\U0001f371",
+            lambda meal: count_for_units_net(data, meal, [("\u6a02\u53f0\u98f2\u6599\u5e97", "\u90e8\u9580\u73fe\u5834")]),
+            lambda meal: note_with_restrictions(data, meal, [("\u6a02\u53f0\u98f2\u6599\u5e97", "\u90e8\u9580\u73fe\u5834")]),
+        ),
         (
             "MT-3F\U0001faa3",
             lambda meal: mt_3f_count_for_meal(data, meal),
@@ -1633,11 +1671,31 @@ def delivery_table_text(report_date, meal_key=None):
         ),
         ("\u5065\u5eb7\u9910\U0001f966-3F", lambda meal: count_from_row(data["locations"]["3F"][meal], ["healthy"]), "MT"),
         ("\u5305\u98ef\u76d2\U0001f371-3F", lambda meal: package_box_count_for_meal(data, meal), "MT"),
-        ("68\u516c\u5bd3\U0001f371", lambda meal: count_for_units_net(data, meal, [("3F", "68")]), "MT"),
-        ("88\u516c\u5bd3\U0001f371", lambda meal: count_for_units_net(data, meal, [("3F", "88")]), "MT"),
-        ("\u4fdd\u59c6 68\U0001f371", lambda meal: count_for_units_net(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "68")]), ""),
-        ("\u4fdd\u59c6 88\U0001f371", lambda meal: count_for_units_net(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "88")]), ""),
-        ("\u6d77\u5357\u96de\u98ef\U0001f371", lambda meal: count_for_units_net(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]), ""),
+        (
+            "68\u516c\u5bd3\U0001f371",
+            lambda meal: count_for_units_net(data, meal, [("3F", "68")]),
+            lambda meal: note_with_restrictions(data, meal, [("3F", "68")], "MT"),
+        ),
+        (
+            "88\u516c\u5bd3\U0001f371",
+            lambda meal: count_for_units_net(data, meal, [("3F", "88")]),
+            lambda meal: note_with_restrictions(data, meal, [("3F", "88")], "MT"),
+        ),
+        (
+            "\u4fdd\u59c6 68\U0001f371",
+            lambda meal: count_for_units_net(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "68")]),
+            lambda meal: note_with_restrictions(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "68")]),
+        ),
+        (
+            "\u4fdd\u59c6 88\U0001f371",
+            lambda meal: count_for_units_net(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "88")]),
+            lambda meal: note_with_restrictions(data, meal, [("\u4fdd\u59c6\u90e8\u9580", "88")]),
+        ),
+        (
+            "\u6d77\u5357\u96de\u98ef\U0001f371",
+            lambda meal: count_for_units_net(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]),
+            lambda meal: note_with_restrictions(data, meal, [("\u6d77\u5357\u96de\u98ef", "\u90e8\u9580\u73fe\u5834")]),
+        ),
         (
             lambda meal: restriction_totals_for_meal(data, meal)[0]["label"] + "\U0001f371",
             lambda meal: restriction_totals_for_meal(data, meal)[0]["row"],
