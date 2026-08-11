@@ -3146,6 +3146,15 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/app-icon.svg":
             self.send_file(BASE_DIR / "app-icon.svg", "image/svg+xml; charset=utf-8")
             return
+        if parsed.path == "/admin-manifest.webmanifest":
+            self.send_file(BASE_DIR / "admin-manifest.webmanifest", "application/manifest+json; charset=utf-8")
+            return
+        if parsed.path == "/admin-sw.js":
+            self.send_file(BASE_DIR / "admin-sw.js", "application/javascript; charset=utf-8")
+            return
+        if parsed.path == "/admin-icon.svg":
+            self.send_file(BASE_DIR / "admin-icon.svg", "image/svg+xml; charset=utf-8")
+            return
         if parsed.path == "/admin":
             if not self.is_admin():
                 self.send_file(BASE_DIR / "admin_login.html", "text/html; charset=utf-8")

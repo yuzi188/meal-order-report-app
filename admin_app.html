@@ -3,6 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#080b10" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="OFA 後台" />
+  <link rel="manifest" href="/admin-manifest.webmanifest" />
+  <link rel="icon" href="/admin-icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/admin-icon.svg" />
   <title>OFA 成本後台</title>
   <style>
     :root {
@@ -1130,6 +1137,11 @@
     const today = todayTaipei();
     document.getElementById("todayInput").value = today;
     document.getElementById("monthInput").value = today.slice(0, 7);
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/admin-sw.js").catch(() => {});
+      });
+    }
     load().catch(err => setStatus(err.message, "bad"));
     setInterval(() => autoRefresh().catch(() => {}), 60000);
   </script>
