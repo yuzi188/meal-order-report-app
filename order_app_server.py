@@ -309,7 +309,7 @@ def image_url_for_item(item):
 
 def dish_image_key(dish, category):
     if str(dish or "").strip() == "\u6c99\u8336\u96de\u67f3":
-        cache_version = "food-shacha-chicken-v2"
+        cache_version = "food-shacha-chicken-v3"
     else:
         cache_version = "drink-v1" if is_beverage_dish(dish) else "food-v1"
     return hashlib.sha1(f"{cache_version}|{category}|{dish}".encode("utf-8")).hexdigest()
@@ -332,6 +332,8 @@ def dish_image_content_type(path):
 
 def is_beverage_dish(dish):
     dish_text = str(dish or "")
+    if "\u6c99\u8336" in dish_text:
+        return False
     beverage_words = [
         "\u5976\u8336",
         "\u9bae\u5976\u8336",
