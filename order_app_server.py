@@ -308,7 +308,10 @@ def image_url_for_item(item):
 
 
 def dish_image_key(dish, category):
-    cache_version = "drink-v1" if is_beverage_dish(dish) else "food-v1"
+    if str(dish or "").strip() == "\u6c99\u8336\u96de\u67f3":
+        cache_version = "food-shacha-chicken-v2"
+    else:
+        cache_version = "drink-v1" if is_beverage_dish(dish) else "food-v1"
     return hashlib.sha1(f"{cache_version}|{category}|{dish}".encode("utf-8")).hexdigest()
 
 
@@ -353,6 +356,12 @@ def ai_dish_prompt(dish, category):
         style_hint = "\u53f0\u7063\u5718\u81b3\u5eda\u623f\u5be6\u969b\u98f2\u54c1\u7167\uff0c\u81ea\u7136\u5149\uff0c\u6e05\u695a\uff0c\u676f\u88dd\u98f2\u6599\u70ba\u4e3b\u9ad4\uff0c\u4e0d\u8981\u9910\u76e4\u6216\u6e6f\u7897\u3002"
     elif category == "\u6e6f\u54c1":
         kind_hint = "\u6e6f\u54c1\u8981\u662f\u4e00\u7897\u6e6f\uff0c\u770b\u5f97\u5230\u6e6f\u6c41\u548c\u4e3b\u8981\u98df\u6750\u3002"
+    elif str(dish or "").strip() == "\u6c99\u8336\u96de\u67f3":
+        kind_hint = (
+            "\u5fc5\u9808\u662f\u53f0\u5f0f\u6c99\u8336\u96de\u67f3\uff1a\u96de\u80f8\u6216\u96de\u817f\u8089\u5207\u6210\u689d\u72c0\u96de\u67f3\uff0c"
+            "\u7528\u6c99\u8336\u91ac\u7092\u6210\u68d5\u8910\u8272\u91ac\u6c41\uff0c\u53ef\u4ee5\u6709\u6d0b\u8525\u3001\u9752\u6912\u6216\u8471\u6bb5\u4e00\u8d77\u62cc\u7092\uff0c"
+            "\u88dd\u5728\u4e00\u76e4\u6210\u54c1\u83dc\u88e1\u3002\u4e0d\u8981\u51fa\u73fe\u6e6f\u3001\u706b\u934b\u3001\u9eb5\u3001\u98ef\u3001\u96de\u817f\u3001\u9b5a\u3001\u8c6c\u8089\u6216\u725b\u8089\u3002"
+        )
     else:
         kind_hint = "\u8981\u662f\u4e00\u76e4\u6210\u54c1\u83dc\uff0c\u4e3b\u9ad4\u53ea\u6709\u9019\u9053\u83dc\u3002"
     return (
