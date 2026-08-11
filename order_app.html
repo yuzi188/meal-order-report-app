@@ -383,8 +383,15 @@
 
     function renderDepartmentTabs() {
       document.getElementById("departmentTabs").innerHTML = departments.map(unit => `
-        <button type="button" class="tab ${unit === activeDepartment ? "active" : ""}" data-department="${unit}">${unit}</button>
+        <button type="button" class="tab ${unit === activeDepartment ? "active" : ""}" data-department="${unit}">${departmentLabel(unit)}</button>
       `).join("");
+    }
+
+    function departmentLabel(unit) {
+      return {
+        "1002-2代理": "1002-2",
+        "1002-3金流": "1002-3"
+      }[unit] || unit;
     }
 
     function locationButtons(selected, mealKey = activeMeal) {
