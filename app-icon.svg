@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#080b10"/>
+  <rect x="40" y="40" width="432" height="432" rx="76" fill="#111720" stroke="#f5c84b" stroke-width="18"/>
+  <circle cx="256" cy="210" r="92" fill="#f5c84b"/>
+  <path d="M142 308h228c18 0 32 14 32 32v10c0 56-45 101-101 101h-90c-56 0-101-45-101-101v-10c0-18 14-32 32-32z" fill="#f6f3e7"/>
+  <path d="M178 164c16-34 47-52 78-52s62 18 78 52" fill="none" stroke="#080b10" stroke-width="24" stroke-linecap="round"/>
+  <text x="256" y="278" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="900" fill="#080b10">OFA</text>
+</svg>

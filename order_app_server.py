@@ -3134,8 +3134,17 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
-        if parsed.path == "/":
+        if parsed.path in {"/", "/wap"}:
             self.send_file(BASE_DIR / "order_app.html", "text/html; charset=utf-8")
+            return
+        if parsed.path == "/manifest.webmanifest":
+            self.send_file(BASE_DIR / "manifest.webmanifest", "application/manifest+json; charset=utf-8")
+            return
+        if parsed.path == "/sw.js":
+            self.send_file(BASE_DIR / "sw.js", "application/javascript; charset=utf-8")
+            return
+        if parsed.path == "/app-icon.svg":
+            self.send_file(BASE_DIR / "app-icon.svg", "image/svg+xml; charset=utf-8")
             return
         if parsed.path == "/admin":
             if not self.is_admin():
