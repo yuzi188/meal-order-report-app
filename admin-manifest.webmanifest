@@ -1,7 +1,7 @@
 {
-  "name": "OFA \u6210\u672c\u5f8c\u53f0",
-  "short_name": "OFA\u5f8c\u53f0",
-  "description": "OFA \u6bcf\u65e5\u83dc\u91d1\u3001\u4eba\u6578\u3001\u6210\u672c\u8207\u6708\u7d50\u7d71\u8a08\u5f8c\u53f0",
+  "name": "\u5eda\u623f\u5f8c\u53f0",
+  "short_name": "\u5eda\u623f\u5f8c\u53f0",
+  "description": "\u6bcf\u65e5\u83dc\u91d1\u3001\u4eba\u6578\u3001\u6210\u672c\u8207\u6708\u7d50\u7d71\u8a08\u5f8c\u53f0",
   "start_url": "/admin",
   "scope": "/",
   "display": "standalone",

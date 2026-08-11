@@ -1,7 +1,7 @@
 {
-  "name": "OFA \u5eda\u623f\u8a02\u9910\u56de\u5831",
-  "short_name": "OFA\u5eda\u623f",
-  "description": "OFA \u6bcf\u65e5\u83dc\u55ae\u3001\u4eba\u6578\u56de\u5831\u8207\u9001\u9910\u7e3d\u8868",
+  "name": "\u5eda\u623f",
+  "short_name": "\u5eda\u623f",
+  "description": "\u6bcf\u65e5\u83dc\u55ae\u3001\u4eba\u6578\u56de\u5831\u8207\u9001\u9910\u7e3d\u8868",
   "start_url": "/wap",
   "scope": "/",
   "display": "standalone",
