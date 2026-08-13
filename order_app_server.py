@@ -2153,13 +2153,16 @@ def handle_cost_callback(chat_id, message_id, callback_id, data):
         if not pending or "amount" not in pending:
             telegram_send_message(chat_id, "\u6c92\u6709\u5f85\u78ba\u8a8d\u7684\u83dc\u91d1\uff0c\u8acb\u5148\u7528 /\u83dc\u91d1 \u9078\u5ee0\u5546\u518d\u8f38\u5165\u91d1\u984d\u3002", message_id)
             return {"ok": True, "action": "no_pending_cost"}
-        result = save_cost({"date": pending["date"], pending["field"]: pending["amount"]})
+        result = save_cost({"date": pending["date"], pending["field"]: pending["amount"], "add_costs": True})
         clear_pending_bot_cost(chat_id)
+        row = result.get("row") or {}
+        new_total = float(row.get(pending["field"]) or 0)
         telegram_send_message(
             chat_id,
             f"\u5df2\u5beb\u5165\u83dc\u91d1\n"
             f"{pending['date']}\n"
-            f"{COST_FIELD_LABELS.get(pending['field'], pending['field'])}\uff1a${pending['amount']:.2f}\n"
+            f"{COST_FIELD_LABELS.get(pending['field'], pending['field'])}\uff1a+\u0024{pending['amount']:.2f}\n"
+            f"\u76ee\u524d\u7d2f\u8a08\uff1a${new_total:.2f}\n"
             f"\u5f8c\u53f0\u5df2\u540c\u6b65\u3002",
             message_id,
         )
@@ -2994,7 +2997,10 @@ def save_cost(payload):
     )
     def cost_value(field):
         if field in payload:
-            return float(payload.get(field) or 0)
+            incoming = float(payload.get(field) or 0)
+            if payload.get("add_costs") and existing:
+                return float(existing.get(field) or 0) + incoming
+            return incoming
         if existing:
             return float(existing.get(field) or 0)
         return 0.0
