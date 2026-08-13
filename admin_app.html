@@ -428,6 +428,12 @@
       return `$${Number(value || 0).toFixed(2)}`;
     }
 
+    function averageMoney(value) {
+      const number = Number(value || 0);
+      const truncated = Math.trunc(number * 1000) / 1000;
+      return `$${truncated.toFixed(3)}`;
+    }
+
     function avgClass(value) {
       return Number(value || 0) > limit ? "bad" : "good";
     }
@@ -467,7 +473,7 @@
       }).join("");
       const dots = plotted.map((row, index) => {
         const color = Number(row.average || 0) > limit ? "#ff7a59" : "#70d88b";
-        return `<circle cx="${x(index)}" cy="${y(row.average)}" r="4.5" fill="${color}"><title>${row.date} 平均 ${money(row.average)}</title></circle>`;
+        return `<circle cx="${x(index)}" cy="${y(row.average)}" r="4.5" fill="${color}"><title>${row.date} 平均 ${averageMoney(row.average)}</title></circle>`;
       }).join("");
       return `
         <svg viewBox="0 0 ${w} ${h}" role="img" aria-label="每日平均成本折線圖">
@@ -667,7 +673,7 @@
         </div>
         <div class="card">
           <div class="card-name">菜金平均</div>
-          <div class="card-value ${avgClass(month.average)}">${money(month.average)}</div>
+          <div class="card-value ${avgClass(month.average)}">${averageMoney(month.average)}</div>
           <div class="card-note">標準 $1.32</div>
         </div>
         <div class="card">
@@ -695,7 +701,7 @@
             <td>${money(row.other_cost)}</td>
             <td>${money(row.total_expense_cost)}</td>
             <td>${row.total_count}</td>
-            <td class="${avgClass(row.average)}">${money(row.average)}</td>
+            <td class="${avgClass(row.average)}">${averageMoney(row.average)}</td>
             <td class="${profit < 0 ? "bad" : "good"}">${money(profit)}</td>
           </tr>
         `;
@@ -736,7 +742,7 @@
           </div>
           <div class="daily-overview-item">
             <div class="daily-overview-label">總菜金 / 總平均</div>
-            <div class="daily-overview-value ${avgClass(totalAverage)}">${money(totals.totalCost)} / ${money(totalAverage)}</div>
+            <div class="daily-overview-value ${avgClass(totalAverage)}">${money(totals.totalCost)} / ${averageMoney(totalAverage)}</div>
           </div>
         </div>
       `;
@@ -758,12 +764,12 @@
         </div>
         <div class="card">
           <div class="card-name">本月菜金平均</div>
-          <div class="card-value ${avgClass(month.average)}">${money(month.average)}</div>
+          <div class="card-value ${avgClass(month.average)}">${averageMoney(month.average)}</div>
           <div class="card-note">菜金上限 $1.32</div>
         </div>
         <div class="card">
           <div class="card-name">今日人數 / 平均</div>
-          <div class="card-value ${avgClass(today?.average)}">${today ? `${today.total_count} / ${money(today.average)}` : "0 / $0.00"}</div>
+          <div class="card-value ${avgClass(today?.average)}">${today ? `${today.total_count} / ${averageMoney(today.average)}` : "0 / $0.000"}</div>
           <div class="card-note">${selectedDate()}</div>
         </div>
       `;
@@ -778,22 +784,22 @@
             <td>${row.date}</td>
             <td>${row.taiwan_count}</td>
             <td>${money(row.taiwan_food_cost)}</td>
-            <td class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</td>
+            <td class="${avgClass(taiwanAvg)}">${averageMoney(taiwanAvg)}</td>
             <td>${row.cambodia_count}</td>
             <td>${money(row.cambodia_cost)}</td>
-            <td class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</td>
+            <td class="${avgClass(cambodiaAvg)}">${averageMoney(cambodiaAvg)}</td>
             <td>${row.total_count}</td>
             <td>${money(row.total_cost)}</td>
-            <td class="${avgClass(row.average)}">${money(row.average)}</td>
+            <td class="${avgClass(row.average)}">${averageMoney(row.average)}</td>
           </tr>
           <tr class="details-row" data-detail-date="${row.date}">
             <td colspan="10">
               <div class="detail-grid">
                 <div class="detail-box">
                   <strong>餐別成本</strong>
-                  台餐菜金 ${money(row.taiwan_food_cost)} / 台餐+健康餐 ${row.taiwan_count} / 平均 <span class="${avgClass(taiwanAvg)}">${money(taiwanAvg)}</span><br>
-                  柬餐菜金 ${money(row.cambodia_cost)} / 柬餐 ${row.cambodia_count} / 平均 <span class="${avgClass(cambodiaAvg)}">${money(cambodiaAvg)}</span><br>
-                  總菜金 ${money(row.total_cost)} / 總人數 ${row.total_count} / 總平均 <span class="${avgClass(row.average)}">${money(row.average)}</span>
+                  台餐菜金 ${money(row.taiwan_food_cost)} / 台餐+健康餐 ${row.taiwan_count} / 平均 <span class="${avgClass(taiwanAvg)}">${averageMoney(taiwanAvg)}</span><br>
+                  柬餐菜金 ${money(row.cambodia_cost)} / 柬餐 ${row.cambodia_count} / 平均 <span class="${avgClass(cambodiaAvg)}">${averageMoney(cambodiaAvg)}</span><br>
+                  總菜金 ${money(row.total_cost)} / 總人數 ${row.total_count} / 總平均 <span class="${avgClass(row.average)}">${averageMoney(row.average)}</span>
                 </div>
                 <div class="detail-box">
                   <strong>供應商細項</strong>
@@ -826,8 +832,8 @@
           <td>${money(row.other_cost)}</td>
           <td>${money(row.total_expense_cost)}</td>
           <td>${row.count}</td>
-          <td class="${avgClass(row.average)}">${money(row.average)}</td>
-          <td>${money(row.expense_average)}</td>
+          <td class="${avgClass(row.average)}">${averageMoney(row.average)}</td>
+          <td>${averageMoney(row.expense_average)}</td>
         </tr>
       `).join("");
 
