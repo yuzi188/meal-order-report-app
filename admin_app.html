@@ -253,11 +253,12 @@
         <div><label for="corner_store_cost">柑仔店</label><input id="corner_store_cost" data-expense="corner_store_cost" type="number" step="0.01" min="0"></div>
         <div><label for="rice_cost">大米</label><input id="rice_cost" data-expense="rice_cost" type="number" step="0.01" min="0"></div>
         <div><label for="ice_cost">冰塊</label><input id="ice_cost" data-expense="ice_cost" type="number" step="0.01" min="0"></div>
-        <div><label for="cost_68">68</label><input id="cost_68" data-expense="cost_68" type="number" step="0.01" min="0"></div>
+        <div><label for="cost_68">68菜商</label><input id="cost_68" data-expense="cost_68" type="number" step="0.01" min="0"></div>
+        <div><label for="cost_68_frozen">68冷凍</label><input id="cost_68_frozen" data-expense="cost_68_frozen" type="number" step="0.01" min="0"></div>
       </div>
       <div class="expense-actions">
         <button id="saveExpense" type="button">儲存今日菜金</button>
-        <div class="hint">豬肉商、青菜商、冷凍商納入台餐菜金；柬餐菜金跟柬餐人數計算。雜貨、瓦斯、水、餐盒、柑仔店、大米、冰塊不算每日菜金平均，但會進入每5天總成本。</div>
+        <div class="hint">豬肉商、青菜商、冷凍商納入台餐菜金；柬餐菜金跟柬餐人數計算。雜貨、瓦斯、水、餐盒、柑仔店、大米、冰塊、68菜商、68冷凍不算每日菜金平均，但會進入每5天總成本。</div>
       </div>
     </section>
 
@@ -303,7 +304,8 @@
               <th>柑仔店</th>
               <th>大米</th>
               <th>冰塊</th>
-              <th>68</th>
+              <th>68菜商</th>
+              <th>68冷凍</th>
               <th>菜金</th>
               <th>其他成本</th>
               <th>總成本</th>
@@ -385,7 +387,8 @@
       "corner_store_cost",
       "rice_cost",
       "ice_cost",
-      "cost_68"
+      "cost_68",
+      "cost_68_frozen"
     ];
     const monthOverheadFields = ["rent_cost", "utility_cost", "labor_cost", "other_monthly_cost", "note"];
     const costFieldLabels = {
@@ -400,14 +403,15 @@
       corner_store_cost: "柑仔店",
       rice_cost: "大米",
       ice_cost: "冰塊",
-      cost_68: "68",
+      cost_68: "68菜商",
+      cost_68_frozen: "68冷凍",
       rent_cost: "租金",
       utility_cost: "水電",
       labor_cost: "人事",
       other_monthly_cost: "其他固定成本"
     };
     const foodCostFields = ["pork_cost", "vegetable_cost", "frozen_cost", "cambodia_cost"];
-    const otherCostFields = ["grocery_cost", "gas_cost", "water_cost", "meal_box_cost", "corner_store_cost", "rice_cost", "ice_cost", "cost_68"];
+    const otherCostFields = ["grocery_cost", "gas_cost", "water_cost", "meal_box_cost", "corner_store_cost", "rice_cost", "ice_cost", "cost_68", "cost_68_frozen"];
     let monthStaff = [];
 
     function todayTaipei() {
@@ -805,7 +809,7 @@
                   <strong>供應商細項</strong>
                   豬肉商 ${money(row.pork_cost)} / 青菜商 ${money(row.vegetable_cost)} / 冷凍商 ${money(row.frozen_cost)}<br>
                   雜貨 ${money(row.grocery_cost)} / 瓦斯 ${money(row.gas_cost)} / 水 ${money(row.water_cost)}<br>
-                  餐盒 ${money(row.meal_box_cost)} / 柑仔店 ${money(row.corner_store_cost)} / 大米 ${money(row.rice_cost)} / 冰塊 ${money(row.ice_cost)} / 68 ${money(row.cost_68)}
+                  餐盒 ${money(row.meal_box_cost)} / 柑仔店 ${money(row.corner_store_cost)} / 大米 ${money(row.rice_cost)} / 冰塊 ${money(row.ice_cost)}
                 </div>
               </div>
             </td>
@@ -828,6 +832,7 @@
           <td>${money(row.rice_cost)}</td>
           <td>${money(row.ice_cost)}</td>
           <td>${money(row.cost_68)}</td>
+          <td>${money(row.cost_68_frozen)}</td>
           <td>${money(row.cost)}</td>
           <td>${money(row.other_cost)}</td>
           <td>${money(row.total_expense_cost)}</td>
