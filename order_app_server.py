@@ -181,8 +181,8 @@ FIXED_REPORTS = [
         "unit": "1002-3\u91d1\u6d41",
         "location": "\u90e8\u9580\u73fe\u5834",
         "cuisine": "taiwan",
-        "counts": {"breakfast": 2, "lunch": 5, "dinner": 5, "late_night": 5},
-        "beef_notes": {"breakfast": 1, "lunch": 2, "dinner": 2, "late_night": 1},
+        "counts": {"breakfast": 3, "lunch": 4, "dinner": 4, "late_night": 3},
+        "beef_notes": {"breakfast": 1, "lunch": 1, "dinner": 1},
     },
     {
         "unit": "1002-2\u5ba2\u670d",
