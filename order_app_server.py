@@ -2488,6 +2488,36 @@ def handle_telegram_update(update):
         return {"ok": True, "ignored": str(exc)}
 
 
+BEEF_KEYWORDS = [
+    "\u725b\u8089",
+    "\u725b\u8169",
+    "\u725b\u67f3",
+    "\u725b\u6392",
+    "\u725b\u808b",
+    "\u725b\u7b4b",
+    "\u725b\u96dc",
+    "\u725b\u4e38",
+    "\u725b\u9aa8",
+    "\u725b\u5c3e",
+    "\u725b\u8171",
+    "\u6c99\u8336\u725b",
+    "\u9ed1\u80e1\u6912\u725b",
+    "\u7d05\u71d2\u725b",
+    "\u6e05\u71c9\u725b",
+    "\u8525\u7206\u725b",
+    "\u5496\u54e9\u725b",
+    "\u756a\u8304\u725b",
+]
+BEEF_FALSE_POSITIVES = ["\u725b\u84a1", "\u725b\u5976"]
+
+
+def dish_has_beef(dish):
+    normalized = str(dish or "")
+    for false_positive in BEEF_FALSE_POSITIVES:
+        normalized = normalized.replace(false_positive, "")
+    return any(keyword in normalized for keyword in BEEF_KEYWORDS)
+
+
 def meal_has_beef(report_date, meal_key):
     day = load_menu().get(report_date)
     if not day:
@@ -2495,7 +2525,11 @@ def meal_has_beef(report_date, meal_key):
     for meal in day.get("meals", []):
         if meal.get("key") != meal_key:
             continue
-        return any("\u725b" in str(item.get("dish") or "") for item in meal.get("items", []))
+        return any(
+            str(item.get("category") or "") in {"\u4e3b\u98df", "\u4e3b\u83dc"}
+            and dish_has_beef(item.get("dish"))
+            for item in meal.get("items", [])
+        )
     return False
 
 
