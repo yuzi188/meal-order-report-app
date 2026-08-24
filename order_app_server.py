@@ -54,6 +54,7 @@ DISH_IMAGE_DIR = DATA_DIR / "dish_images"
 APP_URL = "https://web-production-664d8.up.railway.app"
 ADMIN_URL = f"{APP_URL}/admin"
 MINI_APP_URL = f"{APP_URL}/?v=20260809-restrictions"
+TELEGRAM_WEBHOOK_URL = f"{APP_URL}/api/telegram/webhook"
 KHMER_USAGE_ANNOUNCEMENT = """សេចក្តីជូនដំណឹងពីផ្ទះបាយ OFA
 
 របៀបប្រើ Kitchen Bot៖
@@ -1994,6 +1995,30 @@ def telegram_api(method, payload):
         return {"ok": False, "error": str(exc)}
 
 
+def telegram_webhook_status():
+    return {
+        "token_configured": bool(TELEGRAM_BOT_TOKEN),
+        "secret_configured": bool(TELEGRAM_WEBHOOK_SECRET),
+        "webhook_url": TELEGRAM_WEBHOOK_URL,
+        "telegram": telegram_api("getWebhookInfo", {}),
+    }
+
+
+def reset_telegram_webhook():
+    payload = {"url": TELEGRAM_WEBHOOK_URL, "drop_pending_updates": "false"}
+    if TELEGRAM_WEBHOOK_SECRET:
+        payload["secret_token"] = TELEGRAM_WEBHOOK_SECRET
+    result = telegram_api("setWebhook", payload)
+    return {
+        "ok": bool(result.get("ok")),
+        "token_configured": bool(TELEGRAM_BOT_TOKEN),
+        "secret_configured": bool(TELEGRAM_WEBHOOK_SECRET),
+        "webhook_url": TELEGRAM_WEBHOOK_URL,
+        "setWebhook": result,
+        "telegram": telegram_api("getWebhookInfo", {}),
+    }
+
+
 def telegram_send_message(chat_id, text, reply_to_message_id=None, reply_markup=None):
     if not TELEGRAM_BOT_TOKEN:
         return {"ok": False, "error": "TELEGRAM_BOT_TOKEN not set"}
@@ -3240,6 +3265,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.send_json(storage_status())
             return
+        if parsed.path == "/api/admin/telegram-webhook":
+            if not self.require_admin():
+                return
+            self.send_json(telegram_webhook_status())
+            return
         if parsed.path == "/api/admin/fixed-reports":
             if not self.require_admin():
                 return
@@ -3303,6 +3333,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/admin/logout":
             self.clear_admin_session()
+            return
+        if parsed.path == "/api/admin/telegram-webhook":
+            if not self.require_admin():
+                return
+            self.send_json(reset_telegram_webhook())
             return
         if parsed.path == "/api/cost":
             if not self.require_admin():
