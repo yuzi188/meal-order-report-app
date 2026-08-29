@@ -717,6 +717,27 @@ def init_db():
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS feedback_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                report_date TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                unit TEXT NOT NULL DEFAULT '',
+                meal_key TEXT NOT NULL DEFAULT '',
+                rating INTEGER,
+                topic TEXT NOT NULL DEFAULT '',
+                message TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_feedback_entries_date
+            ON feedback_entries (report_date, kind, created_at)
+            """
+        )
         menu_override_columns = {
             row[1] for row in conn.execute("PRAGMA table_info(menu_overrides)").fetchall()
         }
@@ -919,6 +940,55 @@ def save_report(payload):
             cleaned,
         )
     return {"ok": True, "saved": len(cleaned), "updated_at": now}
+
+
+def save_feedback(payload):
+    init_db()
+    report_date = str(payload.get("date") or today_key()).strip()
+    try:
+        datetime.strptime(report_date, "%Y-%m-%d")
+    except ValueError:
+        raise ValueError("日期格式不正確")
+
+    kind = str(payload.get("kind") or "").strip()
+    if kind not in {"rating", "opinion"}:
+        raise ValueError("回饋類型不正確")
+
+    unit = str(payload.get("unit") or "").strip()
+    if unit not in DEPARTMENTS:
+        raise ValueError("部門不正確")
+
+    meal_key = str(payload.get("meal_key") or "").strip()
+    rating = None
+    topic = ""
+    if kind == "rating":
+        if meal_key not in MEAL_KEYS:
+            raise ValueError("餐別不正確")
+        rating = int(payload.get("rating") or 0)
+        if rating < 1 or rating > 5:
+            raise ValueError("評分需為 1 到 5")
+    else:
+        meal_key = ""
+        topic = str(payload.get("topic") or "其他").strip()[:40]
+
+    message = str(payload.get("message") or "").strip()
+    if kind == "opinion" and not message:
+        raise ValueError("請輸入意見內容")
+    if len(message) > 1000:
+        raise ValueError("內容最多 1000 字")
+
+    now = datetime.now().isoformat(timespec="seconds")
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO feedback_entries (
+                report_date, kind, unit, meal_key, rating, topic, message, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (report_date, kind, unit, meal_key, rating, topic, message, now),
+        )
+    return {"ok": True, "id": cursor.lastrowid, "created_at": now}
 
 
 def report_date_from_text(text):
@@ -3431,6 +3501,14 @@ class Handler(BaseHTTPRequestHandler):
                 payload = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
                 report_date = str(payload.get("date") or today_key())
                 self.send_json(broadcast_delivery_table(report_date))
+            except Exception as exc:
+                self.send_json({"error": str(exc)}, 400)
+            return
+        if parsed.path == "/api/feedback":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                self.send_json(save_feedback(payload))
             except Exception as exc:
                 self.send_json({"error": str(exc)}, 400)
             return

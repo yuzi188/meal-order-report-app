@@ -34,7 +34,7 @@
     }
     * { box-sizing: border-box; }
     body { margin: 0; background: #080b10; color: var(--text); }
-    button, input, select { font: inherit; }
+    button, input, select, textarea { font: inherit; }
     .app { max-width: 1040px; margin: 0 auto; padding: 12px 12px 30px; }
     .hero {
       margin: -12px -12px 12px;
@@ -50,7 +50,7 @@
     .pill { border: 1px solid rgba(245,200,75,.48); background: rgba(245,200,75,.12); color: var(--brand); padding: 8px 10px; border-radius: 8px; font-weight: 900; white-space: nowrap; font-size: 13px; }
     .toolbar { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
     label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; font-weight: 900; }
-    input, select {
+    input, select, textarea {
       width: 100%;
       min-height: 42px;
       padding: 8px 10px;
@@ -60,7 +60,8 @@
       color: var(--text);
       outline: none;
     }
-    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,200,75,.18); }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,200,75,.18); }
+    textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
     .section-label { margin: 12px 0 7px; color: var(--muted); font-size: 12px; font-weight: 950; letter-spacing: 0; }
     .tabs {
       display: flex;
@@ -84,6 +85,15 @@
       white-space: nowrap;
     }
     .tab.active { background: var(--brand); color: var(--button-text); border-color: var(--brand); box-shadow: 0 8px 18px rgba(245,200,75,.14); }
+    .main-tabs { margin: 6px 0 12px; }
+    .app-view[hidden] { display: none; }
+    .form-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .form-panel h2 { margin: 0 0 12px; color: var(--brand); font-size: 20px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .form-row { margin-top: 10px; }
+    .stars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+    .star-button { min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--muted); font-size: 20px; font-weight: 950; }
+    .star-button.active { border-color: var(--brand); background: rgba(245,200,75,.14); color: var(--brand); }
     .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
     .metric { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-height: 132px; color: var(--text); position: relative; overflow: hidden; }
     .metric.active { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(245,200,75,.22); }
@@ -232,7 +242,7 @@
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .meal-current { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .meal-grid, .actions { grid-template-columns: 1fr; }
+      .meal-grid, .actions, .form-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -255,45 +265,123 @@
       </div>
     </section>
 
-    <div class="section-label">&#37096;&#38272;</div>
-    <section class="tabs" id="departmentTabs"></section>
-    <div class="section-label">&#20170;&#26085;&#22235;&#39184;</div>
-    <section class="cards" id="summaryCards"></section>
-    <section class="delivery-report" id="deliveryReport">
-      <button type="button" class="delivery-toggle" id="deliveryToggle">
-        <span>&#36865;&#39184;&#32317;&#34920;</span>
-        <span id="deliveryHint">&#40670;&#25802;&#25171;&#38283;</span>
-      </button>
-      <div class="delivery-body">
-        <pre class="delivery-text" id="deliveryText">&#36865;&#39184;&#32317;&#34920;&#36617;&#20837;&#20013;...</pre>
-      </div>
+    <section class="tabs main-tabs" aria-label="功能分頁">
+      <button type="button" class="tab active" data-view-tab="orders">今日菜單</button>
+      <button type="button" class="tab" data-view-tab="feedback">評價反饋</button>
+      <button type="button" class="tab" data-view-tab="opinion">意見</button>
     </section>
-    <div class="section-label">&#20154;&#25976;&#22238;&#22577;</div>
-    <section class="meal-grid" id="meals"></section>
 
-    <section class="actions">
-      <button class="primary" id="submit">&#36865;&#20986;&#22238;&#22577;</button>
-      <button class="secondary" id="reload">&#26356;&#26032;</button>
+    <section class="app-view" data-view-panel="orders">
+      <div class="section-label">&#37096;&#38272;</div>
+      <section class="tabs" id="departmentTabs"></section>
+      <div class="section-label">&#20170;&#26085;&#22235;&#39184;</div>
+      <section class="cards" id="summaryCards"></section>
+      <section class="delivery-report" id="deliveryReport">
+        <button type="button" class="delivery-toggle" id="deliveryToggle">
+          <span>&#36865;&#39184;&#32317;&#34920;</span>
+          <span id="deliveryHint">&#40670;&#25802;&#25171;&#38283;</span>
+        </button>
+        <div class="delivery-body">
+          <pre class="delivery-text" id="deliveryText">&#36865;&#39184;&#32317;&#34920;&#36617;&#20837;&#20013;...</pre>
+        </div>
+      </section>
+      <div class="section-label">&#20154;&#25976;&#22238;&#22577;</div>
+      <section class="meal-grid" id="meals"></section>
+
+      <section class="actions">
+        <button class="primary" id="submit">&#36865;&#20986;&#22238;&#22577;</button>
+        <button class="secondary" id="reload">&#26356;&#26032;</button>
+      </section>
+      <p class="status" id="status"></p>
+
+      <section class="report">
+        <h2 id="reportTitle">&#20170;&#26085;&#32113;&#35336;</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>&#39184;&#21029;</th>
+                <th>&#21488;&#39184;</th>
+                <th>&#20581;&#24247;&#39184;</th>
+                <th>&#26596;&#22484;&#23528;&#39184;</th>
+                <th>&#21512;&#35336;</th>
+              </tr>
+            </thead>
+            <tbody id="summaryRows"></tbody>
+          </table>
+        </div>
+        <div class="detail-list" id="detailRows"></div>
+      </section>
     </section>
-    <p class="status" id="status"></p>
 
-    <section class="report">
-      <h2 id="reportTitle">&#20170;&#26085;&#32113;&#35336;</h2>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>&#39184;&#21029;</th>
-              <th>&#21488;&#39184;</th>
-              <th>&#20581;&#24247;&#39184;</th>
-              <th>&#26596;&#22484;&#23528;&#39184;</th>
-              <th>&#21512;&#35336;</th>
-            </tr>
-          </thead>
-          <tbody id="summaryRows"></tbody>
-        </table>
-      </div>
-      <div class="detail-list" id="detailRows"></div>
+    <section class="app-view" data-view-panel="feedback" hidden>
+      <section class="form-panel">
+        <h2>評價反饋</h2>
+        <div class="form-grid">
+          <div>
+            <label for="feedbackDepartment">部門</label>
+            <select id="feedbackDepartment"></select>
+          </div>
+          <div>
+            <label for="feedbackMeal">餐別</label>
+            <select id="feedbackMeal">
+              <option value="breakfast">早餐 06:00</option>
+              <option value="lunch">午餐 12:00</option>
+              <option value="dinner">晚餐 17:00</option>
+              <option value="late_night">宵夜 21:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>評分</label>
+          <div class="stars" id="ratingButtons">
+            <button type="button" class="star-button" data-rating="1">1</button>
+            <button type="button" class="star-button" data-rating="2">2</button>
+            <button type="button" class="star-button" data-rating="3">3</button>
+            <button type="button" class="star-button" data-rating="4">4</button>
+            <button type="button" class="star-button active" data-rating="5">5</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="feedbackMessage">內容</label>
+          <textarea id="feedbackMessage" maxlength="1000" placeholder="例如：太鹹、份量不夠、菜色很好"></textarea>
+        </div>
+        <div class="actions">
+          <button class="primary" id="submitFeedback" type="button">送出評價</button>
+          <button class="secondary" id="clearFeedback" type="button">清空</button>
+        </div>
+        <p class="status" id="feedbackStatus"></p>
+      </section>
+    </section>
+
+    <section class="app-view" data-view-panel="opinion" hidden>
+      <section class="form-panel">
+        <h2>意見</h2>
+        <div class="form-grid">
+          <div>
+            <label for="opinionDepartment">部門</label>
+            <select id="opinionDepartment"></select>
+          </div>
+          <div>
+            <label for="opinionTopic">類型</label>
+            <select id="opinionTopic">
+              <option value="菜色">菜色</option>
+              <option value="份量">份量</option>
+              <option value="送餐">送餐</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="opinionMessage">內容</label>
+          <textarea id="opinionMessage" maxlength="1000" placeholder="請寫下要調整或需要注意的地方"></textarea>
+        </div>
+        <div class="actions">
+          <button class="primary" id="submitOpinion" type="button">送出意見</button>
+          <button class="secondary" id="clearOpinion" type="button">清空</button>
+        </div>
+        <p class="status" id="opinionStatus"></p>
+      </section>
     </section>
 
   </main>
@@ -330,6 +418,8 @@
     let departments = [];
     let activeDepartment = "";
     let activeMeal = "breakfast";
+    let activeView = "orders";
+    let feedbackRating = 5;
     let imageRequestId = 0;
     let deliveryTableText = "";
 
@@ -350,6 +440,22 @@
       const el = document.getElementById("status");
       el.className = `status ${type}`;
       el.textContent = text;
+    }
+
+    function setPanelStatus(id, text, type = "") {
+      const el = document.getElementById(id);
+      el.className = `status ${type}`;
+      el.textContent = text;
+    }
+
+    function activateView(view) {
+      activeView = view;
+      document.querySelectorAll("[data-view-tab]").forEach(button => {
+        button.classList.toggle("active", button.dataset.viewTab === view);
+      });
+      document.querySelectorAll("[data-view-panel]").forEach(panel => {
+        panel.hidden = panel.dataset.viewPanel !== view;
+      });
     }
 
     function escapeHtml(value) {
@@ -375,6 +481,7 @@
       if (!activeDepartment || !departments.includes(activeDepartment)) activeDepartment = departments[0] || "";
       currentSummary = data.summary;
       renderDepartmentTabs();
+      renderFeedbackDepartments();
       renderMeals(data.menu);
       renderSummary(data.summary);
       loadDeliveryTable().catch(() => renderDeliveryTable(""));
@@ -392,6 +499,16 @@
         "1002-2代理": "1002-2",
         "1002-3金流": "1002-3"
       }[unit] || unit;
+    }
+
+    function renderFeedbackDepartments() {
+      const options = departments.map(unit => `<option value="${escapeHtml(unit)}">${departmentLabel(unit)}</option>`).join("");
+      ["feedbackDepartment", "opinionDepartment"].forEach(id => {
+        const el = document.getElementById(id);
+        const previous = el.value;
+        el.innerHTML = options;
+        el.value = departments.includes(previous) ? previous : activeDepartment;
+      });
     }
 
     function locationButtons(selected, mealKey = activeMeal) {
@@ -636,6 +753,44 @@
       document.getElementById("detailRows").innerHTML = "";
     }
 
+    function updateRatingButtons() {
+      document.querySelectorAll("[data-rating]").forEach(button => {
+        button.classList.toggle("active", Number(button.dataset.rating) === feedbackRating);
+      });
+    }
+
+    async function saveFeedback(payload, statusId) {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "送出失敗");
+      setPanelStatus(statusId, "已送出", "ok");
+      if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+      }
+    }
+
+    async function submitFeedbackForm() {
+      const unit = document.getElementById("feedbackDepartment").value || activeDepartment;
+      const mealKey = document.getElementById("feedbackMeal").value;
+      const message = document.getElementById("feedbackMessage").value.trim();
+      await saveFeedback({ date: currentDate, unit, kind: "rating", meal_key: mealKey, rating: feedbackRating, message }, "feedbackStatus");
+      document.getElementById("feedbackMessage").value = "";
+    }
+
+    async function submitOpinionForm() {
+      const unit = document.getElementById("opinionDepartment").value || activeDepartment;
+      const topic = document.getElementById("opinionTopic").value;
+      const message = document.getElementById("opinionMessage").value.trim();
+      if (!message) throw new Error("請輸入意見內容");
+      await saveFeedback({ date: currentDate, unit, kind: "opinion", topic, message }, "opinionStatus");
+      document.getElementById("opinionMessage").value = "";
+    }
+
     function collectEntries() {
       const entries = [];
       document.querySelectorAll("[data-lines]").forEach(box => {
@@ -755,15 +910,24 @@
     }
 
     document.addEventListener("click", event => {
+      const viewTab = event.target.closest("[data-view-tab]")?.dataset.viewTab;
+      if (viewTab) activateView(viewTab);
+      const rating = event.target.closest("[data-rating]")?.dataset.rating;
+      if (rating) {
+        feedbackRating = Number(rating);
+        updateRatingButtons();
+      }
       const department = event.target.dataset.department;
       if (department) {
         activeDepartment = department;
         renderDepartmentTabs();
+        renderFeedbackDepartments();
         refreshSummary().catch(err => setStatus(err.message, "err"));
       }
       const mealTab = event.target.closest("[data-meal-tab]")?.dataset.mealTab;
       if (mealTab) {
         activeMeal = mealTab;
+        document.getElementById("feedbackMeal").value = activeMeal;
         renderMeals(currentMenu);
         renderSummary(currentSummary);
         loadDeliveryTable().catch(err => setStatus(err.message, "err"));
@@ -815,6 +979,16 @@
 
     document.getElementById("submit").addEventListener("click", () => submitReport().catch(err => setStatus(err.message, "err")));
     document.getElementById("reload").addEventListener("click", () => refreshSummary().catch(err => setStatus(err.message, "err")));
+    document.getElementById("submitFeedback").addEventListener("click", () => submitFeedbackForm().catch(err => setPanelStatus("feedbackStatus", err.message, "err")));
+    document.getElementById("clearFeedback").addEventListener("click", () => {
+      document.getElementById("feedbackMessage").value = "";
+      setPanelStatus("feedbackStatus", "");
+    });
+    document.getElementById("submitOpinion").addEventListener("click", () => submitOpinionForm().catch(err => setPanelStatus("opinionStatus", err.message, "err")));
+    document.getElementById("clearOpinion").addEventListener("click", () => {
+      document.getElementById("opinionMessage").value = "";
+      setPanelStatus("opinionStatus", "");
+    });
     document.getElementById("dateInput").addEventListener("change", event => load(event.target.value).catch(err => setStatus(err.message, "err")));
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
