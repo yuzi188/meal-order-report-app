@@ -49,8 +49,8 @@
     .date-text { margin-top: 6px; opacity: .92; font-size: 14px; }
     .pill { border: 1px solid rgba(245,200,75,.48); background: rgba(245,200,75,.12); color: var(--brand); padding: 8px 10px; border-radius: 8px; font-weight: 900; white-space: nowrap; font-size: 13px; }
     .toolbar { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
-    .date-row { display: grid; grid-template-columns: 86px minmax(0, 1fr) 86px; gap: 8px; align-items: center; }
-    .date-step { min-height: 42px; border: 1px solid rgba(245,200,75,.58); border-radius: 8px; background: var(--panel-2); color: var(--brand); font-weight: 950; }
+    .date-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 8px; align-items: center; }
+    .date-step { min-height: 42px; border: 1px solid rgba(245,200,75,.58); border-radius: 8px; background: var(--panel-2); color: var(--brand); font-size: 24px; line-height: 1; font-weight: 950; }
     label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; font-weight: 900; }
     input, select, textarea {
       width: 100%;
@@ -264,9 +264,9 @@
       <div>
         <label for="dateInput">&#26085;&#26399;</label>
         <div class="date-row">
-          <button type="button" class="date-step" id="prevDate">&#26152;&#22825;</button>
+          <button type="button" class="date-step" id="prevDate" aria-label="昨天">&#8249;</button>
           <input id="dateInput" type="date">
-          <button type="button" class="date-step" id="nextDate">&#26126;&#22825;</button>
+          <button type="button" class="date-step" id="nextDate" aria-label="明天">&#8250;</button>
         </div>
       </div>
     </section>
