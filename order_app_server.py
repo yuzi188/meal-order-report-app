@@ -1044,7 +1044,7 @@ def normalize_meal_key(line):
         return "lunch"
     if re.search(r"(\u665a\u9910|Dinner)", line, re.IGNORECASE):
         return "dinner"
-    if re.search(r"(\u5bb5\u591c|Supper)", line, re.IGNORECASE):
+    if re.search(r"(\u5bb5\u591c|\u6d88\u591c|Supper)", line, re.IGNORECASE):
         return "late_night"
     return None
 
@@ -1056,7 +1056,7 @@ def normalize_short_meal_key(text):
         return "lunch"
     if re.search(r"(\u665a\u9910|\u665a\b|Dinner)", text, re.IGNORECASE):
         return "dinner"
-    if re.search(r"(\u5bb5\u591c|\u5bb5\b|Supper)", text, re.IGNORECASE):
+    if re.search(r"(\u5bb5\u591c|\u6d88\u591c|\u5bb5\b|Supper)", text, re.IGNORECASE):
         return "late_night"
     return None
 
@@ -1110,6 +1110,10 @@ def report_unit_from_text(text):
         return "\u6a02\u53f0\u98f2\u6599\u5e97"
     if "\u91d1\u6d41" in text or re.search(r"1002\s*(?:-|之)?\s*3", text, re.IGNORECASE):
         return "1002-3\u91d1\u6d41"
+    if "\u5ba2\u670d" in text:
+        return "1002-2\u5ba2\u670d"
+    if "\u4ee3\u7406" in text or re.search(r"1002\s*(?:-|之)?\s*2", text, re.IGNORECASE):
+        return "1002-2\u4ee3\u7406"
     explicit_3f = (
         re.search(r"\u90e8\u9580\s*[:\uff1a]\s*MT\b", text, re.IGNORECASE)
         or "\u81ea\u7531\u5973\u795e" in text
@@ -1118,8 +1122,6 @@ def report_unit_from_text(text):
     )
     if explicit_3f or any(mark in text for mark in ["3F", "3\u6a13", "3\u697c", "MT"]):
         return "3F"
-    if "\u5ba2\u670d" in text:
-        return "1002-2\u5ba2\u670d"
     return None
 
 
@@ -1134,7 +1136,7 @@ def parse_letai_short_report(text):
     if not meal_key:
         return None
     compact = re.sub(r"\s+", " ", raw)
-    count_match = re.search(r"(?:\u65e9\u9910|\u65e9|\u4e2d\u9910|\u5348\u9910|\u4e2d|\u5348|\u665a\u9910|\u665a|\u5bb5\u591c|\u5bb5|Breakfast|Lunch|Dinner|Supper)\s*([0-9]+)", compact, re.IGNORECASE)
+    count_match = re.search(r"(?:\u65e9\u9910|\u65e9|\u4e2d\u9910|\u5348\u9910|\u4e2d|\u5348|\u665a\u9910|\u665a|\u5bb5\u591c|\u6d88\u591c|\u5bb5|Breakfast|Lunch|Dinner|Supper)\s*([0-9]+)", compact, re.IGNORECASE)
     if not count_match:
         numbers = [int(value) for value in re.findall(r"\b([0-9]+)\b", compact)]
         numbers = [value for value in numbers if value not in {app_now().year, 7, 8, 9, 10, 11, 12}]
@@ -1373,7 +1375,7 @@ def parse_bot_3f_report(text):
         return letai_payload
     unit = report_unit_from_text(raw_text)
     if not unit:
-        raise ValueError("\u76ee\u524d\u53ea\u652f\u63f4 3F \u6216 1002-2\u5ba2\u670d \u7684\u5831\u9910\u6587\u5b57")
+        raise ValueError("\u76ee\u524d\u53ea\u652f\u63f4 3F\u30011002-2\u4ee3\u7406\u30011002-2\u5ba2\u670d\u30011002-3\u91d1\u6d41 \u7684\u5831\u9910\u6587\u5b57")
 
     report_date = report_date_from_text(raw_text)
     if not report_date:
@@ -1388,7 +1390,7 @@ def parse_bot_3f_report(text):
         if meal_key:
             current_meal = meal_key
             line = re.sub(
-                r"^(\u65e9\u9910|\u5348\u9910|\u4e2d\u9910|\u665a\u9910|\u5bb5\u591c|Breakfast|Lunch|Dinner|Supper)\s*[-\uff1a:]?",
+                r"^(\u65e9\u9910|\u5348\u9910|\u4e2d\u9910|\u665a\u9910|\u5bb5\u591c|\u6d88\u591c|Breakfast|Lunch|Dinner|Supper)\s*[-\uff1a:]?",
                 "",
                 line,
                 flags=re.IGNORECASE,
