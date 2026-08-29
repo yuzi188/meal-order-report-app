@@ -17,6 +17,10 @@ from urllib.parse import parse_qs, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent
 MENU_PATH = BASE_DIR / "august_menu_fixed_table.json"
+MENU_PATHS = [
+    MENU_PATH,
+    BASE_DIR / "september_menu_2026.json",
+]
 DATA_DIR = Path(
     os.environ.get("DATA_DIR")
     or os.environ.get("RAILWAY_VOLUME_MOUNT_PATH")
@@ -245,12 +249,19 @@ def allowed_cuisines(unit):
 
 
 def load_menu():
-    menu = json.loads(MENU_PATH.read_text(encoding="utf-8"))
+    menu = {}
+    for path in MENU_PATHS:
+        if path.exists():
+            menu.update(json.loads(path.read_text(encoding="utf-8")))
     return apply_menu_overrides(menu)
 
 
 def load_base_menu():
-    return json.loads(MENU_PATH.read_text(encoding="utf-8"))
+    menu = {}
+    for path in MENU_PATHS:
+        if path.exists():
+            menu.update(json.loads(path.read_text(encoding="utf-8")))
+    return menu
 
 
 def menu_override_rows():

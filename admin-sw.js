@@ -1,4 +1,4 @@
-const ADMIN_CACHE_NAME = "ofa-admin-shell-v1";
+const ADMIN_CACHE_NAME = "kitchen-admin-shell-v2";
 const ADMIN_SHELL_URLS = ["/admin", "/admin-icon.svg", "/admin-manifest.webmanifest"];
 
 self.addEventListener("install", event => {
@@ -12,7 +12,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key.startsWith("ofa-admin-shell-") && key !== ADMIN_CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => key.startsWith("ofa-admin-shell-") || key.startsWith("kitchen-admin-shell-")).filter(key => key !== ADMIN_CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });

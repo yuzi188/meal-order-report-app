@@ -146,6 +146,7 @@
       <button class="tab" data-tab="daily">每日紀錄</button>
       <button class="tab" data-tab="period">每5天</button>
       <button class="tab" data-tab="delivery">送餐總表</button>
+      <button class="tab" data-tab="monthMenu" data-menu-month="2026-09">9月菜單</button>
       <button class="tab" data-tab="monthMenu">當月總菜單</button>
       <button class="tab" data-tab="fixed">固定人數</button>
       <button class="tab" data-tab="storage">資料庫</button>
@@ -544,9 +545,9 @@
       document.getElementById("periodCostChart").innerHTML = periodChart(data.weeks);
     }
 
-    function activateTab(name) {
+    function activateTab(name, activeButton = null) {
       document.querySelectorAll("[data-tab]").forEach(button => {
-        button.classList.toggle("active", button.dataset.tab === name);
+        button.classList.toggle("active", activeButton ? button === activeButton : button.dataset.tab === name);
       });
       document.querySelectorAll("[data-panel]").forEach(panel => {
         panel.classList.toggle("active", panel.dataset.panel === name);
@@ -1094,8 +1095,15 @@
     }
 
     document.addEventListener("click", event => {
-      const tab = event.target.dataset.tab;
-      if (tab) activateTab(tab);
+      const tabButton = event.target.closest("[data-tab]");
+      const tab = tabButton?.dataset.tab;
+      if (tab) {
+        if (tabButton.dataset.menuMonth) {
+          document.getElementById("monthInput").value = tabButton.dataset.menuMonth;
+        }
+        activateTab(tab, tabButton);
+        if (tabButton.dataset.menuMonth) load().catch(err => setStatus(err.message, "bad"));
+      }
       const removeStaff = event.target.dataset.removeStaff;
       if (removeStaff !== undefined) {
         event.target.closest("tr")?.remove();
