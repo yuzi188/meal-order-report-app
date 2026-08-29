@@ -267,15 +267,15 @@
 
     <section class="tabs main-tabs" aria-label="功能分頁">
       <button type="button" class="tab active" data-view-tab="orders">今日菜單</button>
+      <button type="button" class="tab" data-view-tab="counts">填寫人數</button>
       <button type="button" class="tab" data-view-tab="feedback">評價反饋</button>
       <button type="button" class="tab" data-view-tab="opinion">意見</button>
     </section>
 
     <section class="app-view" data-view-panel="orders">
-      <div class="section-label">&#37096;&#38272;</div>
-      <section class="tabs" id="departmentTabs"></section>
       <div class="section-label">&#20170;&#26085;&#22235;&#39184;</div>
       <section class="cards" id="summaryCards"></section>
+      <section class="meal-grid" id="menuMeal"></section>
       <section class="delivery-report" id="deliveryReport">
         <button type="button" class="delivery-toggle" id="deliveryToggle">
           <span>&#36865;&#39184;&#32317;&#34920;</span>
@@ -285,7 +285,14 @@
           <pre class="delivery-text" id="deliveryText">&#36865;&#39184;&#32317;&#34920;&#36617;&#20837;&#20013;...</pre>
         </div>
       </section>
-      <div class="section-label">&#20154;&#25976;&#22238;&#22577;</div>
+    </section>
+
+    <section class="app-view" data-view-panel="counts" hidden>
+      <div class="section-label">&#37096;&#38272;</div>
+      <section class="tabs" id="departmentTabs"></section>
+      <div class="section-label">&#39184;&#21029;</div>
+      <section class="tabs" id="countMealTabs"></section>
+      <div class="section-label">&#22635;&#23531;&#20154;&#25976;</div>
       <section class="meal-grid" id="meals"></section>
 
       <section class="actions">
@@ -482,8 +489,9 @@
       currentSummary = data.summary;
       renderDepartmentTabs();
       renderFeedbackDepartments();
-      renderMeals(data.menu);
       renderSummary(data.summary);
+      renderMenuMeal(data.menu);
+      renderMeals(data.menu);
       loadDeliveryTable().catch(() => renderDeliveryTable(""));
       setStatus("");
     }
@@ -491,6 +499,14 @@
     function renderDepartmentTabs() {
       document.getElementById("departmentTabs").innerHTML = departments.map(unit => `
         <button type="button" class="tab ${unit === activeDepartment ? "active" : ""}" data-department="${unit}">${departmentLabel(unit)}</button>
+      `).join("");
+    }
+
+    function renderCountMealTabs() {
+      const box = document.getElementById("countMealTabs");
+      if (!box || !currentMenu) return;
+      box.innerHTML = currentMenu.meals.map(meal => `
+        <button type="button" class="tab ${meal.key === activeMeal ? "active" : ""}" data-meal-tab="${meal.key}">${mealNames[meal.key]} ${escapeHtml(meal.time)}</button>
       `).join("");
     }
 
@@ -654,6 +670,43 @@
       }
     }
 
+    function renderMenuMeal(menu) {
+      document.getElementById("menuDate").textContent = `${menu.display_date} ${weekdayName(currentDate)} ${t.todayMenu}`;
+      const meal = menu.meals.find(item => item.key === activeMeal) || menu.meals[0];
+      if (!meal) return;
+      activeMeal = meal.key;
+      const dishes = meal.items
+        .filter(item => item.dish)
+        .map(item => `
+          <div class="dish">
+            <div class="cat">${escapeHtml(item.category)}</div>
+            <div class="dish-name">${escapeHtml(item.dish)}</div>
+          </div>
+        `)
+        .join("");
+      const activeTotal = currentMealTotal(meal.key);
+      document.getElementById("menuMeal").innerHTML = `
+        <article class="meal" data-meal="${meal.key}">
+          <div class="meal-head">
+            <div class="meal-title">${escapeHtml(meal.label)}</div>
+            <div class="meal-time">${escapeHtml(meal.time)}</div>
+          </div>
+          <div class="dishes">${dishes}</div>
+          <div class="photo-panel">
+            <div class="photo-head"><span>菜色照片</span><span>${escapeHtml(meal.time)}</span></div>
+            <div id="mealPhotos"><div class="photo-empty">菜色照片載入中...</div></div>
+          </div>
+          <div class="meal-current">
+            <div><strong>${activeTotal.total}</strong><span>合計</span></div>
+            <div><strong>${activeTotal.taiwan}</strong><span>台餐</span></div>
+            <div><strong>${activeTotal.healthy}</strong><span>健康餐</span></div>
+            <div><strong>${activeTotal.cambodia}</strong><span>柬餐</span></div>
+          </div>
+        </article>
+      `;
+      loadMealImages(meal.key);
+    }
+
     function renderMeals(menu) {
       document.getElementById("menuDate").textContent = `${menu.display_date} ${weekdayName(currentDate)} ${t.todayMenu}`;
       const meal = menu.meals.find(item => item.key === activeMeal) || menu.meals[0];
@@ -676,10 +729,6 @@
             <div class="meal-time">${escapeHtml(meal.time)}</div>
           </div>
           <div class="dishes">${dishes}</div>
-          <div class="photo-panel">
-            <div class="photo-head"><span>菜色照片</span><span>${escapeHtml(meal.time)}</span></div>
-            <div id="mealPhotos"><div class="photo-empty">菜色照片載入中...</div></div>
-          </div>
           <div class="meal-current">
             <div><strong>${activeTotal.total}</strong><span>合計</span></div>
             <div><strong>${activeTotal.taiwan}</strong><span>台餐</span></div>
@@ -712,7 +761,6 @@
           </div>
         </article>
       `;
-      loadMealImages(meal.key);
     }
 
     function renderSummary(summary) {
@@ -737,6 +785,7 @@
           </button>
         `;
       }).join("");
+      renderCountMealTabs();
 
       const activeTotal = summary.totals[activeMeal] || { taiwan: 0, healthy: 0, cambodia: 0, total: 0 };
       document.getElementById("reportTitle").textContent = `${mealNames[activeMeal]} ${t.todayMenu}`;
@@ -859,6 +908,7 @@
       const data = await res.json();
       currentSummary = data.summary;
       renderSummary(data.summary);
+      renderMenuMeal(currentMenu);
       renderMeals(currentMenu);
       await loadDeliveryTable();
     }
@@ -928,8 +978,9 @@
       if (mealTab) {
         activeMeal = mealTab;
         document.getElementById("feedbackMeal").value = activeMeal;
-        renderMeals(currentMenu);
         renderSummary(currentSummary);
+        renderMenuMeal(currentMenu);
+        renderMeals(currentMenu);
         loadDeliveryTable().catch(err => setStatus(err.message, "err"));
       }
       const addMeal = event.target.dataset.addLine;

@@ -1,4 +1,4 @@
-const CACHE_NAME = "kitchen-shell-v2";
+const CACHE_NAME = "kitchen-shell-v3";
 const SHELL_URLS = ["/", "/wap", "/app-icon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", event => {
