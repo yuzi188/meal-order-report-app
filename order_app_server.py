@@ -1002,6 +1002,38 @@ def save_feedback(payload):
     return {"ok": True, "id": cursor.lastrowid, "created_at": now}
 
 
+def feedback_report(month):
+    init_db()
+    prefix = str(month or today_key()[:7])[:7]
+    if not re.fullmatch(r"\d{4}-\d{2}", prefix):
+        raise ValueError("月份格式不正確")
+    meal_labels = {
+        "breakfast": "早餐",
+        "lunch": "午餐",
+        "dinner": "晚餐",
+        "late_night": "宵夜",
+    }
+    kind_labels = {"rating": "評價", "opinion": "意見"}
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT id, report_date, kind, unit, meal_key, rating, topic, message, created_at
+            FROM feedback_entries
+            WHERE report_date LIKE ?
+            ORDER BY report_date DESC, created_at DESC, id DESC
+            """,
+            (f"{prefix}-%",),
+        ).fetchall()
+    entries = []
+    for row in rows:
+        item = dict(row)
+        item["kind_label"] = kind_labels.get(item["kind"], item["kind"])
+        item["meal_label"] = meal_labels.get(item["meal_key"], "")
+        entries.append(item)
+    return {"month": prefix, "entries": entries}
+
+
 def report_date_from_text(text):
     normalized = normalize_digits_and_separators(text)
     year = app_now().year
@@ -3397,6 +3429,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             date = params.get("date", [today_key()])[0]
             self.send_json({"date": date, "text": delivery_table_text(date)})
+            return
+        if parsed.path == "/api/admin/feedback":
+            if not self.require_admin():
+                return
+            month = params.get("month", [today_key()[:7]])[0]
+            self.send_json(feedback_report(month))
             return
         if parsed.path == "/api/admin/month-menu":
             if not self.require_admin():
