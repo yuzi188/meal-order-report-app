@@ -95,6 +95,9 @@
     .preview-box { width: 100%; min-height: 420px; border: 1px solid var(--line); border-radius: 8px; background: #0d131c; color: var(--text); padding: 12px; white-space: pre-wrap; font: 16px/1.55 "Noto Sans TC", system-ui, sans-serif; }
     .menu-toolbar { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 12px; flex-wrap: wrap; }
     .menu-toolbar .hint { max-width: 680px; }
+    .menu-month-tabs { display: flex; gap: 8px; padding: 0 12px 12px; overflow-x: auto; }
+    .menu-month-tab { min-height: 40px; padding: 0 16px; border: 1px solid var(--yellow); border-radius: 8px; background: transparent; color: var(--yellow); font-weight: 950; white-space: nowrap; }
+    .menu-month-tab.active { background: var(--yellow); color: #1b1403; }
     .menu-day { margin: 12px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #0d131c; }
     .menu-day-title { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 10px 12px; background: var(--soft); color: var(--yellow); font-weight: 950; }
     .menu-table { min-width: 980px; }
@@ -146,7 +149,6 @@
       <button class="tab" data-tab="daily">每日紀錄</button>
       <button class="tab" data-tab="period">每5天</button>
       <button class="tab" data-tab="delivery">送餐總表</button>
-      <button class="tab" data-tab="monthMenu" data-menu-month="2026-09">9月菜單</button>
       <button class="tab" data-tab="monthMenu">當月總菜單</button>
       <button class="tab" data-tab="fixed">固定人數</button>
       <button class="tab" data-tab="storage">資料庫</button>
@@ -337,6 +339,10 @@
           <button id="reloadMonthMenu" class="ghost" type="button">重新讀取</button>
           <button id="saveMonthMenu" type="button">保存菜單</button>
         </div>
+      </div>
+      <div class="menu-month-tabs" aria-label="菜單月份">
+        <button class="menu-month-tab" type="button" data-menu-month-choice="2026-08">8月菜單</button>
+        <button class="menu-month-tab" type="button" data-menu-month-choice="2026-09">9月菜單</button>
       </div>
       <div id="monthMenuWrap"></div>
     </section>
@@ -951,6 +957,9 @@
       const res = await fetch(`/api/admin/month-menu?month=${encodeURIComponent(month)}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "菜單讀取失敗");
+      document.querySelectorAll("[data-menu-month-choice]").forEach(button => {
+        button.classList.toggle("active", button.dataset.menuMonthChoice === month);
+      });
       renderMonthMenu(data);
     }
 
@@ -1095,6 +1104,12 @@
     }
 
     document.addEventListener("click", event => {
+      const menuMonthButton = event.target.closest("[data-menu-month-choice]");
+      if (menuMonthButton) {
+        document.getElementById("monthInput").value = menuMonthButton.dataset.menuMonthChoice;
+        load().catch(err => setStatus(err.message, "bad"));
+        return;
+      }
       const tabButton = event.target.closest("[data-tab]");
       const tab = tabButton?.dataset.tab;
       if (tab) {
