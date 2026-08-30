@@ -378,7 +378,7 @@
         </div>
         <div class="form-row">
           <label for="feedbackMessage">內容</label>
-          <textarea id="feedbackMessage" maxlength="1000" placeholder="例如：太鹹、份量不夠、菜色很好"></textarea>
+          <textarea id="feedbackMessage" maxlength="1000" placeholder="菜名會自動帶入，直接在冒號後面填評價"></textarea>
         </div>
         <div class="actions">
           <button class="primary" id="submitFeedback" type="button">送出評價</button>
@@ -485,6 +485,7 @@
     let activeMeal = "breakfast";
     let activeView = "orders";
     let feedbackRating = 5;
+    let lastFeedbackTemplate = "";
     let imageRequestId = 0;
     let deliveryTableText = "";
 
@@ -607,10 +608,25 @@
       return items.length ? items.join(" / ") : "這餐目前沒有菜色";
     }
 
+    function feedbackTemplateText(mealKey) {
+      const meal = currentMenu?.meals?.find(item => item.key === mealKey);
+      if (!meal) return "";
+      return (meal.items || [])
+        .filter(item => item.dish)
+        .map(item => `${item.dish}：`)
+        .join("\n");
+    }
+
     function updateFeedbackMenuText() {
       const box = document.getElementById("feedbackMenuText");
       const mealKey = document.getElementById("feedbackMeal")?.value || activeMeal;
       if (box) box.textContent = mealMenuText(mealKey);
+      const textarea = document.getElementById("feedbackMessage");
+      const nextTemplate = feedbackTemplateText(mealKey);
+      if (textarea && nextTemplate && (!textarea.value.trim() || textarea.value === lastFeedbackTemplate)) {
+        textarea.value = nextTemplate;
+      }
+      lastFeedbackTemplate = nextTemplate;
     }
 
     function locationButtons(selected, mealKey = activeMeal) {
