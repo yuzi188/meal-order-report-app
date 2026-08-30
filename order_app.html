@@ -109,6 +109,11 @@
     .form-row { margin-top: 10px; }
     .meal-preview { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: #d8dee7; font-size: 13px; line-height: 1.45; }
     .meal-preview strong { display: block; margin-bottom: 4px; color: var(--brand); }
+    .qa-list { margin-top: 10px; display: grid; gap: 10px; }
+    .qa-item { padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
+    .qa-question { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; color: var(--brand); font-weight: 950; }
+    .qa-step { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 999px; background: rgba(245,200,75,.16); border: 1px solid rgba(245,200,75,.4); color: var(--brand); font-size: 12px; }
+    .qa-help { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.4; }
     .stars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
     .star-button { min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--muted); font-size: 20px; font-weight: 950; }
     .star-button.active { border-color: var(--brand); background: rgba(245,200,75,.14); color: var(--brand); }
@@ -421,11 +426,15 @@
 
     <section class="app-view" data-view-panel="opinion" hidden>
       <section class="form-panel">
-        <h2>意見</h2>
+        <h2>意見 QA</h2>
         <div class="form-grid">
           <div>
             <label for="opinionDepartment">部門</label>
             <select id="opinionDepartment"></select>
+          </div>
+          <div>
+            <label for="opinionMeal">餐別</label>
+            <select id="opinionMeal"></select>
           </div>
           <div>
             <label for="opinionTopic">類型</label>
@@ -433,13 +442,26 @@
               <option value="菜色">菜色</option>
               <option value="份量">份量</option>
               <option value="送餐">送餐</option>
+              <option value="菜色圖片">菜色圖片</option>
+              <option value="人數">人數</option>
               <option value="其他">其他</option>
             </select>
           </div>
+          <div>
+            <label for="opinionTarget">菜名 / 位置</label>
+            <input id="opinionTarget" maxlength="80" placeholder="例如：沙茶雞柳、3F、88公寓">
+          </div>
         </div>
-        <div class="form-row">
-          <label for="opinionMessage">內容</label>
-          <textarea id="opinionMessage" maxlength="1000" placeholder="請寫下要調整或需要注意的地方"></textarea>
+        <div class="qa-list">
+          <div class="qa-item">
+            <div class="qa-question"><span class="qa-step">Q1</span><span>哪裡有問題？</span></div>
+            <textarea id="opinionIssue" maxlength="700" placeholder="例如：太鹹、份量不夠、送錯位置、照片不像菜名"></textarea>
+          </div>
+          <div class="qa-item">
+            <div class="qa-question"><span class="qa-step">Q2</span><span>希望怎麼調整？</span></div>
+            <textarea id="opinionImprove" maxlength="700" placeholder="例如：明天少鹽、下次多一點青菜、改成便當送到68"></textarea>
+            <div class="qa-help">送出後會自動整理成問答格式，後台比較好看。</div>
+          </div>
         </div>
         <div class="actions">
           <button class="primary" id="submitOpinion" type="button">送出意見</button>
@@ -563,6 +585,7 @@
       currentSummary = data.summary;
       renderDepartmentTabs();
       renderFeedbackDepartments();
+      renderOpinionMealOptions();
       renderSummary(data.summary);
       renderMenuMeal(data.menu);
       renderMeals(data.menu);
@@ -606,6 +629,16 @@
         .filter(item => item.dish)
         .map(item => `${item.category}: ${item.dish}`);
       return items.length ? items.join(" / ") : "這餐目前沒有菜色";
+    }
+
+    function renderOpinionMealOptions() {
+      const el = document.getElementById("opinionMeal");
+      if (!el || !currentMenu) return;
+      const previous = el.value || activeMeal;
+      el.innerHTML = currentMenu.meals.map(meal => `
+        <option value="${escapeHtml(meal.key)}">${mealNames[meal.key]} ${escapeHtml(meal.time || "")}</option>
+      `).join("");
+      el.value = currentMenu.meals.some(meal => meal.key === previous) ? previous : activeMeal;
     }
 
     function feedbackTemplateText(mealKey) {
@@ -942,13 +975,37 @@
       document.getElementById("wishMessage").value = "";
     }
 
+    function clearOpinionForm() {
+      document.getElementById("opinionTarget").value = "";
+      document.getElementById("opinionIssue").value = "";
+      document.getElementById("opinionImprove").value = "";
+      setPanelStatus("opinionStatus", "");
+    }
+
     async function submitOpinionForm() {
       const unit = document.getElementById("opinionDepartment").value || activeDepartment;
       const topic = document.getElementById("opinionTopic").value;
-      const message = document.getElementById("opinionMessage").value.trim();
-      if (!message) throw new Error("請輸入意見內容");
-      await saveFeedback({ date: currentDate, unit, kind: "opinion", topic, message }, "opinionStatus");
-      document.getElementById("opinionMessage").value = "";
+      const mealKey = document.getElementById("opinionMeal").value || activeMeal;
+      const meal = currentMenu?.meals?.find(item => item.key === mealKey);
+      const mealText = `${mealNames[mealKey] || mealKey} ${meal?.time || ""}`.trim();
+      const target = document.getElementById("opinionTarget").value.trim();
+      const issue = document.getElementById("opinionIssue").value.trim();
+      const improve = document.getElementById("opinionImprove").value.trim();
+      if (!target && !issue && !improve) throw new Error("請至少填一個問題內容");
+      const message = [
+        `Q：哪一餐？`,
+        `A：${mealText}`,
+        `Q：意見類型？`,
+        `A：${topic}`,
+        `Q：菜名 / 位置？`,
+        `A：${target || "未填"}`,
+        `Q：哪裡有問題？`,
+        `A：${issue || "未填"}`,
+        `Q：希望怎麼調整？`,
+        `A：${improve || "未填"}`
+      ].join("\n");
+      await saveFeedback({ date: currentDate, unit, kind: "opinion", topic: `${topic}/${mealText}`.slice(0, 40), message }, "opinionStatus");
+      clearOpinionForm();
     }
 
     function collectEntries() {
@@ -1154,10 +1211,7 @@
       setPanelStatus("wishStatus", "");
     });
     document.getElementById("submitOpinion").addEventListener("click", () => submitOpinionForm().catch(err => setPanelStatus("opinionStatus", err.message, "err")));
-    document.getElementById("clearOpinion").addEventListener("click", () => {
-      document.getElementById("opinionMessage").value = "";
-      setPanelStatus("opinionStatus", "");
-    });
+    document.getElementById("clearOpinion").addEventListener("click", clearOpinionForm);
     document.getElementById("prevDate").addEventListener("click", () => loadDateOffset(-1).catch(err => setStatus(err.message, "err")));
     document.getElementById("nextDate").addEventListener("click", () => loadDateOffset(1).catch(err => setStatus(err.message, "err")));
     document.getElementById("dateInput").addEventListener("change", event => load(event.target.value).catch(err => setStatus(err.message, "err")));
