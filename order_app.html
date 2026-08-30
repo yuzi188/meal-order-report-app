@@ -296,7 +296,7 @@
       <button type="button" class="tab active" data-view-tab="orders">今日菜單</button>
       <button type="button" class="tab" data-view-tab="counts">填寫人數</button>
       <button type="button" class="tab" data-view-tab="feedback">評價反饋</button>
-      <button type="button" class="tab" data-view-tab="opinion">意見</button>
+      <button type="button" class="tab" data-view-tab="opinion">年度意見</button>
       <button type="button" class="tab" data-view-tab="wish">許願清單</button>
     </section>
 
@@ -426,45 +426,58 @@
 
     <section class="app-view" data-view-panel="opinion" hidden>
       <section class="form-panel">
-        <h2>意見 QA</h2>
+        <h2>年度意見表</h2>
         <div class="form-grid">
           <div>
             <label for="opinionDepartment">部門</label>
             <select id="opinionDepartment"></select>
           </div>
           <div>
-            <label for="opinionMeal">餐別</label>
-            <select id="opinionMeal"></select>
+            <label for="opinionYear">年度</label>
+            <input id="opinionYear" type="number" min="2026" max="2100" inputmode="numeric">
           </div>
           <div>
-            <label for="opinionTopic">類型</label>
-            <select id="opinionTopic">
-              <option value="菜色">菜色</option>
-              <option value="份量">份量</option>
-              <option value="送餐">送餐</option>
-              <option value="菜色圖片">菜色圖片</option>
-              <option value="人數">人數</option>
-              <option value="其他">其他</option>
+            <label for="opinionCuisine">平常吃哪一類</label>
+            <select id="opinionCuisine">
+              <option value="都有吃">都有吃</option>
+              <option value="台餐">台餐</option>
+              <option value="柬餐">柬餐</option>
+              <option value="健康餐">健康餐</option>
+              <option value="不固定">不固定</option>
             </select>
           </div>
           <div>
-            <label for="opinionTarget">菜名 / 位置</label>
-            <input id="opinionTarget" maxlength="80" placeholder="例如：沙茶雞柳、3F、88公寓">
+            <label for="opinionScore">整體滿意度</label>
+            <select id="opinionScore">
+              <option value="5 很滿意">5 很滿意</option>
+              <option value="4 滿意">4 滿意</option>
+              <option value="3 普通">3 普通</option>
+              <option value="2 不太滿意">2 不太滿意</option>
+              <option value="1 不滿意">1 不滿意</option>
+            </select>
           </div>
         </div>
         <div class="qa-list">
           <div class="qa-item">
-            <div class="qa-question"><span class="qa-step">Q1</span><span>哪裡有問題？</span></div>
-            <textarea id="opinionIssue" maxlength="700" placeholder="例如：太鹹、份量不夠、送錯位置、照片不像菜名"></textarea>
+            <div class="qa-question"><span class="qa-step">Q1</span><span>今年最喜歡哪些菜？</span></div>
+            <textarea id="opinionFavorite" maxlength="700" placeholder="例如：滷雞腿、咖哩雞、肉骨茶"></textarea>
           </div>
           <div class="qa-item">
-            <div class="qa-question"><span class="qa-step">Q2</span><span>希望怎麼調整？</span></div>
-            <textarea id="opinionImprove" maxlength="700" placeholder="例如：明天少鹽、下次多一點青菜、改成便當送到68"></textarea>
-            <div class="qa-help">送出後會自動整理成問答格式，後台比較好看。</div>
+            <div class="qa-question"><span class="qa-step">Q2</span><span>今年最不喜歡哪些菜？</span></div>
+            <textarea id="opinionDislike" maxlength="700" placeholder="例如：太油、太辣、不習慣的菜名"></textarea>
+          </div>
+          <div class="qa-item">
+            <div class="qa-question"><span class="qa-step">Q3</span><span>份量、味道、送餐有什麼要改善？</span></div>
+            <textarea id="opinionImprove" maxlength="700" placeholder="例如：青菜多一點、不要太鹹、便當不要漏送"></textarea>
+          </div>
+          <div class="qa-item">
+            <div class="qa-question"><span class="qa-step">Q4</span><span>明年希望增加什麼菜？</span></div>
+            <textarea id="opinionWish" maxlength="700" placeholder="例如：海南雞飯、牛肉麵、更多柬埔寨菜"></textarea>
+            <div class="qa-help">送出後會自動整理成年度 QA，後台可以直接查看。</div>
           </div>
         </div>
         <div class="actions">
-          <button class="primary" id="submitOpinion" type="button">送出意見</button>
+          <button class="primary" id="submitOpinion" type="button">送出年度意見</button>
           <button class="secondary" id="clearOpinion" type="button">清空</button>
         </div>
         <p class="status" id="opinionStatus"></p>
@@ -585,7 +598,8 @@
       currentSummary = data.summary;
       renderDepartmentTabs();
       renderFeedbackDepartments();
-      renderOpinionMealOptions();
+      const opinionYear = document.getElementById("opinionYear");
+      if (opinionYear && !opinionYear.value) opinionYear.value = date.slice(0, 4);
       renderSummary(data.summary);
       renderMenuMeal(data.menu);
       renderMeals(data.menu);
@@ -629,16 +643,6 @@
         .filter(item => item.dish)
         .map(item => `${item.category}: ${item.dish}`);
       return items.length ? items.join(" / ") : "這餐目前沒有菜色";
-    }
-
-    function renderOpinionMealOptions() {
-      const el = document.getElementById("opinionMeal");
-      if (!el || !currentMenu) return;
-      const previous = el.value || activeMeal;
-      el.innerHTML = currentMenu.meals.map(meal => `
-        <option value="${escapeHtml(meal.key)}">${mealNames[meal.key]} ${escapeHtml(meal.time || "")}</option>
-      `).join("");
-      el.value = currentMenu.meals.some(meal => meal.key === previous) ? previous : activeMeal;
     }
 
     function feedbackTemplateText(mealKey) {
@@ -976,35 +980,40 @@
     }
 
     function clearOpinionForm() {
-      document.getElementById("opinionTarget").value = "";
-      document.getElementById("opinionIssue").value = "";
+      document.getElementById("opinionFavorite").value = "";
+      document.getElementById("opinionDislike").value = "";
       document.getElementById("opinionImprove").value = "";
+      document.getElementById("opinionWish").value = "";
       setPanelStatus("opinionStatus", "");
     }
 
     async function submitOpinionForm() {
       const unit = document.getElementById("opinionDepartment").value || activeDepartment;
-      const topic = document.getElementById("opinionTopic").value;
-      const mealKey = document.getElementById("opinionMeal").value || activeMeal;
-      const meal = currentMenu?.meals?.find(item => item.key === mealKey);
-      const mealText = `${mealNames[mealKey] || mealKey} ${meal?.time || ""}`.trim();
-      const target = document.getElementById("opinionTarget").value.trim();
-      const issue = document.getElementById("opinionIssue").value.trim();
+      const year = document.getElementById("opinionYear").value.trim() || new Date().getFullYear();
+      const cuisine = document.getElementById("opinionCuisine").value;
+      const score = document.getElementById("opinionScore").value;
+      const favorite = document.getElementById("opinionFavorite").value.trim();
+      const dislike = document.getElementById("opinionDislike").value.trim();
       const improve = document.getElementById("opinionImprove").value.trim();
-      if (!target && !issue && !improve) throw new Error("請至少填一個問題內容");
+      const wish = document.getElementById("opinionWish").value.trim();
+      if (!favorite && !dislike && !improve && !wish) throw new Error("請至少填一個意見內容");
       const message = [
-        `Q：哪一餐？`,
-        `A：${mealText}`,
-        `Q：意見類型？`,
-        `A：${topic}`,
-        `Q：菜名 / 位置？`,
-        `A：${target || "未填"}`,
-        `Q：哪裡有問題？`,
-        `A：${issue || "未填"}`,
-        `Q：希望怎麼調整？`,
-        `A：${improve || "未填"}`
+        `Q：年度？`,
+        `A：${year}`,
+        `Q：平常吃哪一類？`,
+        `A：${cuisine}`,
+        `Q：整體滿意度？`,
+        `A：${score}`,
+        `Q：今年最喜歡哪些菜？`,
+        `A：${favorite || "未填"}`,
+        `Q：今年最不喜歡哪些菜？`,
+        `A：${dislike || "未填"}`,
+        `Q：份量、味道、送餐有什麼要改善？`,
+        `A：${improve || "未填"}`,
+        `Q：明年希望增加什麼菜？`,
+        `A：${wish || "未填"}`
       ].join("\n");
-      await saveFeedback({ date: currentDate, unit, kind: "opinion", topic: `${topic}/${mealText}`.slice(0, 40), message }, "opinionStatus");
+      await saveFeedback({ date: currentDate, unit, kind: "opinion", topic: `年度意見/${year}`.slice(0, 40), message }, "opinionStatus");
       clearOpinionForm();
     }
 
