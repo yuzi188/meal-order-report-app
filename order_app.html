@@ -456,6 +456,62 @@
               <option value="1 不滿意">1 不滿意</option>
             </select>
           </div>
+          <div>
+            <label for="opinionImproveMeal">最需要改善餐別</label>
+            <select id="opinionImproveMeal">
+              <option value="沒有特別">沒有特別</option>
+              <option value="早餐">早餐</option>
+              <option value="午餐">午餐</option>
+              <option value="晚餐">晚餐</option>
+              <option value="宵夜">宵夜</option>
+              <option value="全部">全部</option>
+            </select>
+          </div>
+          <div>
+            <label for="opinionTasteIssue">口味重點</label>
+            <select id="opinionTasteIssue">
+              <option value="剛好">剛好</option>
+              <option value="太鹹">太鹹</option>
+              <option value="太淡">太淡</option>
+              <option value="太油">太油</option>
+              <option value="太辣">太辣</option>
+              <option value="不夠辣">不夠辣</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div>
+            <label for="opinionPortionIssue">份量重點</label>
+            <select id="opinionPortionIssue">
+              <option value="剛好">剛好</option>
+              <option value="飯不夠">飯不夠</option>
+              <option value="肉不夠">肉不夠</option>
+              <option value="青菜不夠">青菜不夠</option>
+              <option value="湯不夠">湯不夠</option>
+              <option value="太多浪費">太多浪費</option>
+            </select>
+          </div>
+          <div>
+            <label for="opinionDeliveryIssue">送餐重點</label>
+            <select id="opinionDeliveryIssue">
+              <option value="正常">正常</option>
+              <option value="送太早">送太早</option>
+              <option value="送太晚">送太晚</option>
+              <option value="常漏送">常漏送</option>
+              <option value="位置不清楚">位置不清楚</option>
+              <option value="包裝要改善">包裝要改善</option>
+            </select>
+          </div>
+          <div>
+            <label for="opinionRestrictionIssue">特殊餐處理</label>
+            <select id="opinionRestrictionIssue">
+              <option value="正常">正常</option>
+              <option value="不吃牛要更清楚">不吃牛要更清楚</option>
+              <option value="不吃豬要更清楚">不吃豬要更清楚</option>
+              <option value="不吃海鮮要更清楚">不吃海鮮要更清楚</option>
+              <option value="健康餐要改善">健康餐要改善</option>
+              <option value="素食需求">素食需求</option>
+            </select>
+          </div>
         </div>
         <div class="qa-list">
           <div class="qa-item">
@@ -473,6 +529,22 @@
           <div class="qa-item">
             <div class="qa-question"><span class="qa-step">Q4</span><span>明年希望增加什麼菜？</span></div>
             <textarea id="opinionWish" maxlength="700" placeholder="例如：海南雞飯、牛肉麵、更多柬埔寨菜"></textarea>
+          </div>
+          <div class="qa-item">
+            <div class="qa-question"><span class="qa-step">Q5</span><span>哪些菜希望常出？</span></div>
+            <textarea id="opinionFrequent" maxlength="700" placeholder="例如：一週一次、每月固定出的菜"></textarea>
+          </div>
+          <div class="qa-item">
+            <div class="qa-question"><span class="qa-step">Q6</span><span>哪些菜希望不要再出？</span></div>
+            <textarea id="opinionAvoid" maxlength="700" placeholder="例如：吃不習慣、太常重複、大家不愛的菜"></textarea>
+          </div>
+          <div class="qa-item">
+            <div class="qa-question"><span class="qa-step">Q7</span><span>早餐或湯品想新增什麼？</span></div>
+            <textarea id="opinionBreakfastSoup" maxlength="700" placeholder="例如：豆漿、奶茶、粥品、雞湯、排骨湯"></textarea>
+          </div>
+          <div class="qa-item">
+            <div class="qa-question"><span class="qa-step">Q8</span><span>其他想說的建議</span></div>
+            <textarea id="opinionOther" maxlength="700" placeholder="例如：菜單重複太多、想換口味、希望多一點家鄉菜"></textarea>
             <div class="qa-help">送出後會自動整理成年度 QA，後台可以直接查看。</div>
           </div>
         </div>
@@ -984,6 +1056,10 @@
       document.getElementById("opinionDislike").value = "";
       document.getElementById("opinionImprove").value = "";
       document.getElementById("opinionWish").value = "";
+      document.getElementById("opinionFrequent").value = "";
+      document.getElementById("opinionAvoid").value = "";
+      document.getElementById("opinionBreakfastSoup").value = "";
+      document.getElementById("opinionOther").value = "";
       setPanelStatus("opinionStatus", "");
     }
 
@@ -992,11 +1068,20 @@
       const year = document.getElementById("opinionYear").value.trim() || new Date().getFullYear();
       const cuisine = document.getElementById("opinionCuisine").value;
       const score = document.getElementById("opinionScore").value;
+      const improveMeal = document.getElementById("opinionImproveMeal").value;
+      const tasteIssue = document.getElementById("opinionTasteIssue").value;
+      const portionIssue = document.getElementById("opinionPortionIssue").value;
+      const deliveryIssue = document.getElementById("opinionDeliveryIssue").value;
+      const restrictionIssue = document.getElementById("opinionRestrictionIssue").value;
       const favorite = document.getElementById("opinionFavorite").value.trim();
       const dislike = document.getElementById("opinionDislike").value.trim();
       const improve = document.getElementById("opinionImprove").value.trim();
       const wish = document.getElementById("opinionWish").value.trim();
-      if (!favorite && !dislike && !improve && !wish) throw new Error("請至少填一個意見內容");
+      const frequent = document.getElementById("opinionFrequent").value.trim();
+      const avoid = document.getElementById("opinionAvoid").value.trim();
+      const breakfastSoup = document.getElementById("opinionBreakfastSoup").value.trim();
+      const other = document.getElementById("opinionOther").value.trim();
+      if (!favorite && !dislike && !improve && !wish && !frequent && !avoid && !breakfastSoup && !other) throw new Error("請至少填一個意見內容");
       const message = [
         `Q：年度？`,
         `A：${year}`,
@@ -1004,6 +1089,16 @@
         `A：${cuisine}`,
         `Q：整體滿意度？`,
         `A：${score}`,
+        `Q：最需要改善餐別？`,
+        `A：${improveMeal}`,
+        `Q：口味重點？`,
+        `A：${tasteIssue}`,
+        `Q：份量重點？`,
+        `A：${portionIssue}`,
+        `Q：送餐重點？`,
+        `A：${deliveryIssue}`,
+        `Q：特殊餐處理？`,
+        `A：${restrictionIssue}`,
         `Q：今年最喜歡哪些菜？`,
         `A：${favorite || "未填"}`,
         `Q：今年最不喜歡哪些菜？`,
@@ -1011,7 +1106,15 @@
         `Q：份量、味道、送餐有什麼要改善？`,
         `A：${improve || "未填"}`,
         `Q：明年希望增加什麼菜？`,
-        `A：${wish || "未填"}`
+        `A：${wish || "未填"}`,
+        `Q：哪些菜希望常出？`,
+        `A：${frequent || "未填"}`,
+        `Q：哪些菜希望不要再出？`,
+        `A：${avoid || "未填"}`,
+        `Q：早餐或湯品想新增什麼？`,
+        `A：${breakfastSoup || "未填"}`,
+        `Q：其他想說的建議？`,
+        `A：${other || "未填"}`
       ].join("\n");
       await saveFeedback({ date: currentDate, unit, kind: "opinion", topic: `年度意見/${year}`.slice(0, 40), message }, "opinionStatus");
       clearOpinionForm();
