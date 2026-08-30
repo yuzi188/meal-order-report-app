@@ -348,6 +348,7 @@
               <th>類型</th>
               <th>部門</th>
               <th>餐別</th>
+              <th>當餐菜色</th>
               <th>星等</th>
               <th>意見類型</th>
               <th>內容</th>
@@ -904,9 +905,9 @@
       const summary = document.getElementById("feedbackSummary");
       if (!tbody) return;
       const entries = data.entries || [];
-      if (summary) summary.textContent = `${data.month} 共 ${entries.length} 筆評價 / 意見`;
+      if (summary) summary.textContent = `${data.month} 共 ${entries.length} 筆評價 / 意見 / 許願`;
       if (!entries.length) {
-        tbody.innerHTML = `<tr><td colspan="8" class="feedback-empty">這個月份還沒有評價留言。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="feedback-empty">這個月份還沒有評價留言。</td></tr>`;
         return;
       }
       tbody.innerHTML = entries.map(row => `
@@ -915,6 +916,7 @@
           <td>${escapeHtml(row.kind_label)}</td>
           <td>${escapeHtml(row.unit)}</td>
           <td>${escapeHtml(row.meal_label || "-")}</td>
+          <td class="feedback-message">${escapeHtml(row.menu_text || "-")}</td>
           <td>${row.rating ? `${Number(row.rating)} 分` : "-"}</td>
           <td>${escapeHtml(row.topic || "-")}</td>
           <td class="feedback-message">${escapeHtml(row.message || "-")}</td>

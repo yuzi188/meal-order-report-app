@@ -1,4 +1,4 @@
-const ADMIN_CACHE_NAME = "kitchen-admin-shell-v4";
+const ADMIN_CACHE_NAME = "kitchen-admin-shell-v5";
 const ADMIN_SHELL_URLS = ["/admin", "/admin-icon.svg", "/admin-manifest.webmanifest"];
 
 self.addEventListener("install", event => {

@@ -107,6 +107,8 @@
     .form-panel h2 { margin: 0 0 12px; color: var(--brand); font-size: 20px; }
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .form-row { margin-top: 10px; }
+    .meal-preview { margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: #d8dee7; font-size: 13px; line-height: 1.45; }
+    .meal-preview strong { display: block; margin-bottom: 4px; color: var(--brand); }
     .stars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
     .star-button { min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--muted); font-size: 20px; font-weight: 950; }
     .star-button.active { border-color: var(--brand); background: rgba(245,200,75,.14); color: var(--brand); }
@@ -290,6 +292,7 @@
       <button type="button" class="tab" data-view-tab="counts">填寫人數</button>
       <button type="button" class="tab" data-view-tab="feedback">評價反饋</button>
       <button type="button" class="tab" data-view-tab="opinion">意見</button>
+      <button type="button" class="tab" data-view-tab="wish">許願清單</button>
     </section>
 
     <section class="app-view" data-view-panel="orders">
@@ -359,6 +362,10 @@
             </select>
           </div>
         </div>
+        <div class="meal-preview">
+          <strong>當餐菜色</strong>
+          <div id="feedbackMenuText">請先選餐別</div>
+        </div>
         <div class="form-row">
           <label>評分</label>
           <div class="stars" id="ratingButtons">
@@ -378,6 +385,37 @@
           <button class="secondary" id="clearFeedback" type="button">清空</button>
         </div>
         <p class="status" id="feedbackStatus"></p>
+      </section>
+    </section>
+
+    <section class="app-view" data-view-panel="wish" hidden>
+      <section class="form-panel">
+        <h2>許願清單</h2>
+        <div class="form-grid">
+          <div>
+            <label for="wishDepartment">部門</label>
+            <select id="wishDepartment"></select>
+          </div>
+          <div>
+            <label for="wishTopic">類型</label>
+            <select id="wishTopic">
+              <option value="想吃菜色">想吃菜色</option>
+              <option value="早餐">早餐</option>
+              <option value="午餐">午餐</option>
+              <option value="晚餐">晚餐</option>
+              <option value="宵夜">宵夜</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="wishMessage">想吃什麼</label>
+          <textarea id="wishMessage" maxlength="1000" placeholder="例如：想吃滷雞腿、咖哩飯、肉骨茶"></textarea>
+        </div>
+        <div class="actions">
+          <button class="primary" id="submitWish" type="button">送出許願</button>
+          <button class="secondary" id="clearWish" type="button">清空</button>
+        </div>
+        <p class="status" id="wishStatus"></p>
       </section>
     </section>
 
@@ -527,6 +565,7 @@
       renderSummary(data.summary);
       renderMenuMeal(data.menu);
       renderMeals(data.menu);
+      updateFeedbackMenuText();
       loadDeliveryTable().catch(() => renderDeliveryTable(""));
       setStatus("");
     }
@@ -551,12 +590,27 @@
 
     function renderFeedbackDepartments() {
       const options = departments.map(unit => `<option value="${escapeHtml(unit)}">${departmentLabel(unit)}</option>`).join("");
-      ["feedbackDepartment", "opinionDepartment"].forEach(id => {
+      ["feedbackDepartment", "opinionDepartment", "wishDepartment"].forEach(id => {
         const el = document.getElementById(id);
         const previous = el.value;
         el.innerHTML = options;
         el.value = departments.includes(previous) ? previous : activeDepartment;
       });
+    }
+
+    function mealMenuText(mealKey) {
+      const meal = currentMenu?.meals?.find(item => item.key === mealKey);
+      if (!meal) return "這餐目前沒有菜單資料";
+      const items = (meal.items || [])
+        .filter(item => item.dish)
+        .map(item => `${item.category}: ${item.dish}`);
+      return items.length ? items.join(" / ") : "這餐目前沒有菜色";
+    }
+
+    function updateFeedbackMenuText() {
+      const box = document.getElementById("feedbackMenuText");
+      const mealKey = document.getElementById("feedbackMeal")?.value || activeMeal;
+      if (box) box.textContent = mealMenuText(mealKey);
     }
 
     function locationButtons(selected, mealKey = activeMeal) {
@@ -863,6 +917,15 @@
       document.getElementById("feedbackMessage").value = "";
     }
 
+    async function submitWishForm() {
+      const unit = document.getElementById("wishDepartment").value || activeDepartment;
+      const topic = document.getElementById("wishTopic").value;
+      const message = document.getElementById("wishMessage").value.trim();
+      if (!message) throw new Error("請輸入想吃的菜色");
+      await saveFeedback({ date: currentDate, unit, kind: "wish", topic, message }, "wishStatus");
+      document.getElementById("wishMessage").value = "";
+    }
+
     async function submitOpinionForm() {
       const unit = document.getElementById("opinionDepartment").value || activeDepartment;
       const topic = document.getElementById("opinionTopic").value;
@@ -1010,6 +1073,7 @@
       if (mealTab) {
         activeMeal = mealTab;
         document.getElementById("feedbackMeal").value = activeMeal;
+        updateFeedbackMenuText();
         renderSummary(currentSummary);
         renderMenuMeal(currentMenu);
         renderMeals(currentMenu);
@@ -1063,9 +1127,15 @@
     document.getElementById("submit").addEventListener("click", () => submitReport().catch(err => setStatus(err.message, "err")));
     document.getElementById("reload").addEventListener("click", () => refreshSummary().catch(err => setStatus(err.message, "err")));
     document.getElementById("submitFeedback").addEventListener("click", () => submitFeedbackForm().catch(err => setPanelStatus("feedbackStatus", err.message, "err")));
+    document.getElementById("feedbackMeal").addEventListener("change", updateFeedbackMenuText);
     document.getElementById("clearFeedback").addEventListener("click", () => {
       document.getElementById("feedbackMessage").value = "";
       setPanelStatus("feedbackStatus", "");
+    });
+    document.getElementById("submitWish").addEventListener("click", () => submitWishForm().catch(err => setPanelStatus("wishStatus", err.message, "err")));
+    document.getElementById("clearWish").addEventListener("click", () => {
+      document.getElementById("wishMessage").value = "";
+      setPanelStatus("wishStatus", "");
     });
     document.getElementById("submitOpinion").addEventListener("click", () => submitOpinionForm().catch(err => setPanelStatus("opinionStatus", err.message, "err")));
     document.getElementById("clearOpinion").addEventListener("click", () => {

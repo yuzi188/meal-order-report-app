@@ -739,6 +739,7 @@ def init_db():
                 rating INTEGER,
                 topic TEXT NOT NULL DEFAULT '',
                 message TEXT NOT NULL DEFAULT '',
+                menu_text TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL
             )
             """
@@ -749,6 +750,11 @@ def init_db():
             ON feedback_entries (report_date, kind, created_at)
             """
         )
+        feedback_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(feedback_entries)").fetchall()
+        }
+        if "menu_text" not in feedback_columns:
+            conn.execute("ALTER TABLE feedback_entries ADD COLUMN menu_text TEXT NOT NULL DEFAULT ''")
         menu_override_columns = {
             row[1] for row in conn.execute("PRAGMA table_info(menu_overrides)").fetchall()
         }
@@ -962,7 +968,7 @@ def save_feedback(payload):
         raise ValueError("日期格式不正確")
 
     kind = str(payload.get("kind") or "").strip()
-    if kind not in {"rating", "opinion"}:
+    if kind not in {"rating", "opinion", "wish"}:
         raise ValueError("回饋類型不正確")
 
     unit = str(payload.get("unit") or "").strip()
@@ -972,19 +978,21 @@ def save_feedback(payload):
     meal_key = str(payload.get("meal_key") or "").strip()
     rating = None
     topic = ""
+    menu_text = ""
     if kind == "rating":
         if meal_key not in MEAL_KEYS:
             raise ValueError("餐別不正確")
         rating = int(payload.get("rating") or 0)
         if rating < 1 or rating > 5:
             raise ValueError("評分需為 1 到 5")
+        menu_text = feedback_menu_text(report_date, meal_key)
     else:
         meal_key = ""
-        topic = str(payload.get("topic") or "其他").strip()[:40]
+        topic = str(payload.get("topic") or ("想吃菜色" if kind == "wish" else "其他")).strip()[:40]
 
     message = str(payload.get("message") or "").strip()
-    if kind == "opinion" and not message:
-        raise ValueError("請輸入意見內容")
+    if kind in {"opinion", "wish"} and not message:
+        raise ValueError("請輸入內容")
     if len(message) > 1000:
         raise ValueError("內容最多 1000 字")
 
@@ -993,13 +1001,26 @@ def save_feedback(payload):
         cursor = conn.execute(
             """
             INSERT INTO feedback_entries (
-                report_date, kind, unit, meal_key, rating, topic, message, created_at
+                report_date, kind, unit, meal_key, rating, topic, message, menu_text, created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (report_date, kind, unit, meal_key, rating, topic, message, now),
+            (report_date, kind, unit, meal_key, rating, topic, message, menu_text, now),
         )
     return {"ok": True, "id": cursor.lastrowid, "created_at": now}
+
+
+def feedback_menu_text(report_date, meal_key):
+    day = load_menu().get(report_date) or {}
+    meal = next((item for item in day.get("meals", []) if item.get("key") == meal_key), None)
+    if not meal:
+        return ""
+    parts = []
+    for item in meal.get("items", []):
+        dish = str(item.get("dish") or "").strip()
+        if dish:
+            parts.append(f"{item.get('category')}: {dish}")
+    return " / ".join(parts)
 
 
 def feedback_report(month):
@@ -1013,12 +1034,12 @@ def feedback_report(month):
         "dinner": "晚餐",
         "late_night": "宵夜",
     }
-    kind_labels = {"rating": "評價", "opinion": "意見"}
+    kind_labels = {"rating": "評價", "opinion": "意見", "wish": "許願"}
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             """
-            SELECT id, report_date, kind, unit, meal_key, rating, topic, message, created_at
+            SELECT id, report_date, kind, unit, meal_key, rating, topic, message, menu_text, created_at
             FROM feedback_entries
             WHERE report_date LIKE ?
             ORDER BY report_date DESC, created_at DESC, id DESC
