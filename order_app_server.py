@@ -3092,6 +3092,19 @@ def cost_report(start_date, end_date, summary_end_date=None):
             "cost_68_frozen": 0.0,
         }
 
+    def five_day_period_label(row_date):
+        if row_date.month == 12:
+            month_end_day = 31
+        else:
+            month_end_day = (date(row_date.year, row_date.month + 1, 1) - timedelta(days=1)).day
+        period_start_day = ((row_date.day - 1) // 5) * 5 + 1
+        if month_end_day % 5 == 1 and row_date.day == month_end_day:
+            period_start_day = month_end_day - 5
+        period_end_day = min(period_start_day + 4, month_end_day)
+        if month_end_day - period_end_day == 1:
+            period_end_day = month_end_day
+        return f"{row_date.month}/{period_start_day}-{row_date.month}/{period_end_day}"
+
     month = empty_group("month")
     weeks = {}
     for row in summary_rows:
@@ -3117,9 +3130,7 @@ def cost_report(start_date, end_date, summary_end_date=None):
         ]:
             month[field] += row[field]
         row_date = date.fromisoformat(row["date"])
-        period_start_day = ((row_date.day - 1) // 5) * 5 + 1
-        period_end_day = min(period_start_day + 4, (date(row_date.year, row_date.month + 1, 1) - timedelta(days=1)).day) if row_date.month < 12 else min(period_start_day + 4, 31)
-        period_label = f"{row_date.month}/{period_start_day}-{row_date.month}/{period_end_day}"
+        period_label = five_day_period_label(row_date)
         weeks.setdefault(period_label, empty_group(period_label))
         weeks[period_label]["cost"] += row["total_cost"]
         weeks[period_label]["other_cost"] += row["other_cost"]
