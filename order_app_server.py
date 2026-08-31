@@ -3063,6 +3063,7 @@ def cost_report(start_date, end_date, summary_end_date=None):
         rows.append(build_cost_row(key, stored.get(key)))
         current += timedelta(days=1)
     summary_cutoff = date.fromisoformat(summary_end_date) if summary_end_date else end
+    summary_cutoff = max(start, min(summary_cutoff, end))
     summary_rows = [row for row in rows if date.fromisoformat(row["date"]) <= summary_cutoff]
 
     def empty_group(label):

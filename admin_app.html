@@ -464,6 +464,15 @@
       return { start, end };
     }
 
+    function syncSelectedDateToMonth(range) {
+      const input = document.getElementById("todayInput");
+      let value = input.value || todayTaipei();
+      if (value < range.start) value = range.start;
+      if (value > range.end) value = range.end;
+      input.value = value;
+      return value;
+    }
+
     function money(value) {
       return `$${Number(value || 0).toFixed(2)}`;
     }
@@ -606,7 +615,7 @@
 
     async function load() {
       const range = monthRange(document.getElementById("monthInput").value);
-      const summaryEnd = selectedDate();
+      const summaryEnd = syncSelectedDateToMonth(range);
       await loadStorageStatus();
       const res = await fetch(`/api/costs?start=${range.start}&end=${range.end}&summary_end=${encodeURIComponent(summaryEnd)}`, { cache: "no-store" });
       const data = await res.json();
