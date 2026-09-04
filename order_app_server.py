@@ -188,6 +188,7 @@ FIXED_REPORTS = [
         "cuisine": "taiwan",
         "counts": {"breakfast": 3, "lunch": 4, "dinner": 4, "late_night": 3},
         "beef_notes": {"breakfast": 1, "lunch": 1, "dinner": 1},
+        "active_until": "2026-09-05",
     },
     {
         "unit": "1002-2\u5ba2\u670d",
@@ -810,7 +811,20 @@ def fixed_reports_config():
         return defaults
     if not isinstance(reports, list):
         return defaults
-    existing_keys = {(rule.get("unit"), rule.get("location"), rule.get("cuisine")) for rule in reports}
+    default_by_key = {
+        (rule.get("unit"), rule.get("location"), rule.get("cuisine")): rule
+        for rule in defaults
+    }
+    existing_keys = set()
+    for rule in reports:
+        key = (rule.get("unit"), rule.get("location"), rule.get("cuisine"))
+        existing_keys.add(key)
+        default_rule = default_by_key.get(key)
+        if not default_rule:
+            continue
+        for field in ["beef_notes", "active_from", "active_until"]:
+            if field in default_rule and field not in rule:
+                rule[field] = default_rule[field]
     for rule in defaults:
         key = (rule.get("unit"), rule.get("location"), rule.get("cuisine"))
         if key not in existing_keys:
@@ -842,6 +856,11 @@ def save_fixed_reports_config(reports):
         cleaned_rule = {"unit": unit, "location": location, "cuisine": cuisine, "counts": counts}
         if isinstance(rule.get("beef_notes"), dict):
             cleaned_rule["beef_notes"] = {meal: int(rule["beef_notes"].get(meal) or 0) for meal in MEAL_KEYS}
+        for field in ["active_from", "active_until"]:
+            value = str(rule.get(field) or "").strip()
+            if value:
+                date.fromisoformat(value)
+                cleaned_rule[field] = value
         cleaned.append(cleaned_rule)
     set_setting("fixed_reports", json.dumps(cleaned, ensure_ascii=False))
     return {"ok": True, "reports": cleaned}
@@ -2669,10 +2688,22 @@ def meal_has_beef(report_date, meal_key):
     return False
 
 
+def fixed_rule_is_active(rule, report_date):
+    active_from = str(rule.get("active_from") or "").strip()
+    active_until = str(rule.get("active_until") or "").strip()
+    if active_from and report_date < active_from:
+        return False
+    if active_until and report_date > active_until:
+        return False
+    return True
+
+
 def fixed_rows(report_date, rows, include_hidden=False):
     updated_pairs = {(row["unit"], row["meal_key"]) for row in rows}
     defaults = []
     for rule in fixed_reports_config():
+        if not fixed_rule_is_active(rule, report_date):
+            continue
         if rule.get("unit") in HIDDEN_FIXED_UNITS and not include_hidden:
             continue
         if rule.get("unit") == "1002-2\u4ee3\u7406" and is_sunday(report_date):
