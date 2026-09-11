@@ -312,8 +312,11 @@ def dish_image_url(item):
     category = str((item or {}).get("category") or "").strip()
     if not dish:
         return ""
+    image_version = OPENAI_IMAGE_VERSION
+    if dish == "\u8089\u9aa8\u8336":
+        image_version = f"{OPENAI_IMAGE_VERSION}-bak-kut-teh-v2"
     return "/api/dish-image?" + urllib.parse.urlencode(
-        {"dish": dish, "category": category, "v": OPENAI_IMAGE_VERSION}
+        {"dish": dish, "category": category, "v": image_version}
     )
 
 
