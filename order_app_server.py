@@ -195,12 +195,14 @@ FIXED_REPORTS = [
         "location": "1002-2",
         "cuisine": "taiwan",
         "counts": {"breakfast": 9, "lunch": 1, "dinner": 3, "late_night": 4},
+        "active_until": "2026-09-14",
     },
     {
         "unit": "1002-2\u5ba2\u670d",
         "location": "1002-2",
         "cuisine": "cambodia",
         "counts": {"lunch": 4, "dinner": 4, "late_night": 7},
+        "active_until": "2026-09-14",
     },
     {
         "unit": "\u4fdd\u59c6\u90e8\u9580",
